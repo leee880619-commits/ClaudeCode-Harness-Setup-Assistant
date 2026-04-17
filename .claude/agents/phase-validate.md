@@ -19,6 +19,11 @@ Knowledge 및 체크리스트는 필요 시 어시스턴트 프로젝트에서 R
 - `${CLAUDE_PLUGIN_ROOT}/knowledge/` — Claude Code 파일 명세, 안티패턴
 - `${CLAUDE_PLUGIN_ROOT}/checklists/` — 검증 항목, 보안 감사, 메타 누수 키워드
 
+## Input Context
+작업 시작 전 **반드시** `{대상 프로젝트}/docs/{요청명}/` 아래 모든 Phase 산출물(`00-target-path.md` ~ `06-hooks-mcp.md`)을 전체 Read하여 하네스 전반을 파악한다. 특히 각 파일의 `## Context for Next Phase` 섹션 간 일관성을 교차 검증한다 (예: Phase 4에서 정한 에이전트 목록과 Phase 5에서 생성한 `.claude/agents/*.md` 파일 수·이름 일치).
+
+프롬프트의 `[이전 Phase 결과 요약]`(~200단어)는 힌트이며, 산출물 파일이 source of truth이다. Summary만 보고 검증을 시작하지 말 것.
+
 ## Rules
 - 파일을 생성하거나 수정하지 않는다 (읽기 + 검증만)
 - 검증 실패 시 자동 수정하지 않고 문제점만 보고

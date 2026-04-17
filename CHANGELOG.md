@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-04-18
+
+### Changed
+- **Phase 에이전트에 `## Input Context` 섹션 추가** — 7개 Phase 서브에이전트(`phase-domain-research`, `phase-workflow`, `phase-pipeline`, `phase-team`, `phase-skills`, `phase-hooks`, `phase-validate`)가 작업 시작 전 **이전 Phase 산출물(`docs/{요청명}/NN-*.md`)을 전체 Read하도록 강제**. 각 에이전트 정의 파일에 필수 입력 파일 목록과 "Summary는 힌트, 파일이 source of truth" 원칙을 명시.
+  - 배경: `orchestrator-protocol.md` 는 "다음 에이전트는 이전 파일을 Read하여 `## Context for Next Phase` 섹션에서 상세 컨텍스트를 확보한다"고 **설계 의도**를 기술했으나, 에이전트 정의·플레이북 레벨에서 **강제 지시가 누락**되어 있었음. 에이전트가 프롬프트의 ~200단어 Summary만 보고 작업을 시작할 위험이 실존.
+  - 제외: `phase-setup`(Phase 1-2는 선행 산출물 없음 — Phase 0은 경로 수집만), `red-team-advisor`(이미 `orchestrator-protocol.md` 에 "필요 시 Advisor가 직접 이전 산출물을 Read" 명시).
+  - Phase 9(`phase-validate`)에는 "전체 산출물(`00~06`)을 교차 검증"하도록 확장 지시.
+
 ## [0.3.2] - 2026-04-18
 
 ### Changed

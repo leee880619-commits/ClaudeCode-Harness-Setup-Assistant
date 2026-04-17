@@ -17,6 +17,14 @@ You are a skill craftsman.
 
 Knowledge는 플레이북 파일의 Knowledge References 섹션을 참조하여 필요한 파일만 Read.
 
+## Input Context
+작업 시작 전 **반드시** 다음 산출물을 전체 Read하여 상세 컨텍스트를 확보한다:
+- `{대상 프로젝트}/docs/{요청명}/04-agent-team.md` — 특히 `## Context for Next Phase` 섹션 (에이전트-스킬 소유권 테이블, Identity, Orchestrator Pattern Decision)
+- `{대상 프로젝트}/docs/{요청명}/03-pipeline-design.md` — 각 스킬이 어느 파이프라인 스텝에서 호출되는지 확인
+- `{대상 프로젝트}/docs/{요청명}/02b-domain-research.md` — 존재 시에만. 도메인 Dimension 체크리스트 주입 근거
+
+프롬프트의 `[이전 Phase 결과 요약]`(~200단어)는 힌트이며, 산출물 파일이 source of truth이다. Summary만 보고 작업을 시작하지 말 것.
+
 ## Parallel Skill Crafting (선택)
 제작할 스킬이 3개 이상이고 서로 독립적이면 TeamCreate로 병렬 생성을 고려한다.
 - `TeamCreate("skill-forge-batch")` → 스킬당 Agent 소환(team_name 지정) → 결과 수집 → `05-skill-specs.md` 통합
