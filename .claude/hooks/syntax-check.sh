@@ -23,10 +23,12 @@ fi
 
 # --- 파일명 특수문자 주입 방어 ---
 TARGET_BASE="$(basename "$TARGET_FILE")"
-if [[ "$TARGET_BASE" =~ [';|&$`\\!{}()'\''] ]]; then
-  echo "❌ 파일명 거부: 특수문자가 포함된 파일명은 허용되지 않습니다" >&2
-  exit 1
-fi
+case "$TARGET_BASE" in
+  *\;*|*\|*|*\&*|*\$*|*\`*|*\\*|*\!*|*\{*|*\}*|*\(*|*\)*|*\'*)
+    echo "❌ 파일명 거부: 특수문자가 포함된 파일명은 허용되지 않습니다" >&2
+    exit 1
+    ;;
+esac
 
 # --- JSON 파일 검증 ---
 if [[ "$TARGET_FILE" == *.json ]]; then
