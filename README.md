@@ -64,6 +64,23 @@ cd ClaudeCode-Harness-Setup-Assistant
 claude --plugin-dir .
 ```
 
+## 업데이트
+
+이 플러그인은 자동 업데이트되지 않습니다. 새 버전을 받으려면 Claude Code 세션에서 다음 두 단계를 순서대로 실행하세요.
+
+```
+# 1) 마켓플레이스 캐시 새로고침 (GitHub에서 marketplace.json 재다운로드)
+/plugin marketplace update harness-architect-marketplace
+
+# 2) 플러그인 관리 TUI 열기
+/plugin update
+```
+
+`/plugin update` 를 인자 없이 입력하면 플러그인 목록 TUI가 나옵니다. 거기서
+**Installed → `harness-architect` → `Update now`** 를 선택하면 업데이트가 적용됩니다.
+
+> `/plugin update harness-architect` 처럼 바로 실행했을 때 "already at the latest version (0.1.0)" 이 뜬다면, 1번 마켓플레이스 업데이트를 먼저 실행하지 않았거나 캐시가 남아 있는 경우입니다. 위 2단계 절차를 그대로 따르세요.
+
 ## 사용법
 
 설치 후, 하네스를 만들 **대상 프로젝트에서** Claude Code 세션을 열고 슬래시 커맨드로 시작합니다.

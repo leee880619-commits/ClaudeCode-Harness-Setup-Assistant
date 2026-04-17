@@ -57,6 +57,23 @@ cd ClaudeCode-Harness-Setup-Assistant
 claude --plugin-dir .
 ```
 
+## Update
+
+The plugin does **not** auto-update. To pull the latest version, run these two steps inside a Claude Code session.
+
+```
+# 1) Refresh the marketplace cache (re-fetches marketplace.json from GitHub)
+/plugin marketplace update harness-architect-marketplace
+
+# 2) Open the plugin management TUI
+/plugin update
+```
+
+Calling `/plugin update` **without arguments** opens the plugin list TUI. From
+there, pick **Installed → `harness-architect` → `Update now`** to apply the update.
+
+> If you run `/plugin update harness-architect` directly and see "already at the latest version (0.1.0)", you likely skipped step 1 or the marketplace cache is stale. Follow the two-step flow above exactly.
+
 ## Usage
 
 From **inside your target project** (not this repo), open Claude Code and run:

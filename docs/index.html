@@ -673,6 +673,12 @@
           <p>마켓플레이스에서 <code>harness-architect</code>를 설치합니다.</p>
 <pre class="code"><button class="copy" data-copy>복사</button><code>/plugin install harness-architect@harness-architect-marketplace</code></pre>
           <div class="hint"><i class="fa-solid fa-circle-info"></i> 설치 후 Claude Code 세션을 재시작하면 <code>/harness-architect:harness-setup</code> 커맨드가 로드됩니다.</div>
+          <div class="hint" style="margin-top:8px"><i class="fa-solid fa-rotate"></i> <strong>이미 설치되어 있다면(업데이트):</strong> 먼저 마켓플레이스 캐시를 갱신한 뒤, <code>/plugin update</code> 로 TUI를 열어 <em>Installed → harness-architect → Update now</em> 를 선택하세요. <code>/plugin update harness-architect</code> 를 바로 쓰면 "already at the latest" 로 보일 수 있어 2단계 절차를 권장합니다.</div>
+<pre class="code"><button class="copy" data-copy>복사</button><code><span class="cmt"># 1) 마켓플레이스 캐시 새로고침</span>
+/plugin marketplace update harness-architect-marketplace
+
+<span class="cmt"># 2) TUI 열고 Installed → harness-architect → Update now 선택</span>
+/plugin update</code></pre>
         </div>
       </div>
 
