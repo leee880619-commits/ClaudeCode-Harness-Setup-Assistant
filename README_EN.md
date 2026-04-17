@@ -37,14 +37,14 @@ This plugin is my attempt to collapse that loop. It draws from Claude Code's **o
 
 ## Install
 
-Claude Code plugin marketplace:
+Run these slash commands inside a Claude Code session:
 
-```bash
+```
 # 1) Register the marketplace (one-time)
-claude marketplace add leee880619-commits/ClaudeCode-Harness-Setup-Assistant
+/plugin marketplace add leee880619-commits/ClaudeCode-Harness-Setup-Assistant
 
 # 2) Install the plugin
-claude plugin install harness-architect@harness-architect-marketplace
+/plugin install harness-architect@harness-architect-marketplace
 ```
 
 > Submission to the official Anthropic marketplace is in progress. Until then, use the GitHub-hosted path above.

@@ -44,14 +44,14 @@
 
 ## 설치
 
-Claude Code 플러그인 마켓플레이스로 설치합니다.
+Claude Code 세션에서 슬래시 커맨드로 설치합니다.
 
-```bash
+```
 # 1) 플러그인 마켓플레이스 등록 (한 번만)
-claude marketplace add leee880619-commits/ClaudeCode-Harness-Setup-Assistant
+/plugin marketplace add leee880619-commits/ClaudeCode-Harness-Setup-Assistant
 
 # 2) 플러그인 설치
-claude plugin install harness-architect@harness-architect-marketplace
+/plugin install harness-architect@harness-architect-marketplace
 ```
 
 > 공식 Anthropic 마켓플레이스 제출은 진행 중입니다. 그 전까지는 위 GitHub-hosted 마켓플레이스 경로로 설치하세요.
