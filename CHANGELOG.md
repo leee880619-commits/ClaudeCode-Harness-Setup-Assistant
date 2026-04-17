@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-04-18
+
+### Changed
+- **Strict Coding 6-Step 제안 임계값 이원화** — 기존 "신호 2개 이상 → `[ASK]`" 단일 기준을 이원화:
+  - 2개 이상 → `[ASK]` (의사결정 요청, 기존 동작 유지)
+  - 정확히 1개 → `[NOTE]` (정보 전달만, 사용자가 Phase 3에서 원하면 채택 가능)
+  - 0개 → 기록하지 않음
+  - **예외**: 단일 신호가 #7(사용자 의지 발화 — "엄격", "production-ready" 등)이면 `[ASK]`로 승격. 명시적 품질 의지 표명 시 질문 누락 방지.
+  - 단일 신호 프로젝트(예: tsconfig strict만 있는 POC)에도 워크플로우 존재를 소개하면서, `question-discipline` 의 "합리적 복수 선택지일 때만 질문" 원칙과 양립.
+  - Phase 3 `workflow-design` Step 0 범위 명시: Phase 1-2가 `[ASK]`로 이미 결정 완료한 케이스는 재검토하지 않고, `[NOTE]` 단일 신호 케이스만 재검토 + 사용자 명시 요청 시 채택.
+  - 수정: `playbooks/fresh-setup.md` Step 3-B, `playbooks/workflow-design.md` Step 0, `knowledge/13-strict-coding-workflow.md` 적용 판단 기준·절차.
+
 ## [0.3.1] - 2026-04-17
 
 ### Added
