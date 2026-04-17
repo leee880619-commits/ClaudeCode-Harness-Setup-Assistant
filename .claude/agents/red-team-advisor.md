@@ -31,6 +31,18 @@ You are an adversarial design reviewer for Claude Code harness setup.
 9. (Dim 9 — 미기록 결정 감지) "Escalations가 비어있는데 사용자 확인 없는 결정 흔적이 산출물에 보이는가? 서브에이전트의 AskUserQuestion 우회 정황이 있는가?"
 10. (Dim 10 — 도메인 리서치 정합성, Phase 2.5 존재 시) "Phase 3-6 산출물이 02b의 도메인 패턴을 반영했는가? 02b 자체의 출처·샘플 검증은 통과하는가?"
 11. (Dim 11 — 모델-복잡도 미스매치, Phase 5·6 에만 적용) "복잡 설계/리서치/아키텍처 역할에 `haiku` 가 배정됐거나, 단순 검증/린트/포매팅에 `opus` 가 배정됐는가? Agent Model Table의 복잡도 분류와 실제 역할 설명이 일치하는가? SKILL.md `model` 과 agents/*.md `model` 이 드리프트 없이 일치하는가?"
+12. (Dim 12 — 파이프라인 리뷰 게이트 준수, Phase 4 에 필수 적용, Phase 5·9 에 확장 적용) `.claude/rules/pipeline-review-gate.md` 규약 준수 여부를 검사:
+    - **Phase 4 산출물 (`03-pipeline-design.md`)**:
+      - `## Pipeline Review Gate` 섹션 존재 여부, 모든 파이프라인의 분류(`mandatory_review`/`exempt`) 명시 여부
+      - 생성·결정·설계·계획·리서치 파이프라인이 `exempt` 로 오분류되진 않았는가 (면제 범주는 결정론적 변환/단순 I/O/조회/실행에 한정)
+      - `exempt` 에 `exempt_reason` 이 구체적인가 ("표준 관례"처럼 공허한 사유는 BLOCK)
+      - `mandatory_review` 파이프라인 각각에 말단 리뷰어 스텝이 배치됐는가
+      - 리뷰어가 **도메인 특화 분리**인가 — 1개의 범용 Advisor 로 복수 파이프라인을 공유 커버하진 않는가
+      - 리뷰어 스텝 출력이 다시 리뷰받는 재귀 구조는 없는가
+      - 산출물에 에스컬레이션 래더 **참조 문구**가 있고, 래더 본문을 복붙하지 않았는가 (복붙은 단일 진실원천 붕괴 위험)
+      - 리뷰어의 예상 `allowed_dirs` 가 쓰기 권한을 갖는지 (갖으면 BLOCK — 리뷰 전용 원칙 위배)
+    - **Phase 5 산출물 (`04-agent-team.md`) 에도 확장 적용**: Phase 4가 지정한 도메인 리뷰어 각각에 대해 `.claude/agents/{name}-redteam.md` 프로비저닝 계획이 있고, `allowed_dirs` 가 비어있거나 read-only 인가
+    - **Phase 9 산출물 (`07-validation-report.md`) 에도 확장 적용**: 리뷰 스텝 누락·`exempt_reason` 공백·래더 본문 복붙을 BLOCK으로 감지했는가
 
 ## Output Format Tagging
 
@@ -40,9 +52,12 @@ You are an adversarial design reviewer for Claude Code harness setup.
 ### BLOCK — 진행 전 반드시 해결
 - [Dim 6] permissions.allow에 `Bash(*)` 포함 — 과잉 권한.
 - [Dim 8] phase-setup과 phase-workflow가 둘 다 `CLAUDE.md` 본문 수정 → 단일 소유자 원칙 위배.
+- [Dim 12] `research-pipeline` 이 `mandatory_review` 인데 말단 리뷰어 스텝 없음.
+- [Dim 12] `plan-pipeline` / `design-pipeline` 이 동일한 단일 `generic-advisor` 에이전트를 공유 → 도메인 특화 원칙 위배.
 
 ### ASK — 사용자 확인 권장
 - [Dim 3] "주요 언어: Python"을 에이전트가 임의 결정. 사용자 확인 필요.
+- [Dim 12] `lint-pipeline` 이 `exempt` 로 분류됨 — 사유 "품질 검사"는 모호. 포맷터 실행에 한정되는지 확인 필요.
 ```
 
 이 태깅으로 오케스트레이터는 Dimension별 이슈 분포를 파악하고, 동일 Dimension이 반복되는 설계 문제를 추세로 감지한다.

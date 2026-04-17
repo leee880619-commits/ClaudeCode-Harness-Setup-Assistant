@@ -30,7 +30,7 @@ This plugin is my attempt to collapse that loop. It draws from Claude Code's **o
 | Scope | Full harness (settings/rules/agents/playbooks/hooks/MCP) | Agent + skill team focus |
 | Input | Project-path scan + interactive interview | User-provided narrative |
 | Workflow | 9-phase orchestration, Phase Gate, resume-on-crash | Single-conversation 6 steps |
-| Design review | Red-team Advisor between phases | Not built in |
+| Design review | Red-team Advisor between phases + domain-specialized pipeline review gate auto-injected into the generated harness | Not built in |
 | Core pattern | Agent-Playbook separation (WHO/HOW), pure orchestrator | User-driven design |
 
 **Positioning**: revfactory/harness is ideal when you want an agent/skill team *fast*. harness-architect is the one to reach for when you want a harness set up *properly, once*, with resumability and built-in review.

@@ -37,7 +37,7 @@
 | 범위 | 전체 하네스 (settings/rules/agents/playbooks/hooks/MCP) | 에이전트/스킬 팀 중심 |
 | 입력 | 프로젝트 경로 스캔 + 대화식 인터뷰 | 사용자 서술식 요청 |
 | 워크플로우 | 9-Phase 오케스트레이션 + Phase Gate + 재개 | 단일 대화 6단계 |
-| 설계 리뷰 | Red-team Advisor (매 Phase 독립 비판) | 내장 없음 |
+| 설계 리뷰 | Red-team Advisor (매 Phase 독립 비판) + 생성 하네스에 파이프라인 리뷰 게이트(도메인 특화) 자동 주입 | 내장 없음 |
 | 핵심 패턴 | Agent-Playbook 분리 (WHO/HOW), Pure Orchestrator | 사용자 주도 설계 |
 
 **포지셔닝**: revfactory/harness는 에이전트/스킬 팀을 **빠르게** 만들고 싶을 때. harness-architect는 **한 번 제대로** 세팅해 두고 재개·검증 가능한 하네스를 원할 때.

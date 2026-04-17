@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-04-17
+
+### Added
+- **Pipeline Review Gate** (`.claude/rules/pipeline-review-gate.md`) — 대상 프로젝트의 워크플로우 파이프라인 중 **생성·결정·설계·계획·리서치** 출력을 내보내는 파이프라인에 대해 **도메인 전문 레드팀 리뷰어** 스텝을 말단에 **필수 포함**하도록 강제하는 권위 규칙. 메타 레벨 Red-team Advisor 패턴을 대상 프로젝트 런타임으로 전파하는 도그푸딩.
+  - 파이프라인 분류: `mandatory_review` / `exempt_eligible` (결정론적 변환/단순 I/O/조회/실행만 면제, `exempt_reason` 필수).
+  - **에스컬레이션 래더 (3단)** — BLOCK 1회: 오케스트레이터 자동 승인 재실행 / BLOCK 2회: 사용자 AskUserQuestion (재실행·수용·수동 편집) / BLOCK 3회: **작업 전면 중단** + 3선택 (무시·수동 개입·파이프라인 스킵).
+  - 리뷰어 도메인 특화 의무 (`{domain}-redteam` 컨벤션), 리뷰어 쓰기 권한 금지, 리뷰의 리뷰 재귀 금지, 복잡도 게이트로 스킵 불가.
+- **Phase 4 Step 4.5 — 파이프라인 리뷰 게이트 분류** (`playbooks/pipeline-design.md`). 파이프라인 분류·리뷰어 배치·도메인 Dimension 초안 작성. Output Contract에 `## Pipeline Review Gate` 필수 섹션 추가. Context for Next Phase에 `Pipeline Review Gate Decisions` 표 포함 (Phase 5 리뷰어 프로비저닝 입력).
+- **Red-team Advisor Dimension 12 — 파이프라인 리뷰 게이트 준수** (`.claude/agents/red-team-advisor.md`). Phase 4 필수 적용, Phase 5·9 확장 적용. 리뷰 스텝 누락·`exempt_reason` 공백·범용 Advisor 공유 커버·재귀 구조·래더 본문 복붙·리뷰어 쓰기 권한 부여를 BLOCK으로 감지.
+
+### Changed
+- `playbooks/pipeline-design.md` Guardrails — 도메인 리뷰어 6개 금지 사항 추가 (누락·공유 커버·쓰기 권한·재귀·래더 복붙·복잡도 스킵). 에이전트 수 상한에서 도메인 리뷰어는 별도 취급.
+- Phase 4 산출물 다이어그램 예시 — `mandatory_review` 파이프라인 말단에 리뷰어 스텝 명시, `exempt` 파이프라인은 사유 표기.
+
+### Notes
+- 이 변경은 Phase 5(`agent-team`)·Phase 6(`skill-forge`)·Phase 9(`final-validation`) 플레이북 수정 없이 연계됨 — 기존 플레이북이 Phase 4의 Context for Next Phase를 Read하는 구조이므로 자동 전파. 향후 v0.4 에서 도메인 리뷰어용 SKILL.md 템플릿(`{domain}-redteam` 컨벤션 박스) 표준화 예정.
+
 ## [0.3.0] - 2026-04-17
 
 ### Added
@@ -101,6 +118,10 @@ Initial public release (soft launch).
 - English README (`README_EN.md`) and `examples/` scenarios are incomplete in this release — see Unreleased.
 - Submission to the official Anthropic plugin marketplace has not been completed; installation currently relies on GitHub-hosted marketplace path.
 
-[Unreleased]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/tag/v0.3.1
+[0.3.0]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/tag/v0.3.0
+[0.2.2]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/tag/v0.2.2
+[0.2.1]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/tag/v0.2.1
 [0.2.0]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/tag/v0.2.0
 [0.1.0]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/tag/v0.1.0
