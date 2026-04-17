@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>harness-architect · 팀 온보딩 가이드</title>
+<title>harness-architect · 사용 가이드</title>
 <meta name="description" content="Claude Code 하네스를 9-Phase 오케스트레이션으로 자동 구축하는 플러그인, harness-architect 사용 가이드." />
 
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
@@ -444,7 +444,7 @@
   <div class="wrap nav-inner">
     <a href="#top" class="brand" aria-label="harness-architect 홈">
       <span class="brand-mark" aria-hidden="true"><i class="fa-solid fa-diagram-project"></i></span>
-      <b>harness-architect</b><span>팀 온보딩 가이드</span>
+      <b>harness-architect</b><span>사용 가이드</span>
     </a>
     <nav class="nav-links" aria-label="섹션">
       <a href="#what">개요</a>
@@ -513,7 +513,7 @@
         <div class="sec-tag">01 — What it is</div>
         <h2>무엇을 하는 플러그인인가</h2>
       </div>
-      <p class="sec-desc reveal">대상 프로젝트 폴더를 주면, Claude Code가 그 프로젝트에 맞춰 동작하도록 필요한 설정·규칙·에이전트 팀·자동화 훅을 생성합니다. 사용자는 Phase 전환 시점에만 개입합니다.</p>
+      <p class="sec-desc reveal">대상 프로젝트 폴더를 주면, Claude Code가 그 프로젝트에 맞춰 동작하도록 필요한 설정·규칙·에이전트·자동화 훅을 생성합니다. 사용자는 Phase 전환 시점에만 개입합니다.</p>
     </div>
 
     <div class="bento">
@@ -561,7 +561,7 @@
         <div class="sec-tag">02 — Why we built this</div>
         <h2>왜 만들었나</h2>
       </div>
-      <p class="sec-desc reveal">"Claude Code로 뭘 할지"는 프로젝트마다 다르지만, "하네스를 어떻게 구성해야 하는지"의 원칙은 반복됩니다. 그 반복 작업을 팀 단위로 표준화하기 위해 만들었습니다.</p>
+      <p class="sec-desc reveal">"Claude Code로 뭘 할지"는 프로젝트마다 다르지만, "하네스를 어떻게 구성해야 하는지"의 원칙은 반복됩니다. 그 반복 작업을 자동화해 프로젝트마다 균질한 하네스를 얻기 위해 만들었습니다.</p>
     </div>
 
     <div class="bento">
@@ -573,7 +573,7 @@
       <article class="card half reveal">
         <div class="ic"><i class="fa-solid fa-check"></i></div>
         <h3>해법: 결정을 구조화</h3>
-        <p>Phase 게이팅으로 결정 순서를 강제하고, AskUserQuestion으로 암묵적 가정을 막고, Advisor로 산출물 품질을 더블체크합니다. 결과는 팀 모두가 동일 구조로 읽을 수 있는 하네스입니다.</p>
+        <p>Phase 게이팅으로 결정 순서를 강제하고, AskUserQuestion으로 암묵적 가정을 막고, Advisor로 산출물 품질을 더블체크합니다. 결과는 어느 프로젝트에서든 동일한 구조로 읽히는 하네스입니다.</p>
       </article>
       <article class="card third reveal">
         <div class="ic"><i class="fa-solid fa-ban"></i></div>
@@ -587,8 +587,8 @@
       </article>
       <article class="card third reveal">
         <div class="ic"><i class="fa-solid fa-people-group"></i></div>
-        <h3>팀 표준화</h3>
-        <p>누가 설치하든 동일한 9-Phase와 동일한 산출물 네이밍으로 협업 편차를 줄입니다.</p>
+        <h3>재현 가능한 설계</h3>
+        <p>언제 실행해도 동일한 9-Phase와 동일한 산출물 네이밍으로 편차를 줄입니다.</p>
       </article>
     </div>
   </div>
@@ -756,8 +756,8 @@
 
       <article class="phase reveal">
         <span class="tag"><i class="fa-solid fa-users"></i> Phase 5</span>
-        <h4>에이전트 팀 편성</h4>
-        <p>Teams/Agent/SendMessage 기반 에이전트 팀 편성, 소유권 테이블과 Orchestrator 패턴 결정.</p>
+        <h4>에이전트 구성</h4>
+        <p>Teams/Agent/SendMessage 기반 에이전트 구성, 소유권 테이블과 Orchestrator 패턴 결정.</p>
         <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-team</span></div>
       </article>
 
@@ -837,7 +837,7 @@
         <h4>선택한 항목</h4>
         <div class="item" data-show="claude-md">
           <div class="k">CLAUDE.md</div>
-          <p class="v">프로젝트 정체성·기술 스택·개발 원칙·컨벤션을 200줄 이내로 요약. 팀원과 Claude 모두 세션 시작 시 로딩.</p>
+          <p class="v">프로젝트 정체성·기술 스택·개발 원칙·컨벤션을 200줄 이내로 요약. Claude가 세션 시작 시 자동 로딩.</p>
         </div>
         <div class="item" data-show="settings">
           <div class="k">.claude/settings.json</div>
@@ -873,7 +873,7 @@
         </div>
         <div class="item" data-show="claude-dir">
           <div class="k">.claude/</div>
-          <p class="v">프로젝트 스코프 하네스의 루트. 팀원이 동일한 Claude Code 환경을 공유하기 위한 공통 설정 묶음.</p>
+          <p class="v">프로젝트 스코프 하네스의 루트. 프로젝트 기여자가 동일한 Claude Code 환경을 공유하기 위한 공통 설정 묶음.</p>
         </div>
         <div class="item" data-show="gitignore">
           <div class="k">.gitignore</div>
@@ -890,9 +890,9 @@
     <div class="sec-head">
       <div>
         <div class="sec-tag">07 — Field notes</div>
-        <h2>팀 운영 팁 & 자주 놓치는 점</h2>
+        <h2>운영 팁 & 자주 놓치는 점</h2>
       </div>
-      <p class="sec-desc reveal">실제 도입 시 자주 밟는 부분만 모았습니다.</p>
+      <p class="sec-desc reveal">실제로 자주 밟는 부분만 모았습니다.</p>
     </div>
 
     <div class="tips">
@@ -910,7 +910,7 @@
       </div>
       <div class="tip reveal">
         <div class="ic"><i class="fa-solid fa-scissors"></i></div>
-        <div><h4>CLAUDE.md 200줄 컷</h4><p>초과 시 규칙 파일로 분리됩니다. 팀 컨벤션·도메인 지식은 <code>rules/</code>로 이관해 관리하세요.</p></div>
+        <div><h4>CLAUDE.md 200줄 컷</h4><p>초과 시 규칙 파일로 분리됩니다. 프로젝트 컨벤션·도메인 지식은 <code>rules/</code>로 이관해 관리하세요.</p></div>
       </div>
       <div class="tip reveal">
         <div class="ic"><i class="fa-solid fa-rocket"></i></div>
@@ -918,13 +918,13 @@
       </div>
       <div class="tip reveal">
         <div class="ic"><i class="fa-solid fa-code-pull-request"></i></div>
-        <div><h4>PR에 올릴 땐 산출물까지</h4><p><code>docs/{요청명}/</code>도 함께 커밋하면, 나중에 다른 팀원이 의사결정 히스토리를 그대로 볼 수 있습니다.</p></div>
+        <div><h4>커밋/PR에는 산출물까지</h4><p><code>docs/{요청명}/</code>도 함께 커밋하면 이후에 의사결정 히스토리를 그대로 되짚을 수 있습니다.</p></div>
       </div>
     </div>
 
     <div class="cta reveal">
-      <h3>바로 해 봅시다.</h3>
-      <p>대상 프로젝트 폴더에서 Claude Code를 연 뒤, 위 4단계를 그대로 따라 하면 됩니다. 문제가 생기면 저장소 이슈로 알려 주세요.</p>
+      <h3>바로 시작해 보세요.</h3>
+      <p>대상 프로젝트 폴더에서 Claude Code를 연 뒤 위 단계를 그대로 따라 하면 됩니다. 문제가 생기면 저장소 이슈로 알려 주세요.</p>
       <div class="hero-actions" style="margin-top:10px">
         <a class="btn primary magnetic" href="#usage"><i class="fa-solid fa-play"></i> 사용법 다시 보기</a>
         <a class="btn" href="https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> 저장소 열기</a>
@@ -939,7 +939,7 @@
 <footer>
   <div class="wrap">
     <div>
-      <span>harness-architect</span> · Apache-2.0 · 팀 온보딩 문서
+      <span>harness-architect</span> · Apache-2.0 · 사용 가이드
     </div>
     <div>
       <a href="https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant</a>
