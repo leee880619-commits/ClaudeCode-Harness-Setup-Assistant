@@ -1,10 +1,3 @@
----
-name: user-scope-init
-description: Bootstrap the user-level Claude Code configuration (~/.claude/). Creates CLAUDE.md, settings.json, and rules/ for global personal preferences.
-role: initializer
-allowed_dirs: ["~/.claude/", "knowledge/"]
-user-invocable: false
----
 
 # User Scope Initialization
 

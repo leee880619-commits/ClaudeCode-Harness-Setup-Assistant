@@ -1,10 +1,3 @@
----
-name: cursor-migration
-description: Convert an existing Cursor IDE setup (.cursor/rules/, AGENTS.md, .cursorrules) to Claude Code harness format. Preserves all rules and workflows.
-role: converter
-allowed_dirs: [".", ".claude/", ".cursor/", "knowledge/"]
-user-invocable: false
----
 
 # Cursor to Claude Code Migration
 

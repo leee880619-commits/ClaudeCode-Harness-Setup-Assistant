@@ -1,10 +1,3 @@
----
-name: hooks-mcp-setup
-description: 훅(Hooks) 설계/설치 및 MCP 서버 제안/설치를 수행한다. Phase 7-8에서 사용.
-role: installer
-allowed_dirs: [".", ".claude/", "knowledge/"]
-user-invocable: false
----
 
 # Hooks & MCP Setup
 

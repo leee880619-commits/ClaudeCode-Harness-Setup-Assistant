@@ -1,10 +1,3 @@
----
-name: fresh-setup
-description: Phase 1-2 담당. 프로젝트 스캔, 인터뷰, 기본 하네스(CLAUDE.md, settings.json, rules) 생성.
-role: scanner-interviewer
-allowed_dirs: [".", ".claude/", "knowledge/"]
-user-invocable: false
----
 
 # Fresh Project Setup
 

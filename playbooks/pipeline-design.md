@@ -1,10 +1,3 @@
----
-name: pipeline-design
-description: 각 워크플로우 스텝에 대해 에이전트 실행 체인(파이프라인)을 설계한다. Phase 4에서 사용.
-role: pipeline-designer
-allowed_dirs: [".", ".claude/", "knowledge/"]
-user-invocable: false
----
 
 # Pipeline Design
 

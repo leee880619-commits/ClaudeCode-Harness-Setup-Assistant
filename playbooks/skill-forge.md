@@ -1,10 +1,3 @@
----
-name: skill-forge
-description: 각 에이전트의 SKILL.md를 제작한다. 역할, 도구, 지식, 워크플로우, 가드레일 정의. Phase 6에서 사용.
-role: craftsman
-allowed_dirs: [".", ".claude/", "knowledge/"]
-user-invocable: false
----
 
 # Skill Forge
 

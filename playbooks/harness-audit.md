@@ -1,10 +1,3 @@
----
-name: harness-audit
-description: Audit an existing Claude Code harness setup. Detects anti-patterns, oversized files, permission issues, and suggests improvements.
-role: auditor
-allowed_dirs: [".", ".claude/", "knowledge/"]
-user-invocable: false
----
 
 # Harness Audit
 

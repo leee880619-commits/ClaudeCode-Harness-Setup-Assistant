@@ -1,10 +1,3 @@
----
-name: final-validation
-description: Phase 9 담당. 전체 하네스의 구문, 일관성, 시뮬레이션 검증 후 최종 보고서 생성.
-role: validator
-allowed_dirs: [".", ".claude/", "knowledge/"]
-user-invocable: false
----
 
 # Final Validation
 

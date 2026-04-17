@@ -1,0 +1,193 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  structure:
+    name: Plugin structure + JSON / YAML / playbook checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify JSON files parse
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in \
+            .claude-plugin/plugin.json \
+            .claude-plugin/marketplace.json \
+            .claude/hooks/hooks.json \
+            .claude/settings.json \
+          ; do
+            echo "parse: $f"
+            python3 -c "import json; json.load(open('$f', encoding='utf-8'))"
+          done
+
+      - name: Verify YAML frontmatter in agents/
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in .claude/agents/*.md .claude/templates/workflows/*/agents/*.md; do
+            [ -f "$f" ] || continue
+            # Expect exactly two '---' lines forming a closed frontmatter at the top.
+            head -n 30 "$f" | awk '/^---$/{c++} END{exit c!=2}' || {
+              echo "frontmatter malformed: $f"
+              fail=1
+            }
+            # Required fields: name, description, model.
+            for key in name description model; do
+              head -n 30 "$f" | grep -qE "^${key}: " || {
+                echo "missing frontmatter '${key}': $f"
+                fail=1
+              }
+            done
+          done
+          exit $fail
+
+      - name: Verify playbooks/ has no YAML frontmatter (prevents Skill auto-discovery)
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in playbooks/*.md; do
+            [ -f "$f" ] || continue
+            if head -n 1 "$f" | grep -q '^---$'; then
+              echo "FAIL: $f starts with '---' (frontmatter). Playbooks must not have frontmatter."
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Verify each playbook is referenced by at least one agent
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in playbooks/*.md; do
+            name="$(basename "$f" .md)"
+            if ! grep -rlq -- "$name" .claude/agents/ commands/ 2>/dev/null; then
+              echo "FAIL: playbook '$name' not referenced by any agent or command."
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Verify plugin-internal references use \${CLAUDE_PLUGIN_ROOT}
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          # agents / commands / hooks.json should reference plugin files via ${CLAUDE_PLUGIN_ROOT}/…
+          # Catch hardcoded absolute paths (/home/, /Users/, C:\…) that would break in the plugin cache.
+          if grep -rnE '(/home/[A-Za-z0-9._-]|/Users/[A-Za-z0-9._-]|C:\\Users)' \
+               .claude/agents/ commands/ .claude/hooks/hooks.json 2>/dev/null; then
+            echo "FAIL: hardcoded absolute path in plugin code — use \${CLAUDE_PLUGIN_ROOT}."
+            fail=1
+          fi
+          exit $fail
+
+      - name: CLAUDE.md length sanity (<= 200 lines)
+        shell: bash
+        run: |
+          set -euo pipefail
+          lines=$(wc -l < CLAUDE.md)
+          echo "CLAUDE.md lines: $lines"
+          [ "$lines" -le 200 ] || { echo "CLAUDE.md exceeds 200 lines"; exit 1; }
+
+  shell:
+    name: Shell script lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: .claude/hooks
+
+      - name: Shebang / LF sanity on hooks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in .claude/hooks/*.sh; do
+            head -c2 "$f" | grep -q '^#!' || { echo "FAIL: missing shebang in $f"; exit 1; }
+            if file "$f" | grep -q CRLF; then
+              echo "FAIL: CRLF line endings in $f"
+              exit 1
+            fi
+          done
+
+  security:
+    name: Security / meta-leakage sanity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No dangerous Bash allow patterns in settings.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python3 -c "
+          import json, sys
+          with open('.claude/settings.json') as fh:
+              s = json.load(fh)
+          allow = s.get('permissions', {}).get('allow', [])
+          bad = [p for p in allow if p in ('Bash(*)', 'Bash(sudo *)', 'Bash(rm -rf *)')]
+          if bad:
+              print('FAIL:', bad); sys.exit(1)
+          "; then
+            echo "settings.json permissions.allow OK"
+          else
+            exit 1
+          fi
+
+      - name: Secret-pattern scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Restrict scan to source files; documentation may legitimately cite patterns.
+          # Flag actual token-like strings (sk-xxxxx, ghp_xxxxx, AKIA…). Length gate reduces false positives.
+          if grep -rnEI \
+               --exclude-dir=.git \
+               --exclude-dir=node_modules \
+               --exclude-dir=_harness-archive \
+               --include='*.json' \
+               --include='*.sh' \
+               --include='*.yml' \
+               --include='*.yaml' \
+               -e '(sk-[A-Za-z0-9]{30,}|ghp_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16})' \
+               . ; then
+            echo "FAIL: possible secret pattern in source/config files."
+            exit 1
+          fi
+          echo "no hard-looking secrets found"
+
+      - name: Meta-leakage keyword scan in generated-template docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The checklist file lists keywords that must NOT appear in *generated* files
+          # (templates under .claude/templates/). We scan templates only — not docs about
+          # the plugin itself (which legitimately discuss these concepts).
+          checklist=checklists/meta-leakage-keywords.md
+          if [ ! -f "$checklist" ]; then
+            echo "SKIP: $checklist not found"
+            exit 0
+          fi
+          # Extract backticked phrases from the checklist; require at least one to be absent.
+          mapfile -t phrases < <(grep -oE '`[^`]+`' "$checklist" | tr -d '`' | sort -u)
+          fail=0
+          for p in "${phrases[@]}"; do
+            if grep -rnF --include='*.md' -- "$p" .claude/templates/ 2>/dev/null; then
+              echo "FAIL: meta-leakage phrase '$p' appears in .claude/templates/ (should not)"
+              fail=1
+            fi
+          done
+          exit $fail

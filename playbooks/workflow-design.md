@@ -1,10 +1,3 @@
----
-name: workflow-design
-description: 프로젝트 목적에 맞는 작업 단계 시퀀스(워크플로우)를 설계한다. Phase 3에서 사용.
-role: designer
-allowed_dirs: [".", ".claude/", "knowledge/"]
-user-invocable: false
----
 
 # Workflow Design
 

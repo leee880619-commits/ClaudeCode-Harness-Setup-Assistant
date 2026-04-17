@@ -1,10 +1,3 @@
----
-name: design-review
-description: Phase 산출물의 설계 완전성, 목적 적합성, 암묵적 가정을 비판적으로 검토하는 방법론
-role: reviewer
-allowed_dirs: [".claude/", "knowledge/"]
-user-invocable: false
----
 
 # Design Review
 

@@ -1,10 +1,3 @@
----
-name: agent-team
-description: Claude Code의 Teams/Agent/SendMessage 기능으로 에이전트 팀을 편성한다. Phase 5에서 사용.
-role: coordinator
-allowed_dirs: [".", ".claude/", "knowledge/"]
-user-invocable: false
----
 
 # Agent Team Formation
 
