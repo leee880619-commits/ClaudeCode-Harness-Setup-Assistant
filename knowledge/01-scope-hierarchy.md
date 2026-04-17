@@ -1,4 +1,4 @@
-<!-- File: 01-scope-hierarchy.md | Source: architecture-report Section 2 -->
+<!-- File: 01-scope-hierarchy.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 2 -->
 ## SECTION 2: 4-Tier Scope 계층 완전 명세
 
 Claude Code는 지침과 설정을 **4단계 스코프 계층(4-Tier Scope Hierarchy)**으로 관리한다. 각 스코프는 독립적으로 존재하며, 더 구체적인(하위) 스코프가 상위 스코프를 덮어쓴다(스칼라 값 기준). 단, `deny` 규칙은 예외적으로 어떤 레벨에서든 설정되면 절대 override 불가하다.

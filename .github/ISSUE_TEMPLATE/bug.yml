@@ -1,0 +1,65 @@
+name: Bug report
+description: harness-architect 설치·실행·산출물에서 예상 밖 동작을 발견했을 때.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        버그 신고에 감사합니다. 재현 절차가 구체적일수록 빠르게 도울 수 있습니다.
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      description: .claude-plugin/plugin.json의 version 값 또는 설치된 버전.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: claude-version
+    attributes:
+      label: Claude Code version
+      description: "`claude --version` 출력."
+      placeholder: "claude-code x.y.z"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - Linux
+        - macOS
+        - Windows (WSL)
+        - Windows (native)
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 무엇이 발생했나요
+      description: 관찰한 실제 동작. 에러 메시지가 있으면 전부 포함.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 동작
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 재현 절차
+      placeholder: |
+        1. `claude --plugin-dir .`
+        2. `/harness-setup`
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 관련 로그/산출물 (선택)
+      description: docs/{request-name}/ 경로 파일 중 관련이 있는 것이 있으면 내용 첨부. 개인정보 제거 후.
+      render: shell

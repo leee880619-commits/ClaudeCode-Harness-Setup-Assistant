@@ -1,4 +1,4 @@
-<!-- File: 03-file-reference.md | Source: architecture-report Section 4 -->
+<!-- File: 03-file-reference.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 4 -->
 ## SECTION 4: 모든 파일의 완전 명세 (File-by-File Reference)
 
 ### 4.1 `/etc/claude-code/CLAUDE.md` (Managed 지침)

@@ -1,4 +1,4 @@
-<!-- File: 09-reference-pipeline.md | Source: architecture-report Section 10 -->
+<!-- File: 09-reference-pipeline.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 10 -->
 ## SECTION 10: 기능 구현 요청 시 파일 참조 파이프라인 (Co-optris 사례)
 
 이 섹션에서는 실제 프로젝트(Co-optris: 협동 테트리스 게임)에서 "새로운 게임 모드를 추가해줘"라는 요청이 들어왔을 때, **어떤 파일이 어떤 시점에 어떤 이유로 참조되는지**를 완전히 추적한다.

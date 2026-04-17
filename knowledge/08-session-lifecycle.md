@@ -1,4 +1,4 @@
-<!-- File: 08-session-lifecycle.md | Source: architecture-report Section 9 -->
+<!-- File: 08-session-lifecycle.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 9 -->
 ## SECTION 9: 세션 생명주기 — 파일 로딩 흐름 완전 명세
 
 Claude Code 세션의 파일 로딩은 단순한 "설정 파일 읽기"가 아니다. **정확한 순서, 조건부 로딩, 동적 확장**이라는 세 축으로 구성된 정교한 파이프라인이며, 이 파이프라인을 정확히 이해하지 못하면 지침이 "왜 적용되지 않는지", "왜 충돌하는지"를 진단할 수 없다.

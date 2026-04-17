@@ -1,4 +1,4 @@
-<!-- File: 02-composition-rules.md | Source: architecture-report Section 3 -->
+<!-- File: 02-composition-rules.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 3 -->
 ## SECTION 3: 설정 합성(Composition) 규칙 완전 명세
 
 ### 3.1 CLAUDE.md 합성

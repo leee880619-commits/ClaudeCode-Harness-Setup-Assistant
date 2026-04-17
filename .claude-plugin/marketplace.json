@@ -1,0 +1,14 @@
+{
+  "name": "harness-architect-marketplace",
+  "owner": {
+    "name": "leee880619-commits",
+    "url": "https://github.com/leee880619-commits"
+  },
+  "plugins": [
+    {
+      "name": "harness-architect",
+      "source": ".",
+      "description": "Builds a complete Claude Code harness for any project via a 9-phase orchestrated workflow."
+    }
+  ]
+}

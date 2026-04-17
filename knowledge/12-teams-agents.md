@@ -1,4 +1,4 @@
-<!-- File: 12-teams-agents.md | Source: architecture-report Section 12 -->
+<!-- File: 12-teams-agents.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 12 -->
 ## SECTION 12: Teams 및 Agent 시스템
 
 ### 12.1 개요

@@ -1,4 +1,4 @@
-<!-- File: 00-overview.md | Source: architecture-report Section 1 -->
+<!-- File: 00-overview.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 1 -->
 ## SECTION 1: Claude Code 지침 시스템 개요
 
 ### 1.1 설계 철학: "지침(Context) vs 설정(Config)" 이원 분리

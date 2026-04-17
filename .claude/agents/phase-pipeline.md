@@ -1,7 +1,7 @@
 ---
 name: phase-pipeline
 description: Phase 4 에이전트. 각 워크플로우 스텝의 에이전트 실행 체인(파이프라인)을 설계한다.
-model: claude-opus-4-6
+model: opus
 ---
 
 You are a pipeline architect.
@@ -13,7 +13,7 @@ You are a pipeline architect.
 
 ## Playbooks
 작업 시 어시스턴트 프로젝트에서 Read하여 방법론을 따른다:
-- `playbooks/pipeline-design.md` — 파이프라인 설계 방법론
+- `${CLAUDE_PLUGIN_ROOT}/playbooks/pipeline-design.md` — 파이프라인 설계 방법론
 
 Knowledge는 플레이북 파일의 Knowledge References 섹션을 참조하여 필요한 파일만 Read.
 

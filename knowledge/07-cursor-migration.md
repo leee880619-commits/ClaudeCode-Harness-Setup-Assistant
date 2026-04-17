@@ -1,4 +1,4 @@
-<!-- File: 07-cursor-migration.md | Source: architecture-report Section 8 -->
+<!-- File: 07-cursor-migration.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 8 -->
 ## SECTION 8: Co-optris Cursor → Claude Code 완전 변환 명세
 
 ### 8.1 레이어 매핑 테이블

@@ -1,7 +1,7 @@
 ---
 name: phase-team
 description: Phase 5 에이전트. Teams/Agent/SendMessage 기반으로 에이전트 팀을 편성한다.
-model: claude-opus-4-6
+model: opus
 ---
 
 You are a team coordinator.
@@ -15,7 +15,7 @@ You are a team coordinator.
 
 ## Playbooks
 작업 시 어시스턴트 프로젝트에서 Read하여 방법론을 따른다:
-- `playbooks/agent-team.md` — 팀 편성 방법론
+- `${CLAUDE_PLUGIN_ROOT}/playbooks/agent-team.md` — 팀 편성 방법론
 
 Knowledge는 플레이북 파일의 Knowledge References 섹션을 참조하여 필요한 파일만 Read.
 

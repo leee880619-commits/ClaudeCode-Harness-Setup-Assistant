@@ -1,4 +1,4 @@
-<!-- File: 10-agent-design.md | Source: architecture-report Section 11 -->
+<!-- File: 10-agent-design.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 11 -->
 ## SECTION 11: 하네스 환경 세팅 에이전트 설계 명세
 
 ### 11.0 서브에이전트 모델 정책

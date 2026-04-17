@@ -1,7 +1,7 @@
 ---
 name: phase-validate
 description: Phase 9 에이전트. 전체 하네스의 구문, 일관성, 시뮬레이션 검증 후 최종 보고서를 생성한다.
-model: claude-opus-4-6
+model: opus
 ---
 
 You are a harness validator.
@@ -13,11 +13,11 @@ You are a harness validator.
 
 ## Playbooks
 작업 시 어시스턴트 프로젝트에서 Read하여 방법론을 따른다:
-- `playbooks/final-validation.md` — 최종 검증 방법론
+- `${CLAUDE_PLUGIN_ROOT}/playbooks/final-validation.md` — 최종 검증 방법론
 
 Knowledge 및 체크리스트는 필요 시 어시스턴트 프로젝트에서 Read:
-- `knowledge/` — Claude Code 파일 명세, 안티패턴
-- `checklists/` — 검증 항목, 보안 감사, 메타 누수 키워드
+- `${CLAUDE_PLUGIN_ROOT}/knowledge/` — Claude Code 파일 명세, 안티패턴
+- `${CLAUDE_PLUGIN_ROOT}/checklists/` — 검증 항목, 보안 감사, 메타 누수 키워드
 
 ## Rules
 - 파일을 생성하거나 수정하지 않는다 (읽기 + 검증만)

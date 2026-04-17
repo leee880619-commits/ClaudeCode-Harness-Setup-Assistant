@@ -1,0 +1,28 @@
+name: Question / discussion
+description: 사용법, 아키텍처 이해, 특정 프로젝트 적용 방법 등에 대한 질문.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        - 짧은 사용법 질문은 Discussions 탭을 먼저 확인해 주세요.
+        - 기존 issue/PR에 이미 논의된 주제인지 검색 후 열어주시면 감사합니다.
+  - type: textarea
+    id: context
+    attributes:
+      label: 배경 / 상황
+      description: 어떤 프로젝트 유형에 적용 중이며 어떤 흐름에서 막혔는지.
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: 구체적 질문
+      description: '"X를 하고 싶은데 Y/Z 중 어느 경로가 맞는지" 형태가 좋습니다.'
+    validations:
+      required: true
+  - type: textarea
+    id: read
+    attributes:
+      label: 이미 읽어본 문서 (있으면)
+      description: README / ARCHITECTURE / 특정 playbook / knowledge 파일 등.

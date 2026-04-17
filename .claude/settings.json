@@ -48,29 +48,5 @@
       "Bash(cat ~/.ssh/*)",
       "Bash(cat ~/.claude/settings.local.json)"
     ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/ownership-guard.sh"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/syntax-check.sh"
-          }
-        ]
-      }
-    ]
   }
 }

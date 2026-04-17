@@ -1,4 +1,4 @@
-<!-- File: 11-anti-patterns.md | Source: architecture-report Section 11-B -->
+<!-- File: 11-anti-patterns.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 11-B -->
 ## SECTION 11-B: Claude Code 하네스 안티패턴
 
 에이전트가 감지하고 교정할 수 있어야 하는 안티패턴 목록.

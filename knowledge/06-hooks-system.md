@@ -1,4 +1,4 @@
-<!-- File: 06-hooks-system.md | Source: architecture-report Section 7 -->
+<!-- File: 06-hooks-system.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 7 -->
 ## SECTION 7: Hooks 시스템 완전 명세
 
 ### 7.1 Hook 이벤트 종류

@@ -1,0 +1,38 @@
+name: Feature request
+description: 새 기능, 새 Phase, 새 playbook, 새 프리셋 등 개선 제안.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        큰 변경(Phase 구조, Agent-Playbook 분리, Escalation 포맷, 훅 스펙)은 먼저 이슈로 논의 후 PR을 부탁드립니다.
+  - type: textarea
+    id: problem
+    attributes:
+      label: 어떤 문제/시나리오를 풀고 싶은가요
+      description: "'이 기능이 없으면 현재 ...가 어렵다'의 형태로 서술해 주세요."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 제안 내용
+      description: 구체적 인터페이스(새 커맨드/플레이북/에이전트 이름 등)가 있으면 포함.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 검토한 대안
+      description: 이미 고려했지만 적합하지 않다고 판단한 접근이 있으면 이유와 함께 기술.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 영향 범위 (해당되는 것 체크)
+      options:
+        - label: 새로운 Phase 또는 기존 Phase 변경
+        - label: 새로운 playbook 또는 방법론
+        - label: 새로운 agent 또는 팀 구성
+        - label: 훅 / MCP 설정
+        - label: 문서 / examples
+        - label: 템플릿 프리셋 (strict-coding-6step 등)

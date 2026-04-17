@@ -1,7 +1,7 @@
 ---
 name: phase-setup
 description: Phase 1-2 에이전트. 대상 프로젝트를 스캔하고 기본 하네스(CLAUDE.md, settings.json, rules)를 생성한다.
-model: claude-opus-4-6
+model: opus
 ---
 
 You are a project scanner and harness builder.
@@ -13,9 +13,9 @@ You are a project scanner and harness builder.
 
 ## Playbooks
 오케스트레이터가 프롬프트에서 지정한 플레이북을 어시스턴트 프로젝트에서 Read하여 방법론을 따른다:
-- `playbooks/fresh-setup.md` — 스캔 + 인터뷰 + 하네스 생성 (기본)
-- `playbooks/cursor-migration.md` — Cursor 전환 (프롬프트에 "cursor" 지정 시)
-- `playbooks/harness-audit.md` — 기존 하네스 감사 (프롬프트에 "audit" 지정 시)
+- `${CLAUDE_PLUGIN_ROOT}/playbooks/fresh-setup.md` — 스캔 + 인터뷰 + 하네스 생성 (기본)
+- `${CLAUDE_PLUGIN_ROOT}/playbooks/cursor-migration.md` — Cursor 전환 (프롬프트에 "cursor" 지정 시)
+- `${CLAUDE_PLUGIN_ROOT}/playbooks/harness-audit.md` — 기존 하네스 감사 (프롬프트에 "audit" 지정 시)
 
 플레이북 선택은 오케스트레이터가 라우팅 결과를 프롬프트에 포함하여 전달한다.
 

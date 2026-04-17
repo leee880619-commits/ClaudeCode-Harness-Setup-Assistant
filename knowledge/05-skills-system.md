@@ -1,4 +1,4 @@
-<!-- File: 05-skills-system.md | Source: architecture-report Section 6 -->
+<!-- File: 05-skills-system.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 6 -->
 ## SECTION 6: Skills 시스템 완전 명세
 
 ### 6.1 스킬 디렉터리 구조

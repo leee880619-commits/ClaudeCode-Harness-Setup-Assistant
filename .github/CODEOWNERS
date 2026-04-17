@@ -1,0 +1,10 @@
+# Global ownership — all changes are reviewed by the maintainer.
+*                             @leee880619-commits
+
+# Architecture-critical files: flag PRs touching these for extra attention.
+/.claude-plugin/              @leee880619-commits
+/.claude/agents/              @leee880619-commits
+/.claude/rules/               @leee880619-commits
+/.claude/hooks/               @leee880619-commits
+/commands/                    @leee880619-commits
+/playbooks/                   @leee880619-commits

@@ -1,4 +1,4 @@
-<!-- File: 04-memory-system.md | Source: architecture-report Section 5 -->
+<!-- File: 04-memory-system.md | Source: Derivative commentary based on Claude Code documentation (https://docs.claude.com/en/docs/claude-code). Original section mapping: 5 -->
 ## SECTION 5: 자동 메모리 시스템 완전 명세
 
 ### 5.1 메모리 저장 위치
