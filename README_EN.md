@@ -103,6 +103,10 @@ For the design philosophy, agent-playbook separation, escalation protocol, and r
 
 Issues and PRs are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a PR.
 
+## Privacy
+
+This plugin does not collect, store, or transmit any personal data. Full policy: [PRIVACY.md](./PRIVACY.md).
+
 ## License
 
 [Apache-2.0](./LICENSE) · Copyright © 2026 leee880619-commits

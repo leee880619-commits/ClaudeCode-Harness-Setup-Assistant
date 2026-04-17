@@ -123,6 +123,10 @@ QA)의 프리셋(에이전트 8 + 플레이북 8)이 포함되어 있어, 해당
 
 이슈/PR 환영합니다. 시작하기 전에 [CONTRIBUTING.md](./CONTRIBUTING.md)를 읽어주세요.
 
+## 개인정보 / 프라이버시
+
+이 플러그인은 어떤 개인정보도 수집·전송하지 않습니다. 전문은 [PRIVACY.md](./PRIVACY.md).
+
 ## 라이선스
 
 [Apache-2.0](./LICENSE) · Copyright © 2026 leee880619-commits
