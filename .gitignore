@@ -1,0 +1,20 @@
+# Personal overrides (not shared)
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/memory/
+
+# Internal development notes (not shared)
+dev-notes/
+
+# Runtime artifacts from local smoke tests
+docs/*-setup/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~

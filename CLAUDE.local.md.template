@@ -1,0 +1,26 @@
+# Local Project Overrides
+
+이 파일은 개인 맞춤 설정입니다. 버전 관리에서 제외합니다 (.gitignore 참조).
+
+## 개인용 지침 추가
+
+프로젝트 전체에 적용하기에 민감하지 않은 개인적 워크플로우나 선호사항을 여기에 기록하세요:
+
+```markdown
+## 나의 개발 방식
+
+- 선호하는 모델 선택: (opus / sonnet / haiku)
+- 커밋 메시지 규칙: 예) "feat: add feature X"
+- 테스트 실행 순서: 단위 테스트 → 통합 테스트 → e2e
+- 배포 전 체크리스트: [항목 작성]
+```
+
+## 로컬 환경 변수
+
+민감한 정보(API 키, 토큰)는 `.claude/settings.local.json`에 저장하세요.
+
+## Auto Memory 참조
+
+이 프로젝트의 memory/ 디렉터리를 참조하여 프로젝트별 컨텍스트를 축적하세요.
+
+@memory/MEMORY.md

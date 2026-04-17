@@ -1,0 +1,76 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(wc *)",
+      "Bash(du *)",
+      "Bash(file *)",
+      "Bash(git log *)",
+      "Bash(git status)",
+      "Bash(git branch *)",
+      "Bash(git remote *)",
+      "Bash(git diff *)",
+      "Bash(mkdir *)",
+      "Bash(test *)",
+      "Bash(chmod +x *)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Agent",
+      "TeamCreate",
+      "SendMessage",
+      "TaskCreate",
+      "TaskUpdate",
+      "TaskList",
+      "TaskGet",
+      "TaskOutput",
+      "TaskStop",
+      "AskUserQuestion",
+      "EnterPlanMode",
+      "ExitPlanMode"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(eval *)",
+      "Bash(sh -c *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(nc *)",
+      "Bash(chmod 777 *)",
+      "Bash(export PATH=*)",
+      "Bash(export LD_PRELOAD=*)",
+      "Bash(cat ~/.ssh/*)",
+      "Bash(cat ~/.claude/settings.local.json)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/ownership-guard.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/syntax-check.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

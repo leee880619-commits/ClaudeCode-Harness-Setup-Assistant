@@ -1,0 +1,14 @@
+{
+  "model": "claude-sonnet-4-6",
+  "env": {
+    "API_KEY": "your-api-key-here",
+    "PROJECT_ROOT": "$(pwd)"
+  },
+  "permissions": {
+    "allow": [],
+    "deny": []
+  },
+  "hooks": {},
+  "mcp_servers": {},
+  "comment": "이 파일은 개인 로컬 설정용입니다. .gitignore에 포함되어야 합니다. 민감한 정보(API 키, 토큰)는 여기에 저장하세요."
+}
