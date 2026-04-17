@@ -62,7 +62,7 @@ claude --plugin-dir .
 From **inside your target project** (not this repo), open Claude Code and run:
 
 ```
-/harness-setup
+/harness-architect:harness-setup
 ```
 
 The orchestrator starts at Phase 0 and advances through nine phases. Required decisions (project type, solo/team, hook scope, etc.) are collected via batched `AskUserQuestion` calls; settings, agents, playbooks, and hooks are written to your target project.
