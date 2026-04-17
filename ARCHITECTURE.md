@@ -60,7 +60,7 @@ harness-architect/
 │   │   └── workflows/strict-coding-6step/
 │   └── settings.json            ← developer-facing permissions/deny (not shipped to user session)
 ├── commands/
-│   └── harness-setup.md         ← slash command entry (/harness-setup)
+│   └── harness-setup.md         ← slash command entry (/harness-architect:harness-setup)
 ├── playbooks/*.md               ← 11 — methodology (HOW, plugin-internal only)
 ├── knowledge/*.md               ← 14 — Claude Code documentation commentary
 ├── checklists/*.md              ← 3 — validation / security-audit / meta-leakage-keywords

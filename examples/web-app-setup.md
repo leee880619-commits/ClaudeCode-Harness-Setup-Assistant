@@ -1,6 +1,6 @@
 # Example scenario: setting up a harness for a small web app (solo, React + Node)
 
-> 이 문서는 실제 실행 로그가 아니라 **사용 흐름 예시**입니다. 플러그인 설치 후 `/harness-setup`이 어떻게 진행되는지 감을 잡기 위한 목적입니다.
+> 이 문서는 실제 실행 로그가 아니라 **사용 흐름 예시**입니다. 플러그인 설치 후 `/harness-architect:harness-setup`이 어떻게 진행되는지 감을 잡기 위한 목적입니다.
 
 ## 전제
 
@@ -19,7 +19,7 @@ claude
 세션 내에서:
 
 ```
-/harness-setup
+/harness-architect:harness-setup
 ```
 
 ## 예상 진행

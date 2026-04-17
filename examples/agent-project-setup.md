@@ -20,7 +20,7 @@ claude
 세션 내:
 
 ```
-/harness-setup
+/harness-architect:harness-setup
 ```
 
 ## 예상 진행

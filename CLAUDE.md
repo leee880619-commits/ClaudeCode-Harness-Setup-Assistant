@@ -1,10 +1,10 @@
 # harness-architect (plugin development context)
 
-> 이 파일은 **이 레포에서 Claude Code 세션을 열고 플러그인 자체를 수정**하는 기여자(Contributor)용 가이드입니다. 최종 사용자는 `/harness-setup` 슬래시 커맨드만으로 플러그인을 쓰면 되며 이 파일을 볼 필요가 없습니다.
+> 이 파일은 **이 레포에서 Claude Code 세션을 열고 플러그인 자체를 수정**하는 기여자(Contributor)용 가이드입니다. 최종 사용자는 `/harness-architect:harness-setup` 슬래시 커맨드만으로 플러그인을 쓰면 되며 이 파일을 볼 필요가 없습니다.
 
 ## 이 레포가 무엇인가
 
-Claude Code용 **Apache-2.0 오픈소스 플러그인**인 `harness-architect`의 소스 저장소입니다. 설치 후 사용자는 `/harness-setup` 으로 9-Phase 오케스트레이션을 시작해 대상 프로젝트의 Claude Code 하네스를 구축합니다.
+Claude Code용 **Apache-2.0 오픈소스 플러그인**인 `harness-architect`의 소스 저장소입니다. 설치 후 사용자는 `/harness-architect:harness-setup` 으로 9-Phase 오케스트레이션을 시작해 대상 프로젝트의 Claude Code 하네스를 구축합니다.
 
 ## 이 레포에서 개발 시 (contributors only)
 

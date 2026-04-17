@@ -29,7 +29,7 @@
   로컬 검증 절차. CONTRIBUTING.md "테스트" 섹션의 체크와 이 변경 특유의 확인이 섞여도 좋습니다.
   예:
   1. `claude --plugin-dir .`
-  2. `/harness-setup`
+  2. `/harness-architect:harness-setup`
   3. Phase 3에서 Fast-Forward 분기 확인
 -->
 

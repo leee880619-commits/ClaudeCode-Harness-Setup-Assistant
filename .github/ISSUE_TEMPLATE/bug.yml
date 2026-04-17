@@ -53,7 +53,7 @@ body:
       label: 재현 절차
       placeholder: |
         1. `claude --plugin-dir .`
-        2. `/harness-setup`
+        2. `/harness-architect:harness-setup`
         3. ...
     validations:
       required: true

@@ -13,7 +13,7 @@ Initial public release (soft launch).
 ### Added
 - Plugin manifest (`.claude-plugin/plugin.json`) with custom component paths for `.claude/agents/`, `commands/`, and `.claude/hooks/hooks.json`.
 - Self-hosted single-plugin marketplace (`.claude-plugin/marketplace.json`).
-- Orchestrator slash command `/harness-setup` (entry point at `commands/harness-setup.md`).
+- Orchestrator slash command `/harness-architect:harness-setup` (entry point at `commands/harness-setup.md`).
 - 8 Phase workers under `.claude/agents/`:
   `phase-setup`, `phase-workflow`, `phase-pipeline`, `phase-team`, `phase-skills`, `phase-hooks`, `phase-validate`, `red-team-advisor`.
 - 11 playbooks under `playbooks/` (Agent-Playbook separation — HOW files, not exposed as Skills to the main session).
