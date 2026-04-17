@@ -1,14 +1,23 @@
 {
   "name": "harness-architect-marketplace",
   "owner": {
-    "name": "leee880619-commits",
-    "url": "https://github.com/leee880619-commits"
+    "name": "leee880619-commits"
+  },
+  "metadata": {
+    "description": "Self-hosted single-plugin marketplace for harness-architect (Claude Code harness builder)."
   },
   "plugins": [
     {
       "name": "harness-architect",
-      "source": ".",
-      "description": "Builds a complete Claude Code harness for any project via a 9-phase orchestrated workflow."
+      "source": {
+        "source": "github",
+        "repo": "leee880619-commits/ClaudeCode-Harness-Setup-Assistant"
+      },
+      "description": "Builds a complete Claude Code harness (CLAUDE.md, rules, agents, playbooks, hooks) via a 9-phase orchestrated workflow with Agent-Playbook separation and a red-team advisor.",
+      "category": "developer-tools",
+      "keywords": ["harness", "orchestrator", "agent-team", "scaffolding", "meta-tool"],
+      "license": "Apache-2.0",
+      "homepage": "https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant"
     }
   ]
 }

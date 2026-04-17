@@ -17,7 +17,16 @@
     "meta-tool",
     "setup-assistant"
   ],
-  "agents": "./.claude/agents/",
+  "agents": [
+    "./.claude/agents/phase-setup.md",
+    "./.claude/agents/phase-workflow.md",
+    "./.claude/agents/phase-pipeline.md",
+    "./.claude/agents/phase-team.md",
+    "./.claude/agents/phase-skills.md",
+    "./.claude/agents/phase-hooks.md",
+    "./.claude/agents/phase-validate.md",
+    "./.claude/agents/red-team-advisor.md"
+  ],
   "commands": "./commands/",
   "hooks": "./.claude/hooks/hooks.json"
 }
