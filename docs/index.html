@@ -497,10 +497,10 @@
     </div>
 
     <div class="stats reveal" aria-label="지표">
-      <div class="stat"><i class="fa-solid fa-layer-group"></i><div class="n" data-count="9">0</div><div class="l">오케스트레이션 Phase</div></div>
-      <div class="stat"><i class="fa-solid fa-user-astronaut"></i><div class="n" data-count="8">0</div><div class="l">전문 에이전트</div></div>
-      <div class="stat"><i class="fa-solid fa-book"></i><div class="n" data-count="11">0</div><div class="l">Playbook 방법론</div></div>
-      <div class="stat"><i class="fa-solid fa-database"></i><div class="n" data-count="14">0</div><div class="l">Knowledge 명세</div></div>
+      <div class="stat"><i class="fa-solid fa-layer-group"></i><div class="n" data-count="9">0</div><div class="l">오케스트레이션 Phase (+ 옵션 2.5)</div></div>
+      <div class="stat"><i class="fa-solid fa-user-astronaut"></i><div class="n" data-count="9">0</div><div class="l">전문 에이전트</div></div>
+      <div class="stat"><i class="fa-solid fa-book"></i><div class="n" data-count="12">0</div><div class="l">Playbook 방법론</div></div>
+      <div class="stat"><i class="fa-solid fa-database"></i><div class="n" data-count="22">0</div><div class="l">Knowledge + 도메인 KB</div></div>
     </div>
   </div>
 </section>
@@ -741,6 +741,13 @@
       </article>
 
       <article class="phase reveal">
+        <span class="tag" style="color:var(--accent-3);background:rgba(240,171,252,0.08);border-color:rgba(240,171,252,0.22)"><i class="fa-solid fa-globe"></i> Phase 2.5 · 옵션</span>
+        <h4>도메인 리서치 — 큐레이션 KB + 라이브 검색</h4>
+        <p>딥리서치·웹툰·유튜브·코드리뷰·기술문서·데이터 파이프라인·마케팅 등 도메인이 특정되면, <code>knowledge/domains/</code> 8종 KB와 <code>WebSearch</code>/<code>WebFetch</code>로 표준 워크플로우·역할·도구 스택을 수집. 출처 URL + 발췌일 강제.</p>
+        <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-domain-research</span><span><i class="fa-solid fa-forward"></i> "해당 없음"/Fast Track이면 스킵</span></div>
+      </article>
+
+      <article class="phase reveal">
         <span class="tag"><i class="fa-solid fa-diagram-project"></i> Phase 3</span>
         <h4>워크플로우 설계</h4>
         <p>프로젝트 목적에 맞는 작업 스텝 시퀀스를 정의. 각 스텝의 목적·트리거·완료 조건·의존성을 문서화.</p>
@@ -824,6 +831,7 @@
 ├── <span class="d h" data-k="docs">docs/{요청명}/</span>
 │   ├── 00-target-path.md         <span class="c"># Phase 0 산출</span>
 │   ├── 01-discovery-answers.md   <span class="c"># Phase 1–2</span>
+│   ├── 02b-domain-research.md    <span class="c"># Phase 2.5 (옵션)</span>
 │   ├── 02-workflow-design.md     <span class="c"># Phase 3</span>
 │   ├── 03-pipeline-design.md     <span class="c"># Phase 4</span>
 │   ├── 04-agent-team.md          <span class="c"># Phase 5</span>
@@ -915,6 +923,10 @@
       <div class="tip reveal">
         <div class="ic"><i class="fa-solid fa-rocket"></i></div>
         <div><h4>에이전트 프로젝트는 Fast-Forward</h4><p>에이전트 파이프라인 프로젝트로 감지되면 Phase 3–5 통합 실행 옵션이 뜹니다. 시간을 크게 단축할 수 있습니다.</p></div>
+      </div>
+      <div class="tip reveal">
+        <div class="ic" style="color:var(--accent-3);background:rgba(240,171,252,0.08);border-color:rgba(240,171,252,0.22)"><i class="fa-solid fa-globe"></i></div>
+        <div><h4>도메인이 뚜렷하면 Phase 2.5를 켜세요</h4><p>딥리서치·웹툰 제작·유튜브 기획·코드리뷰·기술문서·데이터 파이프라인·마케팅 캠페인 등 업계 표준이 있는 도메인이면 <code>phase-domain-research</code>가 큐레이션 KB와 라이브 검색으로 표준 워크플로우·역할·도구 스택을 모아 후속 Phase에 주입합니다. 필요 없으면 "해당 없음" 또는 "빠르게"로 자동 스킵.</p></div>
       </div>
       <div class="tip reveal">
         <div class="ic"><i class="fa-solid fa-code-pull-request"></i></div>

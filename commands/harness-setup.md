@@ -73,12 +73,15 @@ docs/myapp-setup/
 |-------|------|-------------|----------------|---------|
 | 0 | 경로 수집 | (Orchestrator) | N/A | 없음 |
 | 1-2 | 스캔 + 인터뷰 + 기본 하네스 | phase-setup | fresh-setup | red-team-advisor |
+| 2.5 | 도메인 리서치 (선택) | phase-domain-research | domain-research | red-team-advisor |
 | 3 | 워크플로우 설계 | phase-workflow | workflow-design | red-team-advisor |
 | 4 | 파이프라인 설계 | phase-pipeline | pipeline-design | red-team-advisor |
 | 5 | 에이전트 팀 편성 | phase-team | agent-team | red-team-advisor |
 | 6 | SKILL/Playbook 작성 | phase-skills | skill-forge | red-team-advisor |
 | 7-8 | 훅/MCP 설치 | phase-hooks | hooks-mcp-setup | red-team-advisor |
 | 9 | 최종 검증 | phase-validate | final-validation | red-team-advisor |
+
+> Phase 2.5는 옵션이다. Phase 1-2의 Escalation(`[ASK] 핵심 도메인 식별`)에 대한 사용자 답변이 "해당 없음"/공백이거나 초기 발화에 "--fast"/"빠르게"가 있으면 소환하지 않고 Phase 3로 직행한다.
 
 ## Available Playbooks
 
@@ -90,6 +93,7 @@ docs/myapp-setup/
 | cursor-migration | Cursor 설정 → Claude Code 변환 | 1-2 |
 | harness-audit | 기존 하네스 진단/개선 | 1-2 |
 | user-scope-init | ~/.claude/ 개인 설정 초기화 | 사전 |
+| domain-research | 도메인 표준 워크플로우/역할/툴체인 수집 (KB + 라이브) | 2.5 |
 | workflow-design | 작업 단계 시퀀스 설계 | 3 |
 | pipeline-design | 스텝별 에이전트 실행 체인 설계 | 4 |
 | agent-team | Teams/Agent/SendMessage 기반 팀 편성 | 5 |
@@ -101,6 +105,7 @@ docs/myapp-setup/
 ## Knowledge Base
 
 - `${CLAUDE_PLUGIN_ROOT}/knowledge/00~13-*.md` — Claude Code 명세 14권 (scope, composition, files, memory, skills, hooks, cursor, session, reference, agents, anti-patterns, teams, strict-coding-workflow). 서브에이전트가 필요 시 Read로 개별 로딩.
+- `${CLAUDE_PLUGIN_ROOT}/knowledge/domains/` — 8개 도메인 레퍼런스 KB (deep-research, website-build, webtoon-production, youtube-content, code-review, technical-docs, data-pipeline, marketing-campaign). Phase 2.5가 참조.
 - `${CLAUDE_PLUGIN_ROOT}/.claude/templates/workflows/strict-coding-6step/` — 복잡 코딩 프로젝트용 6단계 워크플로우 preset.
 - `${CLAUDE_PLUGIN_ROOT}/checklists/` — Phase 9가 사용하는 검증 체크리스트(validation / security-audit / meta-leakage-keywords).
 
@@ -121,7 +126,8 @@ for phase N in [1..9]:
 | Start Phase | 필수 선행 산출물 |
 |-------------|------------------|
 | 1-2 | `00-target-path.md` |
-| 3   | `01-discovery-answers.md` |
+| 2.5 | `01-discovery-answers.md` (Phase 1-2 완료 + 사용자가 도메인을 확정한 상태) |
+| 3   | `01-discovery-answers.md` (+ `02b-domain-research.md`가 존재하면 Phase 3가 Read) |
 | 4   | `02-workflow-design.md` |
 | 5   | `03-pipeline-design.md` |
 | 6   | `04-agent-team.md` (에이전트 프로젝트일 때) |

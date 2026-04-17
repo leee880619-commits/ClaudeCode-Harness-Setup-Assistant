@@ -30,7 +30,9 @@
       "TaskStop",
       "AskUserQuestion",
       "EnterPlanMode",
-      "ExitPlanMode"
+      "ExitPlanMode",
+      "WebSearch",
+      "WebFetch"
     ],
     "deny": [
       "Bash(rm -rf *)",

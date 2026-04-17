@@ -75,6 +75,7 @@ If the session is interrupted, state is persisted under `docs/{request-name}/` i
 |-------|----------------|-------|
 | 0 | Collect target path, generate request name | (orchestrator) |
 | 1-2 | Scan + interview + base harness | `phase-setup` |
+| 2.5 | Domain research (optional) | `phase-domain-research` |
 | 3 | Workflow design (step sequence) | `phase-workflow` |
 | 4 | Pipeline design (per-step execution chain) | `phase-pipeline` |
 | 5 | Agent team assembly | `phase-team` |
@@ -88,6 +89,15 @@ Three **Phase 1-2 branches** handle the common cases:
 - `fresh-setup` — brand-new project
 - `cursor-migration` — convert a Cursor IDE config
 - `harness-audit` — assess and improve an existing Claude Code setup
+
+### Phase 2.5 — Domain research (optional)
+
+When the project's core domain is clear (deep research / website build / webtoon production / YouTube content / code review / technical docs / data pipeline / marketing campaign, or any custom domain), Phase 1-2 surfaces it via Escalation and the user confirms. `phase-domain-research` then collects industry-standard workflows, role splits, tool stacks, and antipatterns from (1) a curated KB under `knowledge/domains/` (8 seeds: 5 full + 3 stub) and (2) bounded live web research (`WebSearch` ≤ 6, `WebFetch` ≤ 3). The artifact is written to `docs/{request-name}/02b-domain-research.md`.
+
+- Downstream Phase 3-6 playbooks automatically Read this artifact when present and cite domain patterns in their designs.
+- All external claims require **source URLs and retrieval dates**; the Red-team Advisor samples URLs via WebFetch to block hallucinated sources.
+- Phase 2.5 is **skipped** when the user answers "none" / blank, or the initial prompt contains `--fast` / "quickly" — the orchestrator jumps directly to Phase 3.
+- Search queries never include target-project identifiers (leak prevention). Free-form domain names pass sanitization (2-5 words, 80 chars max).
 
 A `strict-coding-6step` preset (8 agents + 8 playbooks) is shipped under `.claude/templates/workflows/` and auto-copied for complex coding projects.
 

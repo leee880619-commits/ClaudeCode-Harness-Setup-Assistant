@@ -89,6 +89,7 @@ claude
 |-------|------|---------------|
 | 0 | 대상 프로젝트 경로 수집 + 요청명 생성 | (Orchestrator) |
 | 1-2 | 스캔 + 인터뷰 + 기본 하네스 | `phase-setup` |
+| 2.5 | 도메인 리서치 (옵션) | `phase-domain-research` |
 | 3 | 워크플로우 설계 | `phase-workflow` |
 | 4 | 파이프라인 설계 | `phase-pipeline` |
 | 5 | 에이전트 팀 편성 | `phase-team` |
@@ -102,6 +103,15 @@ claude
 - `fresh-setup`: 신규 프로젝트 하네스 구성
 - `cursor-migration`: Cursor IDE 설정을 Claude Code로 변환
 - `harness-audit`: 기존 Claude Code 설정 진단 및 개선
+
+### Phase 2.5 — 도메인 리서치 (옵션)
+
+프로젝트의 핵심 도메인(딥 리서치 / 웹사이트 제작 / 웹툰 제작 / 유튜브 콘텐츠 / 코드 리뷰 / 기술 문서 / 데이터 파이프라인 / 마케팅 캠페인 등)이 특정되면, Phase 1-2 Escalation에서 사용자가 도메인을 확인한 뒤 `phase-domain-research` 에이전트가 소환됩니다. 이 에이전트는 (1) `knowledge/domains/` 아래 **큐레이션 KB 8종**(5종 full + 3종 stub)과 (2) `WebSearch`/`WebFetch`로 도메인 업계의 표준 워크플로우·역할 분업·도구 스택·안티패턴을 수집해 `docs/{요청명}/02b-domain-research.md`에 저장합니다.
+
+- 후속 Phase 3-6 playbook은 이 산출물이 있으면 **자동으로 Read**해 설계 시 도메인 레퍼런스를 인용합니다.
+- 모든 외부 주장에 **출처 URL + 발췌일**이 강제되고, Advisor가 URL 샘플 검증까지 수행합니다.
+- "해당 없음" / 공백 / `--fast` / "빠르게" 키워드면 Phase 2.5를 자동 스킵하고 Phase 3로 직행합니다.
+- 라이브 검색 budget은 WebSearch 최대 6회 · WebFetch 최대 3회로 제한되며, 대상 프로젝트 식별 정보를 쿼리에 포함하지 않습니다(데이터 유출 방지).
 
 ### 복잡 코딩 프로젝트 프리셋
 
