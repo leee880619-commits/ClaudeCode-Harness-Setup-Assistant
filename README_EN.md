@@ -6,7 +6,7 @@
 
 > A meta-tool plugin for Claude Code that scans a project and builds a complete harness — CLAUDE.md, settings, rules, agents, playbooks, hooks, MCP — through a 9-phase orchestrated workflow.
 
-> 🇰🇷 Korean: [README.md](./README.md) · 🧭 Internals: [ARCHITECTURE.md](./ARCHITECTURE.md) · 📜 Changes: [CHANGELOG.md](./CHANGELOG.md)
+> 🌐 Intro page: [harness-architect team guide](https://leee880619-commits.github.io/ClaudeCode-Harness-Setup-Assistant/) · 🇰🇷 Korean: [README.md](./README.md) · 🧭 Internals: [ARCHITECTURE.md](./ARCHITECTURE.md) · 📜 Changes: [CHANGELOG.md](./CHANGELOG.md)
 
 ## Why this exists
 

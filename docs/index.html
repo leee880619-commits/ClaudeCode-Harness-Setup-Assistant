@@ -1,0 +1,1052 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>harness-architect · 팀 온보딩 가이드</title>
+<meta name="description" content="Claude Code 하네스를 9-Phase 오케스트레이션으로 자동 구축하는 플러그인, harness-architect 사용 가이드." />
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+<style>
+  :root{
+    --bg: #0b0c10;
+    --bg-2: #0f1117;
+    --surface: #13151d;
+    --surface-2: #171a23;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #e7e9ee;
+    --text-dim: #9aa0ab;
+    --text-mute: #6b7180;
+    --accent: #b8f26a;          /* lime */
+    --accent-2: #7dd3fc;         /* sky  */
+    --accent-3: #f0abfc;         /* plum */
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 20px 60px rgba(0,0,0,0.45);
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif;
+    --display: "Montserrat", var(--sans);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(184,242,106,0.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 30%, rgba(125,211,252,0.07), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    font-feature-settings: "ss01","cv11";
+    -webkit-font-smoothing:antialiased;
+    line-height:1.55;
+    letter-spacing:-0.005em;
+  }
+
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit}
+  code,pre,kbd{font-family:var(--mono)}
+  ::selection{background:var(--accent);color:#0b0c10}
+
+  /* ---------- accessibility ---------- */
+  .skip{
+    position:absolute;left:-9999px;top:0;
+    background:var(--accent);color:#0b0c10;padding:10px 14px;border-radius:8px;
+    font-weight:700;z-index:9999;
+  }
+  .skip:focus{left:16px;top:16px;outline:2px solid #fff}
+
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+
+  /* ---------- layout ---------- */
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+  @media (max-width:640px){.wrap{padding:0 18px}}
+
+  /* ---------- nav ---------- */
+  .nav{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    background: color-mix(in oklab, var(--bg) 72%, transparent);
+    border-bottom:1px solid transparent;
+    transition:border-color .3s ease, background .3s ease;
+  }
+  .nav.scrolled{
+    border-bottom-color:var(--border);
+    background: color-mix(in oklab, var(--bg) 88%, transparent);
+  }
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px;gap:20px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;letter-spacing:-0.01em}
+  .brand-mark{
+    width:28px;height:28px;border-radius:8px;
+    background:conic-gradient(from 210deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent));
+    display:grid;place-items:center;color:#0b0c10;font-size:13px;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.12) inset, 0 4px 18px rgba(184,242,106,0.25);
+  }
+  .brand b{font-size:15px}
+  .brand span{color:var(--text-dim);font-weight:500;font-family:var(--sans);font-size:13px;margin-left:2px}
+
+  .nav-links{display:flex;align-items:center;gap:6px}
+  .nav-links a{
+    padding:8px 12px;border-radius:8px;font-size:14px;color:var(--text-dim);
+    transition:color .2s ease, background .2s ease;
+  }
+  .nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04)}
+  .nav-cta{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:9px 14px;border-radius:10px;font-size:13.5px;font-weight:600;
+    background:var(--accent);color:#0b0c10;
+    border:1px solid rgba(0,0,0,0.2);
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .nav-cta:hover{background:#c9ff7c;box-shadow:0 8px 22px rgba(184,242,106,0.35)}
+  .nav-cta i{font-size:12px}
+
+  .hamburger{display:none;background:none;border:1px solid var(--border);color:var(--text);
+    width:40px;height:40px;border-radius:10px;align-items:center;justify-content:center;cursor:pointer}
+  .hamburger:hover{background:rgba(255,255,255,0.04)}
+  @media (max-width:860px){
+    .nav-links, .nav-cta{display:none}
+    .hamburger{display:flex}
+  }
+
+  /* mobile menu */
+  .m-menu{
+    position:fixed;inset:64px 0 0 0;z-index:49;
+    background:color-mix(in oklab, var(--bg) 94%, transparent);
+    backdrop-filter:blur(20px);
+    padding:28px 22px;
+    display:none;flex-direction:column;gap:4px;
+    border-top:1px solid var(--border);
+  }
+  .m-menu.open{display:flex}
+  .m-menu a{
+    padding:14px 10px;border-radius:10px;font-size:16px;color:var(--text);
+    border-bottom:1px solid var(--border);
+  }
+  .m-menu a:last-of-type{border-bottom:0}
+  .m-menu .nav-cta{display:inline-flex;margin-top:12px;align-self:flex-start}
+
+  /* ---------- hero ---------- */
+  .hero{padding:72px 0 56px;position:relative;overflow:hidden}
+  .hero::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:
+      linear-gradient(180deg, transparent, rgba(11,12,16,0) 60%, rgba(11,12,16,0.8) 100%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 80px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 80px);
+    mask-image:radial-gradient(800px 400px at 30% 20%, #000 40%, transparent 80%);
+  }
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:6px 12px;border-radius:999px;
+    background:rgba(184,242,106,0.08);
+    border:1px solid rgba(184,242,106,0.22);
+    color:var(--accent);
+    font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;
+  }
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  h1.hero-title{
+    font-family:var(--display);
+    font-size:clamp(38px, 6vw, 68px);
+    line-height:1.02;
+    font-weight:800;
+    letter-spacing:-0.025em;
+    margin:20px 0 18px;
+  }
+  h1.hero-title em{font-style:normal;background:linear-gradient(120deg,var(--accent),var(--accent-2) 60%, var(--accent-3));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero-lede{max-width:760px;color:var(--text-dim);font-size:18px;line-height:1.65}
+  .hero-lede b{color:var(--text);font-weight:600}
+
+  .hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:12px 18px;border-radius:12px;font-weight:600;font-size:14.5px;
+    border:1px solid var(--border-strong);background:var(--surface);color:var(--text);
+    transition:transform .15s ease, background .2s ease, border-color .2s ease;
+    will-change:transform;
+  }
+  .btn:hover{background:var(--surface-2);border-color:rgba(255,255,255,0.22)}
+  .btn.primary{background:var(--accent);color:#0b0c10;border-color:transparent}
+  .btn.primary:hover{background:#c9ff7c}
+  .btn i{font-size:13px}
+
+  /* stats bento row */
+  .stats{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px;margin-top:56px;
+  }
+  .stat{
+    padding:22px;border-radius:var(--radius);border:1px solid var(--border);
+    background:linear-gradient(180deg, var(--surface), var(--bg-2));
+    position:relative;overflow:hidden;
+  }
+  .stat::after{
+    content:"";position:absolute;inset:auto -30% -40% auto;width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(closest-side, rgba(184,242,106,0.18), transparent);
+    filter:blur(10px);
+  }
+  .stat .n{font-family:var(--display);font-size:40px;font-weight:800;letter-spacing:-0.02em}
+  .stat .l{color:var(--text-dim);font-size:13px;margin-top:2px}
+  .stat i{position:absolute;top:18px;right:18px;color:var(--text-mute);font-size:14px}
+  @media (max-width:860px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+  /* ---------- sections ---------- */
+  section{padding:84px 0;border-top:1px solid var(--border)}
+  .sec-head{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:36px;flex-wrap:wrap}
+  .sec-head h2{
+    font-family:var(--display);font-size:clamp(28px,3.5vw,40px);
+    letter-spacing:-0.02em;font-weight:700;margin:6px 0 0;
+  }
+  .sec-tag{
+    font-family:var(--mono);font-size:12px;color:var(--text-mute);
+    display:flex;align-items:center;gap:8px;
+  }
+  .sec-tag::before{content:"";width:18px;height:1px;background:var(--text-mute)}
+  .sec-desc{color:var(--text-dim);max-width:640px;font-size:15.5px}
+
+  /* ---------- bento: what/why ---------- */
+  .bento{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:14px;
+  }
+  .card{
+    border:1px solid var(--border);border-radius:var(--radius);
+    background:linear-gradient(180deg, var(--surface), var(--bg-2));
+    padding:26px;position:relative;overflow:hidden;
+    transition:transform .25s ease, border-color .25s ease, background .25s ease;
+  }
+  .card:hover{border-color:var(--border-strong);transform:translateY(-2px)}
+  .card h3{font-family:var(--display);font-size:18px;letter-spacing:-0.01em;margin:14px 0 8px}
+  .card p{color:var(--text-dim);font-size:14.5px;margin:0}
+  .card .ic{
+    width:40px;height:40px;border-radius:10px;display:grid;place-items:center;
+    background:rgba(184,242,106,0.08);color:var(--accent);
+    border:1px solid rgba(184,242,106,0.18);font-size:16px;
+  }
+  .card.wide{grid-column:span 4}
+  .card.half{grid-column:span 3}
+  .card.third{grid-column:span 2}
+  .card.tall{grid-row:span 2}
+
+  .card .kbd-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+  kbd{
+    background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    padding:4px 8px;border-radius:6px;font-size:12px;color:var(--text)
+  }
+
+  @media (max-width:900px){.bento{grid-template-columns:repeat(2,1fr)} .card.wide,.card.half,.card.third{grid-column:span 2} .card.tall{grid-row:auto}}
+
+  /* ---------- prerequisites grid ---------- */
+  .checks{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .check{
+    border:1px solid var(--border);border-radius:var(--radius-sm);
+    background:var(--surface);padding:18px;display:flex;gap:14px;align-items:flex-start;
+  }
+  .check .ic{
+    flex:none;width:34px;height:34px;border-radius:8px;display:grid;place-items:center;
+    background:rgba(125,211,252,0.08);color:var(--accent-2);border:1px solid rgba(125,211,252,0.2);
+  }
+  .check h4{margin:0 0 4px;font-size:14.5px;font-family:var(--display)}
+  .check p{margin:0;color:var(--text-dim);font-size:13.5px}
+  @media (max-width:860px){.checks{grid-template-columns:1fr}}
+
+  /* ---------- step list ---------- */
+  .steps{display:flex;flex-direction:column;gap:14px;counter-reset:step}
+  .step{
+    display:grid;grid-template-columns:56px 1fr;gap:18px;align-items:start;
+    padding:22px;border:1px solid var(--border);border-radius:var(--radius);
+    background:linear-gradient(180deg, var(--surface), var(--bg-2));
+  }
+  .step .num{
+    width:44px;height:44px;border-radius:12px;
+    display:grid;place-items:center;
+    font-family:var(--display);font-weight:700;font-size:16px;
+    background:#0b0c10;border:1px solid var(--border-strong);color:var(--accent);
+  }
+  .step h4{font-family:var(--display);font-size:17px;margin:4px 0 8px;letter-spacing:-0.01em}
+  .step p{color:var(--text-dim);font-size:14.5px;margin:0 0 10px}
+  .step .hint{display:flex;align-items:center;gap:8px;color:var(--text-mute);font-size:13px;margin-top:8px}
+  .step .hint i{color:var(--warn)}
+
+  pre.code{
+    margin:10px 0 0;padding:14px 16px;border-radius:10px;
+    background:#07080c;border:1px solid var(--border);
+    overflow-x:auto;font-size:13px;line-height:1.7;color:#d6e0ea;
+    position:relative;
+  }
+  .code .cmt{color:#6b7180}
+  .code .kw{color:var(--accent)}
+  .code .str{color:var(--accent-2)}
+  .copy{
+    position:absolute;top:8px;right:8px;
+    background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    color:var(--text-dim);padding:4px 8px;border-radius:6px;font-size:11.5px;cursor:pointer;
+    font-family:var(--sans);
+    transition:color .15s ease, background .15s ease;
+  }
+  .copy:hover{color:var(--text);background:rgba(255,255,255,0.08)}
+  .copy.done{color:var(--accent);border-color:rgba(184,242,106,0.3)}
+
+  /* ---------- phase timeline ---------- */
+  .phases{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .phases::before{
+    content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;
+    background:linear-gradient(180deg, transparent, var(--border), transparent);
+  }
+  .phase{
+    border:1px solid var(--border);border-radius:var(--radius);
+    background:linear-gradient(180deg, var(--surface), var(--bg-2));
+    padding:22px;position:relative;
+  }
+  .phase::before{
+    content:"";position:absolute;top:28px;width:10px;height:10px;border-radius:50%;
+    background:var(--accent);box-shadow:0 0 0 4px rgba(184,242,106,0.15);
+  }
+  .phases > .phase:nth-child(odd){grid-column:1;margin-right:20px}
+  .phases > .phase:nth-child(odd)::before{right:-25px}
+  .phases > .phase:nth-child(even){grid-column:2;margin-left:20px;margin-top:60px}
+  .phases > .phase:nth-child(even)::before{left:-25px}
+  .phase .tag{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:var(--mono);font-size:11.5px;color:var(--accent);
+    background:rgba(184,242,106,0.08);border:1px solid rgba(184,242,106,0.22);
+    padding:3px 8px;border-radius:999px;
+  }
+  .phase h4{font-family:var(--display);font-size:17px;margin:10px 0 6px}
+  .phase p{color:var(--text-dim);font-size:14px;margin:0}
+  .phase .icns{display:flex;gap:10px;margin-top:12px;color:var(--text-mute);font-size:13px}
+  .phase .icns span{display:inline-flex;align-items:center;gap:6px}
+  @media (max-width:860px){
+    .phases{grid-template-columns:1fr}
+    .phases::before{left:18px}
+    .phases > .phase{grid-column:1 !important;margin:0 0 0 32px !important}
+    .phases > .phase::before{left:-26px !important;right:auto !important}
+  }
+
+  .advisor-banner{
+    margin-top:24px;display:flex;gap:16px;align-items:flex-start;
+    padding:20px;border-radius:var(--radius);
+    border:1px solid rgba(240,171,252,0.22);
+    background:linear-gradient(120deg, rgba(240,171,252,0.06), rgba(125,211,252,0.06));
+  }
+  .advisor-banner .ic{color:var(--accent-3);font-size:18px}
+  .advisor-banner h4{font-family:var(--display);margin:0 0 4px;font-size:15.5px}
+  .advisor-banner p{margin:0;color:var(--text-dim);font-size:14px}
+  .advisor-banner .tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .advisor-banner .tags span{
+    font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;
+    border:1px solid var(--border);color:var(--text-dim);
+  }
+  .advisor-banner .tags .block{color:var(--danger);border-color:rgba(248,113,113,0.3)}
+  .advisor-banner .tags .ask{color:var(--warn);border-color:rgba(251,191,36,0.3)}
+  .advisor-banner .tags .note{color:var(--accent-2);border-color:rgba(125,211,252,0.3)}
+
+  /* ---------- tree ---------- */
+  .tree-wrap{
+    display:grid;grid-template-columns:1.1fr 1fr;gap:20px;
+  }
+  .tree{
+    background:#07080c;border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px 22px 22px 18px;overflow-x:auto;
+    font-family:var(--mono);font-size:13px;line-height:1.85;color:#c8d0dc;
+  }
+  .tree .d{color:var(--accent-2)}
+  .tree .f{color:#c8d0dc}
+  .tree .c{color:var(--text-mute)}
+  .tree .h{background:rgba(184,242,106,0.06);outline:1px dashed rgba(184,242,106,0.3);border-radius:4px;padding:0 4px;cursor:pointer;transition:background .2s}
+  .tree .h:hover{background:rgba(184,242,106,0.12)}
+  .tree .h.active{background:rgba(184,242,106,0.2)}
+
+  .legend{
+    border:1px solid var(--border);border-radius:var(--radius);padding:22px;
+    background:var(--surface);
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .legend h4{font-family:var(--display);font-size:15px;margin:0 0 2px}
+  .legend .item{
+    padding:12px 14px;border-radius:10px;border:1px solid var(--border);
+    background:var(--bg-2);
+  }
+  .legend .item .k{font-family:var(--mono);font-size:12.5px;color:var(--accent);margin-bottom:4px}
+  .legend .item .v{color:var(--text-dim);font-size:13.5px;margin:0}
+  @media (max-width:860px){.tree-wrap{grid-template-columns:1fr}}
+
+  /* ---------- tips / pitfalls ---------- */
+  .tips{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .tip{
+    border:1px solid var(--border);border-radius:var(--radius);padding:22px;
+    background:var(--surface);display:grid;grid-template-columns:40px 1fr;gap:14px;align-items:start;
+  }
+  .tip .ic{
+    width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+    background:rgba(251,191,36,0.08);color:var(--warn);border:1px solid rgba(251,191,36,0.22);
+  }
+  .tip h4{font-family:var(--display);font-size:15.5px;margin:2px 0 6px}
+  .tip p{margin:0;color:var(--text-dim);font-size:14px}
+  @media (max-width:860px){.tips{grid-template-columns:1fr}}
+
+  /* ---------- CTA ---------- */
+  .cta{
+    margin:40px 0 0;padding:44px;
+    border-radius:20px;
+    border:1px solid var(--border-strong);
+    background:
+      radial-gradient(400px 200px at 90% 0%, rgba(184,242,106,0.14), transparent 60%),
+      radial-gradient(400px 260px at 0% 100%, rgba(125,211,252,0.10), transparent 60%),
+      linear-gradient(180deg, var(--surface), var(--bg-2));
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .cta h3{font-family:var(--display);font-size:clamp(22px,3vw,30px);margin:0;letter-spacing:-0.02em}
+  .cta p{color:var(--text-dim);margin:0;max-width:640px}
+
+  /* ---------- footer ---------- */
+  footer{
+    border-top:1px solid var(--border);padding:32px 0 48px;color:var(--text-mute);font-size:13px;
+  }
+  footer .wrap{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+  footer a{color:var(--text-dim)}
+  footer a:hover{color:var(--text)}
+
+  /* ---------- scroll reveal ---------- */
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease, transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+
+  /* ---------- skeleton (for counters before mount) ---------- */
+  .sk{
+    display:inline-block;width:64px;height:34px;border-radius:8px;
+    background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    background-size:200% 100%;animation:sk 1.4s infinite;
+  }
+  @keyframes sk{0%{background-position:0% 0}100%{background-position:-200% 0}}
+
+  /* reduce motion */
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+
+<header class="nav" id="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand" aria-label="harness-architect 홈">
+      <span class="brand-mark" aria-hidden="true"><i class="fa-solid fa-diagram-project"></i></span>
+      <b>harness-architect</b><span>팀 온보딩 가이드</span>
+    </a>
+    <nav class="nav-links" aria-label="섹션">
+      <a href="#what">개요</a>
+      <a href="#why">도입 배경</a>
+      <a href="#prereq">준비</a>
+      <a href="#usage">사용법</a>
+      <a href="#phases">Phase</a>
+      <a href="#tree">산출물</a>
+    </nav>
+    <a class="nav-cta" href="https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant" target="_blank" rel="noopener">
+      <i class="fa-brands fa-github"></i> Repo
+    </a>
+    <button class="hamburger" id="hamburger" aria-label="메뉴 열기" aria-expanded="false" aria-controls="m-menu">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+  </div>
+  <div class="m-menu" id="m-menu" role="dialog" aria-label="모바일 메뉴">
+    <a href="#what">개요</a>
+    <a href="#why">도입 배경</a>
+    <a href="#prereq">준비</a>
+    <a href="#usage">사용법</a>
+    <a href="#phases">Phase</a>
+    <a href="#tree">산출물</a>
+    <a class="nav-cta" href="https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant" target="_blank" rel="noopener">
+      <i class="fa-brands fa-github"></i> GitHub Repo
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+<a id="top"></a>
+
+<!-- ============== HERO ============== -->
+<section class="hero" style="border-top:0">
+  <div class="wrap">
+    <span class="eyebrow reveal"><span class="dot"></span> Claude Code Plugin · Apache-2.0</span>
+    <h1 class="hero-title reveal">프로젝트마다 <em>Claude Code 하네스</em>를<br/>9-Phase로 자동 설계합니다.</h1>
+    <p class="hero-lede reveal">
+      <b>harness-architect</b>는 새 프로젝트에 필요한 CLAUDE.md, settings.json, rules, agents, skills, hooks, MCP 설정을
+      사람이 직접 구축하는 부담 없이 오케스트레이션해 만들어 주는 Claude Code 플러그인입니다.
+      단순 템플릿 복사가 아니라, 프로젝트를 스캔하고 인터뷰한 뒤 Red-team Advisor가 매 단계를 검토합니다.
+    </p>
+    <div class="hero-actions reveal">
+      <a class="btn primary magnetic" href="#usage"><i class="fa-solid fa-play"></i> 시작하기</a>
+      <a class="btn" href="#phases"><i class="fa-solid fa-list-check"></i> 9-Phase 살펴보기</a>
+      <a class="btn" href="https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant" target="_blank" rel="noopener">
+        <i class="fa-brands fa-github"></i> 저장소
+      </a>
+    </div>
+
+    <div class="stats reveal" aria-label="지표">
+      <div class="stat"><i class="fa-solid fa-layer-group"></i><div class="n" data-count="9">0</div><div class="l">오케스트레이션 Phase</div></div>
+      <div class="stat"><i class="fa-solid fa-user-astronaut"></i><div class="n" data-count="8">0</div><div class="l">전문 에이전트</div></div>
+      <div class="stat"><i class="fa-solid fa-book"></i><div class="n" data-count="11">0</div><div class="l">Playbook 방법론</div></div>
+      <div class="stat"><i class="fa-solid fa-database"></i><div class="n" data-count="14">0</div><div class="l">Knowledge 명세</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== WHAT ============== -->
+<section id="what">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-tag">01 — What it is</div>
+        <h2>무엇을 하는 플러그인인가</h2>
+      </div>
+      <p class="sec-desc reveal">대상 프로젝트 폴더를 주면, Claude Code가 그 프로젝트에 맞춰 동작하도록 필요한 설정·규칙·에이전트 팀·자동화 훅을 생성합니다. 사용자는 Phase 전환 시점에만 개입합니다.</p>
+    </div>
+
+    <div class="bento">
+      <article class="card wide tall reveal">
+        <div class="ic"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <h3>프로젝트 맞춤형 하네스 자동 구축</h3>
+        <p>Fresh Setup / Cursor Migration / Harness Audit 세 가지 모드를 프로젝트 상태에 따라 자동 분기합니다. 생성 결과는 <code>CLAUDE.md</code>, <code>.claude/settings.json</code>, <code>.claude/rules/</code>, <code>.claude/agents/</code>, <code>.claude/skills/</code>, <code>.claude/hooks/</code>, MCP 선정까지 모든 레이어를 포함합니다.</p>
+        <div class="kbd-row">
+          <kbd>CLAUDE.md</kbd><kbd>settings.json</kbd><kbd>rules/</kbd><kbd>agents/</kbd><kbd>skills/</kbd><kbd>hooks/</kbd><kbd>MCP</kbd>
+        </div>
+      </article>
+
+      <article class="card third reveal">
+        <div class="ic"><i class="fa-solid fa-compass-drafting"></i></div>
+        <h3>스캔 → 인터뷰 → 설계</h3>
+        <p>파일 시스템을 직접 스캔하고 부족한 정보만 인터뷰로 질문합니다.</p>
+      </article>
+
+      <article class="card third reveal">
+        <div class="ic"><i class="fa-solid fa-shield-halved"></i></div>
+        <h3>Red-team Advisor 내장</h3>
+        <p>매 Phase 산출물을 독립 리뷰하고 BLOCK/ASK/NOTE로 분류합니다.</p>
+      </article>
+
+      <article class="card half reveal">
+        <div class="ic"><i class="fa-solid fa-arrows-rotate"></i></div>
+        <h3>중단/재개 지원</h3>
+        <p><code>docs/{요청명}/</code> 폴더에 Phase별 산출물을 저장해, 세션이 끊겨도 마지막 완료 Phase 다음부터 이어서 진행합니다.</p>
+      </article>
+
+      <article class="card half reveal">
+        <div class="ic"><i class="fa-solid fa-sitemap"></i></div>
+        <h3>WHO/HOW 분리 아키텍처</h3>
+        <p>WHO(<code>.claude/agents/</code>)와 HOW(<code>playbooks/</code>)를 분리해 메인 세션의 Skill 툴 우회 실행을 원천 차단합니다. 외부 노출이 필요한 도메인 스킬만 <code>.claude/skills/</code>로 갑니다.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============== WHY ============== -->
+<section id="why">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-tag">02 — Why we built this</div>
+        <h2>왜 만들었나</h2>
+      </div>
+      <p class="sec-desc reveal">"Claude Code로 뭘 할지"는 프로젝트마다 다르지만, "하네스를 어떻게 구성해야 하는지"의 원칙은 반복됩니다. 그 반복 작업을 팀 단위로 표준화하기 위해 만들었습니다.</p>
+    </div>
+
+    <div class="bento">
+      <article class="card half reveal">
+        <div class="ic" style="background:rgba(248,113,113,0.08);color:var(--danger);border-color:rgba(248,113,113,0.22)"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3>문제: 매번 수동 세팅</h3>
+        <p>새 프로젝트마다 CLAUDE.md 형식, 권한 범위, 훅 스크립트, 에이전트 구성을 처음부터 고민합니다. 개인·프로젝트마다 품질이 달라지고, 보안 기본값을 빠뜨리기 쉽습니다.</p>
+      </article>
+      <article class="card half reveal">
+        <div class="ic"><i class="fa-solid fa-check"></i></div>
+        <h3>해법: 결정을 구조화</h3>
+        <p>Phase 게이팅으로 결정 순서를 강제하고, AskUserQuestion으로 암묵적 가정을 막고, Advisor로 산출물 품질을 더블체크합니다. 결과는 팀 모두가 동일 구조로 읽을 수 있는 하네스입니다.</p>
+      </article>
+      <article class="card third reveal">
+        <div class="ic"><i class="fa-solid fa-ban"></i></div>
+        <h3>Meta-Leakage 방지</h3>
+        <p>"이 툴 자신의 규칙"이 생성 결과에 새어나가지 않도록 체크리스트로 필터링합니다.</p>
+      </article>
+      <article class="card third reveal">
+        <div class="ic"><i class="fa-solid fa-gauge-high"></i></div>
+        <h3>컨텍스트 효율</h3>
+        <p>메인 세션은 Summary(~200단어)만 들고, 상세는 산출물 파일에 남기는 패턴으로 긴 세션에서도 안정적입니다.</p>
+      </article>
+      <article class="card third reveal">
+        <div class="ic"><i class="fa-solid fa-people-group"></i></div>
+        <h3>팀 표준화</h3>
+        <p>누가 설치하든 동일한 9-Phase와 동일한 산출물 네이밍으로 협업 편차를 줄입니다.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============== PREREQ ============== -->
+<section id="prereq">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-tag">03 — Prerequisites</div>
+        <h2>사전 준비 / 권장 환경</h2>
+      </div>
+      <p class="sec-desc reveal">공식 Claude Code CLI가 설치되어 있고, 플러그인 시스템(<code>/plugin</code>)을 쓸 수 있는 최신 버전이면 충분합니다.</p>
+    </div>
+
+    <div class="checks">
+      <div class="check reveal">
+        <div class="ic"><i class="fa-solid fa-terminal"></i></div>
+        <div><h4>Claude Code CLI</h4><p>플러그인 명령어(<code>/plugin</code>)가 지원되는 최신 버전을 사용하세요. <code>claude --version</code> 으로 확인.</p></div>
+      </div>
+      <div class="check reveal">
+        <div class="ic"><i class="fa-brands fa-git-alt"></i></div>
+        <div><h4>Git 저장소</h4><p>대상 프로젝트는 Git으로 관리되는 상태를 권장합니다. 산출물은 커밋 단위로 리뷰됩니다.</p></div>
+      </div>
+      <div class="check reveal">
+        <div class="ic"><i class="fa-solid fa-folder-tree"></i></div>
+        <div><h4>빈 프로젝트 or 기존 프로젝트</h4><p>신규는 Fresh Setup, <code>.cursor/</code>가 있으면 Cursor Migration, 이미 <code>.claude/</code>가 있으면 Audit 모드로 자동 분기됩니다.</p></div>
+      </div>
+      <div class="check reveal">
+        <div class="ic"><i class="fa-solid fa-key"></i></div>
+        <div><h4>API Key</h4><p>Claude Code가 인증된 상태여야 합니다. Anthropic 키/워크스페이스 설정은 <code>.claude/settings.local.json</code>(gitignored)에 저장하세요.</p></div>
+      </div>
+      <div class="check reveal">
+        <div class="ic"><i class="fa-brands fa-windows"></i></div>
+        <div><h4>OS / 쉘</h4><p>macOS · Linux · Windows(WSL 2) 모두 지원. Windows는 WSL 경로(<code>/mnt/c/...</code>) 사용을 권장.</p></div>
+      </div>
+      <div class="check reveal">
+        <div class="ic"><i class="fa-solid fa-memory"></i></div>
+        <div><h4>컨텍스트 여유</h4><p>긴 프로젝트는 Opus 계열 모델을 권장합니다. 9-Phase 전체가 한 세션에서 진행될 수 있도록 설정하세요.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== USAGE ============== -->
+<section id="usage">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-tag">04 — How to use</div>
+        <h2>사용 방법</h2>
+      </div>
+      <p class="sec-desc reveal">세팅할 프로젝트 폴더로 이동해 Claude Code를 연 뒤, 아래 순서대로 입력합니다. 최초 1회는 마켓플레이스 등록이 필요합니다.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step reveal">
+        <div class="num">1</div>
+        <div>
+          <h4>프로젝트 폴더에서 Claude 실행</h4>
+          <p>대상 프로젝트의 루트로 이동한 뒤 Claude Code를 시작합니다. 하네스가 이 위치에 만들어집니다.</p>
+<pre class="code"><button class="copy" data-copy>복사</button><code><span class="cmt"># 터미널</span>
+<span class="kw">cd</span> path/to/your-project
+<span class="kw">claude</span></code></pre>
+        </div>
+      </div>
+
+      <div class="step reveal">
+        <div class="num">2</div>
+        <div>
+          <h4>(최초 1회) 마켓플레이스 등록</h4>
+          <p>플러그인 소스를 Claude Code에 알려 줍니다. 이미 등록했다면 건너뛰세요.</p>
+<pre class="code"><button class="copy" data-copy>복사</button><code>/plugin marketplace add leee880619-commits/ClaudeCode-Harness-Setup-Assistant</code></pre>
+        </div>
+      </div>
+
+      <div class="step reveal">
+        <div class="num">3</div>
+        <div>
+          <h4>플러그인 설치</h4>
+          <p>마켓플레이스에서 <code>harness-architect</code>를 설치합니다.</p>
+<pre class="code"><button class="copy" data-copy>복사</button><code>/plugin install harness-architect@harness-architect-marketplace</code></pre>
+          <div class="hint"><i class="fa-solid fa-circle-info"></i> 설치 후 Claude Code 세션을 재시작하면 <code>/harness-architect:harness-setup</code> 커맨드가 로드됩니다.</div>
+        </div>
+      </div>
+
+      <div class="step reveal">
+        <div class="num">4</div>
+        <div>
+          <h4>프로젝트 설명과 함께 설치 커맨드 실행</h4>
+          <p>프로젝트에 대한 설명을 함께 적어서 호출합니다. 러프해도 동작하지만, 구체적일수록 인터뷰가 짧아집니다.</p>
+<pre class="code"><button class="copy" data-copy>복사</button><code>/harness-architect:harness-setup
+<span class="cmt"># 예시</span>
+/harness-architect:harness-setup 이 프로젝트는 Next.js + tRPC 로 만드는 내부 운영 대시보드야.
+테스트는 Vitest, 배포는 Vercel. 솔로 개발이고, DB는 Supabase.</code></pre>
+          <div class="hint"><i class="fa-solid fa-circle-info"></i> 프로젝트 폴더에 이미 진행 중이던 산출물이 있으면 자동으로 감지하고 재개할지 묻습니다.</div>
+        </div>
+      </div>
+
+      <div class="step reveal">
+        <div class="num">5</div>
+        <div>
+          <h4>질문에 답변하며 진행</h4>
+          <p>이후 Claude가 AskUserQuestion으로 묻는 항목에 답변만 하면 됩니다. Advisor가 BLOCK을 띄운 경우엔 수정 여부를 확인받습니다.</p>
+        </div>
+      </div>
+
+      <div class="step reveal">
+        <div class="num">6</div>
+        <div>
+          <h4>중단됐을 때는 같은 폴더에서 이어서</h4>
+          <p>세션이 끊겨도 동일한 대상 프로젝트 폴더로 돌아와 플러그인을 다시 호출하면, <code>docs/{요청명}/</code>의 산출물 번호로 이전 작업을 감지해 "계속 / 새로 시작"을 묻습니다. 별도의 재개용 키워드는 필요 없습니다.</p>
+<pre class="code"><button class="copy" data-copy>복사</button><code><span class="cmt"># 같은 프로젝트 폴더에서 다시 호출</span>
+/harness-architect:harness-setup
+
+<span class="cmt"># 또는 이전 Claude Code 세션 자체를 복원</span>
+/resume</code></pre>
+          <div class="hint"><i class="fa-solid fa-circle-info"></i> 마지막으로 완료된 Phase의 다음 단계부터 자동 재개됩니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== PHASES ============== -->
+<section id="phases">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-tag">05 — Mechanism</div>
+        <h2>동작 메커니즘 · 9-Phase 워크플로우</h2>
+      </div>
+      <p class="sec-desc reveal">각 Phase는 독립 서브에이전트가 담당합니다. 산출물은 <code>docs/{요청명}/NN-*.md</code>로 남고, 다음 Phase는 그 파일의 "Context for Next Phase" 섹션을 Read해 이어갑니다.</p>
+    </div>
+
+    <div class="phases" aria-label="9-Phase 타임라인">
+      <article class="phase reveal">
+        <span class="tag"><i class="fa-solid fa-location-crosshairs"></i> Phase 0</span>
+        <h4>프로젝트 경로 수집</h4>
+        <p>대상 프로젝트 경로 확정, 요청명 자동 생성, 기존 작업 감지 및 재개 여부 확인, <code>docs/{요청명}/</code> 작업 폴더 생성.</p>
+        <div class="icns"><span><i class="fa-solid fa-user"></i> 오케스트레이터</span><span><i class="fa-solid fa-question"></i> AskUserQuestion</span></div>
+      </article>
+
+      <article class="phase reveal">
+        <span class="tag"><i class="fa-solid fa-magnifying-glass"></i> Phase 1–2</span>
+        <h4>스캔 + 인터뷰 + 기본 하네스</h4>
+        <p><code>fresh-setup</code> / <code>cursor-migration</code> / <code>harness-audit</code> 중 자동 분기. CLAUDE.md, settings.json, rules 초안 생성.</p>
+        <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-setup</span></div>
+      </article>
+
+      <article class="phase reveal">
+        <span class="tag"><i class="fa-solid fa-diagram-project"></i> Phase 3</span>
+        <h4>워크플로우 설계</h4>
+        <p>프로젝트 목적에 맞는 작업 스텝 시퀀스를 정의. 각 스텝의 목적·트리거·완료 조건·의존성을 문서화.</p>
+        <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-workflow</span></div>
+      </article>
+
+      <article class="phase reveal">
+        <span class="tag"><i class="fa-solid fa-bezier-curve"></i> Phase 4</span>
+        <h4>파이프라인 설계</h4>
+        <p>각 스텝의 에이전트 실행 체인(파이프라인) 설계. 모델·쓰기 범위·소통 포인트를 결정.</p>
+        <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-pipeline</span></div>
+      </article>
+
+      <article class="phase reveal">
+        <span class="tag"><i class="fa-solid fa-users"></i> Phase 5</span>
+        <h4>에이전트 팀 편성</h4>
+        <p>Teams/Agent/SendMessage 기반 에이전트 팀 편성, 소유권 테이블과 Orchestrator 패턴 결정.</p>
+        <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-team</span></div>
+      </article>
+
+      <article class="phase reveal">
+        <span class="tag"><i class="fa-solid fa-book-open"></i> Phase 6</span>
+        <h4>SKILL / Playbook 제작</h4>
+        <p>각 에이전트의 방법론(HOW)을 작성하면서 저장 위치를 2케이스로 분기 결정. 외부 노출이 필요한 <b>도메인 스킬 → <code>.claude/skills/</code></b>(케이스 A), <b>에이전트 전용 방법론 → <code>playbooks/</code></b>(케이스 B). 동시에 <code>allowed_dirs</code>로 쓰기 범위를 확정합니다.</p>
+        <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-skills</span></div>
+      </article>
+
+      <article class="phase reveal">
+        <span class="tag"><i class="fa-solid fa-plug"></i> Phase 7–8</span>
+        <h4>Hooks 설치 + MCP 추천</h4>
+        <p>자동화 훅 설계/설치(PreToolUse 가드 등)와 MCP 서버 선정·설치. 생성 파일 범위 제한을 강제화.</p>
+        <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-hooks</span></div>
+      </article>
+
+      <article class="phase reveal">
+        <span class="tag"><i class="fa-solid fa-clipboard-check"></i> Phase 9</span>
+        <h4>최종 검증</h4>
+        <p>문법 · 일관성 · 메타 누수 체크리스트로 전체 하네스를 검증하고 최종 리포트를 생성.</p>
+        <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-validate</span></div>
+      </article>
+    </div>
+
+    <aside class="advisor-banner reveal" aria-label="Red-team Advisor">
+      <div class="ic"><i class="fa-solid fa-shield-virus"></i></div>
+      <div>
+        <h4>매 Phase — Red-team Advisor 독립 리뷰</h4>
+        <p>각 Phase 산출물을 사용자의 원래 요구사항 관점에서 비판적으로 검토하고, 다음 세 가지로 분류합니다. BLOCK이 있으면 오케스트레이터가 사용자에게 확인 후 Phase 재실행 여부를 결정합니다.</p>
+        <div class="tags">
+          <span class="block">BLOCK · 진행 전 수정 필요</span>
+          <span class="ask">ASK · 사용자 확인 요청</span>
+          <span class="note">NOTE · 참고 메모</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============== TREE ============== -->
+<section id="tree">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-tag">06 — Output</div>
+        <h2>생성되는 폴더 구조</h2>
+      </div>
+      <p class="sec-desc reveal">9-Phase 완료 후 대상 프로젝트에 남는 레이어입니다. 왼쪽 트리의 <code>항목</code>에 포인터를 올리거나 클릭하면 오른쪽에 설명이 고정됩니다.</p>
+    </div>
+
+    <div class="tree-wrap">
+      <pre class="tree" id="tree" role="tree" aria-label="생성 폴더 구조">
+<span class="d">your-project/</span>
+├── <span class="f h" data-k="claude-md">CLAUDE.md</span>                  <span class="c"># 프로젝트 정체성·지침(서밋, 200줄 이내)</span>
+├── <span class="d h" data-k="claude-dir">.claude/</span>
+│   ├── <span class="f h" data-k="settings">settings.json</span>           <span class="c"># 권한·env·훅·MCP</span>
+│   ├── <span class="f h" data-k="settings-local">settings.local.json</span>     <span class="c"># 로컬/시크릿(gitignored)</span>
+│   ├── <span class="d h" data-k="rules">rules/</span>                     <span class="c"># 항상 적용 규칙 + path-scoped</span>
+│   ├── <span class="d h" data-k="agents">agents/</span>                    <span class="c"># 에이전트 정의(WHO)</span>
+│   ├── <span class="d h" data-k="skills">skills/</span>                    <span class="c"># 도메인 스킬 — 자동 디스커버리 대상</span>
+│   └── <span class="d h" data-k="hooks">hooks/</span>                     <span class="c"># 자동화 스크립트</span>
+├── <span class="d h" data-k="playbooks">playbooks/</span>                   <span class="c"># 에이전트 전용 HOW — 우회 실행 방지</span>
+├── <span class="d h" data-k="docs">docs/{요청명}/</span>
+│   ├── 00-target-path.md         <span class="c"># Phase 0 산출</span>
+│   ├── 01-discovery-answers.md   <span class="c"># Phase 1–2</span>
+│   ├── 02-workflow-design.md     <span class="c"># Phase 3</span>
+│   ├── 03-pipeline-design.md     <span class="c"># Phase 4</span>
+│   ├── 04-agent-team.md          <span class="c"># Phase 5</span>
+│   ├── 05-skill-specs.md         <span class="c"># Phase 6</span>
+│   ├── 06-hooks-mcp.md           <span class="c"># Phase 7–8</span>
+│   └── 07-validation-report.md   <span class="c"># Phase 9</span>
+└── <span class="f h" data-k="gitignore">.gitignore</span>                   <span class="c"># settings.local.json 등 포함</span>
+      </pre>
+
+      <div class="legend" aria-live="polite" id="legend">
+        <h4>선택한 항목</h4>
+        <div class="item" data-show="claude-md">
+          <div class="k">CLAUDE.md</div>
+          <p class="v">프로젝트 정체성·기술 스택·개발 원칙·컨벤션을 200줄 이내로 요약. 팀원과 Claude 모두 세션 시작 시 로딩.</p>
+        </div>
+        <div class="item" data-show="settings">
+          <div class="k">.claude/settings.json</div>
+          <p class="v">허용/차단 권한(allow/deny), 환경변수, 훅, MCP 서버 등록. 깃에 커밋되는 공용 설정.</p>
+        </div>
+        <div class="item" data-show="settings-local">
+          <div class="k">.claude/settings.local.json</div>
+          <p class="v">API 키나 개인 설정 등 시크릿은 여기에만. <code>.gitignore</code>로 커밋 금지.</p>
+        </div>
+        <div class="item" data-show="rules">
+          <div class="k">.claude/rules/</div>
+          <p class="v">항상 적용되거나 특정 경로에서만 적용되는 규칙 파일. meta-leakage-guard 등 품질 가드 포함.</p>
+        </div>
+        <div class="item" data-show="agents">
+          <div class="k">.claude/agents/</div>
+          <p class="v">각 Phase·역할을 맡는 서브에이전트의 정체성(WHO). 소환 시 자동 로딩되는 경량 정의.</p>
+        </div>
+        <div class="item" data-show="skills">
+          <div class="k">.claude/skills/</div>
+          <p class="v">Claude Code가 자동 디스커버리해 <b>메인 세션에 노출</b>되는 도메인 스킬 전용. 실제로 Skill 툴로 호출해도 되는 기능 단위만 이 경로에 둡니다. 에이전트 전용 방법론(HOW)은 여기가 아니라 <code>playbooks/</code>에 배치합니다.</p>
+        </div>
+        <div class="item" data-show="hooks">
+          <div class="k">.claude/hooks/</div>
+          <p class="v">PreToolUse/PostToolUse 등 이벤트 훅 스크립트. ownership-guard 등으로 범위 이탈을 차단.</p>
+        </div>
+        <div class="item" data-show="playbooks">
+          <div class="k">playbooks/</div>
+          <p class="v">서브에이전트가 Read해 실행하는 <b>에이전트 전용 방법론(HOW)</b>. 자동 디스커버리 대상이 아니므로 메인 세션이 Skill 툴로 가로챌 수 없고, 반드시 에이전트 소환을 거쳐야 참조됩니다. 기존 프로젝트에 같은 이름 폴더가 없으면 새로 생성됩니다.</p>
+        </div>
+        <div class="item" data-show="docs">
+          <div class="k">docs/{요청명}/</div>
+          <p class="v">Phase별 산출물. 중단/재개 시 이 폴더의 번호를 기준으로 마지막 완료 Phase를 파악.</p>
+        </div>
+        <div class="item" data-show="claude-dir">
+          <div class="k">.claude/</div>
+          <p class="v">프로젝트 스코프 하네스의 루트. 팀원이 동일한 Claude Code 환경을 공유하기 위한 공통 설정 묶음.</p>
+        </div>
+        <div class="item" data-show="gitignore">
+          <div class="k">.gitignore</div>
+          <p class="v">최소한 <code>.claude/settings.local.json</code>, <code>CLAUDE.local.md</code>는 포함시켜 시크릿 유출을 방지.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== TIPS ============== -->
+<section id="tips">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-tag">07 — Field notes</div>
+        <h2>팀 운영 팁 & 자주 놓치는 점</h2>
+      </div>
+      <p class="sec-desc reveal">실제 도입 시 자주 밟는 부분만 모았습니다.</p>
+    </div>
+
+    <div class="tips">
+      <div class="tip reveal">
+        <div class="ic"><i class="fa-solid fa-lock"></i></div>
+        <div><h4>시크릿은 settings.local.json으로</h4><p>API 키 · 토큰 · 개인 경로는 <code>settings.local.json</code>에만. 플러그인도 이 원칙을 감지해 경고합니다.</p></div>
+      </div>
+      <div class="tip reveal">
+        <div class="ic"><i class="fa-solid fa-rotate"></i></div>
+        <div><h4>Advisor가 BLOCK을 띄우면 되돌아가기</h4><p>그냥 넘기지 말고, 오케스트레이터가 묻는 확인을 통해 해당 Phase를 피드백과 함께 재실행하세요. 최대 2회 루프가 설계돼 있습니다.</p></div>
+      </div>
+      <div class="tip reveal">
+        <div class="ic"><i class="fa-solid fa-file-circle-question"></i></div>
+        <div><h4>"알아서 해줘"는 답변이 아닙니다</h4><p>명시적으로 답하거나 "모르겠어요"를 선택하세요. 후자는 <code># TODO:</code>로 표시되어 추후 보완됩니다.</p></div>
+      </div>
+      <div class="tip reveal">
+        <div class="ic"><i class="fa-solid fa-scissors"></i></div>
+        <div><h4>CLAUDE.md 200줄 컷</h4><p>초과 시 규칙 파일로 분리됩니다. 팀 컨벤션·도메인 지식은 <code>rules/</code>로 이관해 관리하세요.</p></div>
+      </div>
+      <div class="tip reveal">
+        <div class="ic"><i class="fa-solid fa-rocket"></i></div>
+        <div><h4>에이전트 프로젝트는 Fast-Forward</h4><p>에이전트 파이프라인 프로젝트로 감지되면 Phase 3–5 통합 실행 옵션이 뜹니다. 시간을 크게 단축할 수 있습니다.</p></div>
+      </div>
+      <div class="tip reveal">
+        <div class="ic"><i class="fa-solid fa-code-pull-request"></i></div>
+        <div><h4>PR에 올릴 땐 산출물까지</h4><p><code>docs/{요청명}/</code>도 함께 커밋하면, 나중에 다른 팀원이 의사결정 히스토리를 그대로 볼 수 있습니다.</p></div>
+      </div>
+    </div>
+
+    <div class="cta reveal">
+      <h3>바로 해 봅시다.</h3>
+      <p>대상 프로젝트 폴더에서 Claude Code를 연 뒤, 위 4단계를 그대로 따라 하면 됩니다. 문제가 생기면 저장소 이슈로 알려 주세요.</p>
+      <div class="hero-actions" style="margin-top:10px">
+        <a class="btn primary magnetic" href="#usage"><i class="fa-solid fa-play"></i> 사용법 다시 보기</a>
+        <a class="btn" href="https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> 저장소 열기</a>
+        <a class="btn" href="https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/issues/new" target="_blank" rel="noopener"><i class="fa-regular fa-circle-question"></i> 이슈 제기</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <span>harness-architect</span> · Apache-2.0 · 팀 온보딩 문서
+    </div>
+    <div>
+      <a href="https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ---------- nav scroll shadow ---------- */
+const nav = document.getElementById('nav');
+const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 4);
+window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
+
+/* ---------- mobile menu ---------- */
+const ham = document.getElementById('hamburger');
+const mm = document.getElementById('m-menu');
+ham.addEventListener('click', () => {
+  const open = mm.classList.toggle('open');
+  ham.setAttribute('aria-expanded', String(open));
+  ham.innerHTML = open ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-bars"></i>';
+});
+mm.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  mm.classList.remove('open');
+  ham.setAttribute('aria-expanded','false');
+  ham.innerHTML = '<i class="fa-solid fa-bars"></i>';
+}));
+
+/* ---------- scroll reveal ---------- */
+const io = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+    if (e.isIntersecting) {
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    }
+  }
+}, {rootMargin:'-8% 0px -4% 0px', threshold:0.05});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ---------- count up ---------- */
+const counters = document.querySelectorAll('.stat .n[data-count]');
+const countIO = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+    if (!e.isIntersecting) continue;
+    const el = e.target;
+    const target = parseInt(el.dataset.count, 10);
+    const start = performance.now();
+    const dur = 900;
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * eased);
+      if (t < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    };
+    requestAnimationFrame(step);
+    countIO.unobserve(el);
+  }
+}, {threshold:0.6});
+counters.forEach(el => countIO.observe(el));
+
+/* ---------- copy to clipboard ---------- */
+document.querySelectorAll('[data-copy]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const code = btn.parentElement.querySelector('code');
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code.innerText);
+      const prev = btn.textContent;
+      btn.textContent = '복사됨';
+      btn.classList.add('done');
+      setTimeout(() => { btn.textContent = prev; btn.classList.remove('done'); }, 1400);
+    } catch {
+      btn.textContent = '복사 실패';
+    }
+  });
+});
+
+/* ---------- tree hover → legend highlight ---------- */
+const legend = document.getElementById('legend');
+const items = legend.querySelectorAll('[data-show]');
+const setActive = (key) => {
+  items.forEach(it => it.style.display = it.dataset.show === key ? 'block' : 'none');
+};
+const defaultKey = 'claude-md';
+setActive(defaultKey);
+document.querySelectorAll('#tree .h').forEach(el => {
+  el.setAttribute('tabindex','0');
+  el.setAttribute('role','treeitem');
+  el.addEventListener('mouseenter', () => {
+    document.querySelectorAll('#tree .h').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    setActive(el.dataset.k);
+  });
+  el.addEventListener('focus', () => el.dispatchEvent(new Event('mouseenter')));
+  el.addEventListener('click', () => el.dispatchEvent(new Event('mouseenter')));
+});
+
+/* ---------- subtle magnetic CTA ---------- */
+document.querySelectorAll('.magnetic').forEach(btn => {
+  btn.addEventListener('mousemove', (e) => {
+    const r = btn.getBoundingClientRect();
+    const dx = (e.clientX - (r.left + r.width/2)) / r.width;
+    const dy = (e.clientY - (r.top + r.height/2)) / r.height;
+    btn.style.transform = `translate(${dx*4}px, ${dy*3}px)`;
+  });
+  btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+});
+</script>
+</body>
+</html>

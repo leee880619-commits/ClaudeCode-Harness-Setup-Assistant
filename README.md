@@ -6,7 +6,7 @@
 
 > 프로젝트를 분석해 완벽한 Claude Code 하네스를 9단계로 구축하는 메타-도구 플러그인.
 
-> 📖 영어 버전: [README_EN.md](./README_EN.md) · 🧭 아키텍처 상세: [ARCHITECTURE.md](./ARCHITECTURE.md) · 📜 변경 이력: [CHANGELOG.md](./CHANGELOG.md)
+> 🌐 소개 페이지: [harness-architect 팀 가이드](https://leee880619-commits.github.io/ClaudeCode-Harness-Setup-Assistant/) · 📖 영어 버전: [README_EN.md](./README_EN.md) · 🧭 아키텍처 상세: [ARCHITECTURE.md](./ARCHITECTURE.md) · 📜 변경 이력: [CHANGELOG.md](./CHANGELOG.md)
 
 ## 배경 (Why this exists)
 
