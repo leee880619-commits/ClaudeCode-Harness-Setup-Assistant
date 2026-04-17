@@ -33,6 +33,11 @@
 - 프로젝트 이름 + 한 줄 설명
 - 프로젝트 유형 (웹 앱 / CLI / 에이전트 파이프라인 / 데이터 / 콘텐츠 자동화 / 기타)
 - 솔로 / 팀 여부
+- **기본 성능 수준** (A5) — 생성될 에이전트들의 모델 기본 배정 힌트. header: `성능 수준`. 옵션:
+  1. `경제형` — Haiku 위주, 응답 빠르고 비용 낮음
+  2. `균형형 (권장)` — Sonnet 중심, 복잡 설계만 Opus
+  3. `고성능형` — Opus 중심, 비용 높고 응답 다소 느림
+  이 값은 Phase 5 `phase-team` 프롬프트의 `[Model Tier]` 로 전달된다. 최종 조정은 Phase 6 완료 직후 "Model Confirmation Gate"에서 한 번 더 수행.
 
 나머지 질문(Q5~Q9 + 도메인 후보)은 서브에이전트가 스캔 결과를 기반으로 Escalations에 기록하고,
 오케스트레이터가 Phase 1-2 완료 후 일괄 처리한다.
@@ -224,6 +229,41 @@ Agent(
 
 3. NOTE만 존재:
    a. 텍스트로 간략 보고 후 다음 Phase 진행
+
+## Model Confirmation Gate (Phase 6 완료 직후)
+
+### 목적
+Phase 5에서 `phase-team`이 `[Model Tier]` 힌트로 에이전트 모델을 자동 배정한 뒤, Phase 6에서 스킬 복잡도가 드러난다. 사용자가 스킬 복잡도를 반영해 모델을 최종 재조정할 수 있는 **단일 게이트**를 Phase 6 Advisor 통과 직후에 실행한다. Phase 5 직후에는 실행하지 않는다 — 스킬이 아직 보이지 않아 재조정 근거가 부족하기 때문.
+
+### 실행 조건
+- Phase 6 Advisor 리뷰가 `pass` / `note` 로 종료 (또는 `manual_override` 수락)
+- `04-agent-team.md` 의 Agent Model Table 에이전트 수 **≥ 2** (단독 에이전트면 스킵)
+- Phase 6 병렬 SKILL 제작(TeamCreate)이 **완전히 종료**된 상태 (레이스 방지)
+- 복잡도 게이트와 무관하게 항상 실행 (단순 프로젝트도 적용) — 모델 비용·성능은 복잡도 독립 이슈
+
+### 동작
+
+1. 오케스트레이터가 `docs/{요청명}/04-agent-team.md` Agent Model Table + `docs/{요청명}/05-skill-specs.md` Final Agent-Skill Mapping을 Read하여 통합 표 조립:
+   `| 에이전트 | 역할 | 사용 스킬 | 모델 | 상대 비용 힌트 |`
+   (상대 비용: Opus ≈ Sonnet × 5, Sonnet ≈ Haiku × 3 정도의 표기로 사용자 판단 지원)
+2. Phase 6 Advisor 가 `manual_override` 인 경우 표 상단에 경고: "⚠ Advisor가 {N}건 우려를 제기했고 사용자가 수용함. 재조정 시 Advisor 재실행 권장."
+3. AskUserQuestion (header: `모델 확정`, 문구: "스킬 완성 후 최종 재조정 — 한 번만 실행"):
+   - `전체 승인` — 현재 배정 확정 (권장)
+   - `개별 에이전트 조정` — 특정 에이전트만 모델 변경
+   - `티어 일괄 변경` — Phase 0과 동일 3선택으로 전체 재배정
+4. "개별 조정" 선택 시 해당 에이전트를 AskUserQuestion 으로 한 번 더 (최대 4개씩) → 변경 내역을 `phase-team` 재소환 프롬프트의 `[Model Overrides]` 필드로 전달
+5. "티어 일괄 변경" 선택 시 Phase 0과 동일 3선택 제시 → 새 티어를 `phase-team` 재소환 프롬프트의 `[Model Tier]` 로 전달 → `phase-team` 이 매트릭스로 전체 재배정 + `04-agent-team.md` Rejected Alternatives 갱신 + `.claude/agents/*.md` frontmatter `model` 필드 Edit. 이후 `phase-skills` 재소환 → `05-skill-specs.md` 및 SKILL.md `model` 필드 동기화
+6. 재소환 상한: **2회**. 소진 시 "현재 배정 수용 / 수동 편집" 2선택 (Advisor 루프 패턴과 동일)
+7. **재소환 후 Dim 11 한정 경량 Advisor 재실행 (필수)**: `phase-team` / `phase-skills` 재소환으로 `04-agent-team.md` 또는 `05-skill-specs.md` 가 재작성되면, 오케스트레이터는 `red-team-advisor` 를 **Dim 11 전용 프롬프트**(`[Scope] Dim 11 only — 모델 배정 드리프트 및 복잡도 미스매치만 검사`)로 1회 재소환한다. 결과가 `pass`/`note` 면 통과, `block` 이면 Gate 재진입. 다른 Dimension은 Phase 6 본 Advisor가 이미 커버했으므로 중복 실행하지 않음
+8. 확정 후 `04-agent-team.md` frontmatter에 `model_confirmation: confirmed` 를 기록. 재개 시 이 필드로 게이트 스킵 판단
+
+### 재개 시 안전 체크
+재개 프로토콜에서 `04-agent-team.md` 를 감지하면 다음을 수행:
+- Agent Model Table의 각 에이전트 model 필드와 실제 `.claude/agents/{이름}.md` frontmatter `model` 이 일치하는지 1회 sanity check
+- 불일치 발견 시 "사용자가 에이전트 파일을 수동 편집한 것 같음. 테이블 기준 재동기화 / 에이전트 파일 기준 테이블 갱신 / 그대로 두고 재컨펌" 3선택 AskUserQuestion
+
+### 변경 흔적 기록
+재소환 시 `phase-team` 은 `04-agent-team.md` 의 `### 기각된 대안 (Rejected Alternatives)` 섹션을 **갱신 의무**가 있다. 이전 배정을 기각 이유와 함께 이관하고 새 배정을 본문으로 이동. 누락 시 재개 상태 혼선 유발.
 
 ## Phase Gate
 
@@ -468,6 +508,7 @@ frontmatter 필드 정의:
 - `completed`: 에이전트가 반환을 마친 ISO8601 timestamp
 - `status`: `done` | `in_progress` (에이전트 실행 중 중단) | `manual_override` (BLOCK 루프 소진 후 사용자가 수동 개입)
 - `advisor_status`: `pass` | `block` | `ask` | `note` | `manual_override`
+- `model_confirmation` (Phase 5 산출물 `04-agent-team.md` 에만 기록): `pending` (기본) | `confirmed` (Model Confirmation Gate 통과) | `manual_override` (재소환 상한 소진 후 사용자가 수동 편집 선택). 재개 시 `confirmed` 가 아니면 Gate 재진입 대상
 
 재개 시 오케스트레이터는 이 필드를 **재개 판단의 단일 소스**로 사용한다. HTML 주석만 있는 구형 파일은 frontmatter 없이 존재 여부만으로 Phase 완료로 취급(레거시 호환).
 

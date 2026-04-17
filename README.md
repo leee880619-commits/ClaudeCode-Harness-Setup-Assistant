@@ -110,13 +110,14 @@ claude
 
 | Phase | 내용 | 담당 에이전트 |
 |-------|------|---------------|
-| 0 | 대상 프로젝트 경로 수집 + 요청명 생성 | (Orchestrator) |
+| 0 | 대상 프로젝트 경로 수집 + 요청명 생성 + **기본 성능 수준(경제/균형/고성능) 힌트** 수집 | (Orchestrator) |
 | 1-2 | 스캔 + 인터뷰 + 기본 하네스 | `phase-setup` |
 | 2.5 | 도메인 리서치 (옵션) | `phase-domain-research` |
 | 3 | 워크플로우 설계 | `phase-workflow` |
 | 4 | 파이프라인 설계 | `phase-pipeline` |
-| 5 | 에이전트 팀 편성 | `phase-team` |
+| 5 | 에이전트 팀 편성 + 모델 티어 매트릭스 배정 | `phase-team` |
 | 6 | SKILL/playbook 작성 | `phase-skills` |
+| 6+ | **Model Confirmation Gate** — 에이전트-모델-스킬 통합 표로 최종 1회 승인 | (Orchestrator) |
 | 7-8 | 훅/MCP 설치 | `phase-hooks` |
 | 9 | 최종 검증 | `phase-validate` |
 | 매 Phase | 독립 비판 리뷰 | `red-team-advisor` |

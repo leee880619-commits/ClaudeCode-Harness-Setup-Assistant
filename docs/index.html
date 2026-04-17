@@ -739,8 +739,8 @@
     <div class="phases" aria-label="9-Phase 타임라인">
       <article class="phase reveal">
         <span class="tag"><i class="fa-solid fa-location-crosshairs"></i> Phase 0</span>
-        <h4>프로젝트 경로 수집</h4>
-        <p>대상 프로젝트 경로 확정, 요청명 자동 생성, 기존 작업 감지 및 재개 여부 확인, <code>docs/{요청명}/</code> 작업 폴더 생성.</p>
+        <h4>프로젝트 경로 + 기본 정보 수집</h4>
+        <p>대상 프로젝트 경로 확정, 요청명 자동 생성, 기존 작업 감지 및 재개 여부 확인, <code>docs/{요청명}/</code> 작업 폴더 생성. 프로젝트 이름·유형·팀 규모와 함께 <b>기본 성능 수준(경제/균형/고성능)</b>을 수집해 Phase 5 모델 배정의 힌트로 사용합니다.</p>
         <div class="icns"><span><i class="fa-solid fa-user"></i> 오케스트레이터</span><span><i class="fa-solid fa-question"></i> AskUserQuestion</span></div>
       </article>
 
@@ -774,8 +774,8 @@
 
       <article class="phase reveal">
         <span class="tag"><i class="fa-solid fa-users"></i> Phase 5</span>
-        <h4>에이전트 구성</h4>
-        <p>Teams/Agent/SendMessage 기반 에이전트 구성, 소유권 테이블과 Orchestrator 패턴 결정.</p>
+        <h4>에이전트 구성 + 모델 티어 매트릭스</h4>
+        <p>Teams/Agent/SendMessage 기반 에이전트 구성, 소유권 테이블과 Orchestrator 패턴 결정. Phase 0에서 받은 <b>기본 성능 수준(경제/균형/고성능)</b> 힌트로 역할 복잡도 매트릭스에 따라 에이전트별 모델을 자동 배정합니다.</p>
         <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-team</span></div>
       </article>
 
@@ -784,6 +784,13 @@
         <h4>SKILL / Playbook 제작</h4>
         <p>각 에이전트의 방법론(HOW)을 작성하면서 저장 위치를 2케이스로 분기 결정. 외부 노출이 필요한 <b>도메인 스킬 → <code>.claude/skills/</code></b>(케이스 A), <b>에이전트 전용 방법론 → <code>playbooks/</code></b>(케이스 B). 동시에 <code>allowed_dirs</code>로 쓰기 범위를 확정합니다.</p>
         <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-skills</span></div>
+      </article>
+
+      <article class="phase reveal">
+        <span class="tag" style="color:var(--accent-2);background:rgba(125,211,252,0.08);border-color:rgba(125,211,252,0.22)"><i class="fa-solid fa-check-double"></i> Phase 6+ · Gate</span>
+        <h4>Model Confirmation Gate</h4>
+        <p>Phase 6 Advisor 통과 직후, 스킬이 다 드러난 시점에 에이전트 · 역할 · 사용 스킬 · 모델 · 상대 비용 힌트를 하나의 표로 묶어 <b>최종 1회</b> 승인받습니다. <b>전체 승인 / 개별 에이전트 조정 / 티어 일괄 변경</b> 3선택. 에이전트 ≥ 2 일 때만 실행.</p>
+        <div class="icns"><span><i class="fa-solid fa-user"></i> 오케스트레이터</span><span><i class="fa-solid fa-rotate"></i> 재소환 상한 2회</span></div>
       </article>
 
       <article class="phase reveal">

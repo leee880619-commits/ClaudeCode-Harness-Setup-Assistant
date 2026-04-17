@@ -181,8 +181,9 @@ Step 6에서 결정된 위치에 파일을 생성한다.
 4. Agent-Skill 매핑 검증: Phase 5에서 생성된 에이전트 정의의 `Playbooks`/`Skills` 섹션이 참조하는 파일이 실제로 생성되었는지 확인 (경로가 위치 케이스와 일치하는지 포함)
 5. allowed_dirs-훅 사전 검증: 각 스킬의 allowed_dirs 목록을 정리하여 Phase 7 훅 설계의 입력 데이터로 산출물에 포함
 6. **가시성 일관성 검증**: 오케스트레이터 패턴(케이스 B)으로 판정된 스킬이 실수로 `.claude/skills/` 아래에 있지 않은지 확인. 있으면 `[BLOCKING]` Escalation — 메인 세션 우회 문제가 재현됨
-7. 전체 스킬 목록을 트리 구조로 제시 (`.claude/skills/`와 `playbooks/` 두 섹션으로 구분)
-8. 최종 확인 사항을 Escalations에 기록
+7. **모델 필드 일관성 검증**: 각 SKILL.md frontmatter의 `model` 필드가 Phase 5 `04-agent-team.md` Agent Model Table 및 `.claude/agents/{에이전트}.md` frontmatter `model` 과 일치하는지 확인. 불일치 시 `[BLOCKING] 모델 필드 드리프트: {스킬} SKILL.md={A}, agents/*.md={B}, 04-agent-team.md={C}` Escalation (Model Confirmation Gate 재소환 시 `phase-skills` 가 SKILL.md 까지 동기화했는지 재확인 용도)
+8. 전체 스킬 목록을 트리 구조로 제시 (`.claude/skills/`와 `playbooks/` 두 섹션으로 구분)
+9. 최종 확인 사항을 Escalations에 기록
 
 ### Step 10: Phase 7로 전환
 스킬 작성이 완료되면 Phase 7 `/hooks-mcp-setup`으로 전환한다.

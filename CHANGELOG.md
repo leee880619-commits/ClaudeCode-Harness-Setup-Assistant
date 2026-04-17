@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-17
+
+### Added
+- **Phase 0 A5 — "기본 성능 수준" 인터뷰 질문** (경제형 / 균형형(권장) / 고성능형). 답변은 Phase 5 `phase-team` 프롬프트에 `[Model Tier]` 로 전달되어 에이전트별 모델 자동 배정의 힌트가 된다.
+- **Phase 5 모델 매트릭스** (`playbooks/agent-team.md` Step 3). 역할 복잡도(복잡 설계 / 구현 / 단순 검증) × 티어(경제/균형/고성능)의 3×3 매트릭스로 에이전트별 모델을 자동 배정. 매트릭스 이탈 시 근거를 Escalations에 기록.
+- **Phase 6 완료 직후 — Model Confirmation Gate** (`.claude/rules/orchestrator-protocol.md`). 스킬 완성 후 에이전트-모델-스킬 통합 표를 1회 AskUserQuestion으로 제시, "전체 승인 / 개별 조정 / 티어 일괄 변경" 선택. 에이전트 ≥ 2 일 때만 실행, 복잡도 게이트와 무관하게 항상 실행. 상대 비용 힌트(Opus ≈ Sonnet × 5, Sonnet ≈ Haiku × 3) 표기.
+- **Gate 재소환 상한 2회** + 소진 시 "수용 / 수동 편집" 2선택 (Advisor 루프 패턴과 동일).
+- **재소환 후 Dim 11 한정 경량 Advisor 재실행** — 재작성된 `04-agent-team.md` / `05-skill-specs.md` 에 대해 모델 드리프트·미스매치만 재검증.
+- **Red-team Dimension 11 — 모델-복잡도 미스매치** (`playbooks/design-review.md`, `.claude/agents/red-team-advisor.md`). Phase 5·6 전용. 복잡 설계에 haiku → BLOCK, 단순 검증에 opus → ASK. `04-agent-team.md` ↔ `.claude/agents/*.md` frontmatter ↔ SKILL.md 3중 드리프트 감지.
+- **`05-skill-specs.md` 모델 필드 3중 일관성 검증** (`playbooks/skill-forge.md` Step 9).
+
+### Changed
+- **CLAUDE.md에 에이전트 모델 기재 금지** (`playbooks/agent-team.md` Step 6). `## 에이전트 팀 구조` 섹션은 `@import docs/{요청명}/04-agent-team.md` 한 줄만. 모델의 단일 진실(source of truth)은 `.claude/agents/{이름}.md` frontmatter `model` 필드. Confirmation Gate 재조정 시 CLAUDE.md 본문을 건드리지 않아 드리프트 원천 차단.
+- **`04-agent-team.md` frontmatter `model_confirmation` 필드** (`pending` / `confirmed` / `manual_override`). 재개 시 `confirmed` 가 아니면 Gate 재진입 대상. 재개 안전 체크: Agent Model Table ↔ agents/*.md frontmatter 1회 sanity check.
+- **Rejected Alternatives 누적 상한** — 최근 1개(직전 배정)만 유지, 더 오래된 이관은 한 줄 압축 주석으로 교체 (파일 비대화 방지).
+- **메타 누수 정규식 보강** (`checklists/meta-leakage-keywords.md`, `scripts/validate-meta-leakage.sh`) — `기본 성능 수준` / `모델 티어` / `Model Tier` / `Model Confirmation Gate` / `경제형 … 균형형 … 고성능형` 근접 패턴 추가. `docs/{요청명}/NN-*.md` 표준 산출물은 스캔 제외.
+
 ## [0.2.2] - 2026-04-17
 
 ### Added

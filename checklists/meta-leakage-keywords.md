@@ -44,6 +44,13 @@ have leaked into the target project's configuration files.
 - "deny > ask > allow"
 - "context vs config"
 
+### Plugin-internal UX Labels (must not appear in generated CLAUDE.md / rules / agents / skills)
+사용자 인터뷰용 라벨이 대상 프로젝트 생성물에 복제되면 안 됨. A5 답변 원값(예: `균형형`)은 Pre-collected Answers 메타 기록에만 허용:
+- "기본 성능 수준" (Phase 0 질문 라벨)
+- "모델 티어" / "Model Tier"
+- "Model Confirmation Gate"
+- 라벨 전문 패턴: `경제형.*균형형.*고성능형` (세 단어가 한 줄/근접 위치에 동시 등장 = 이 플러그인의 UX 라벨 복제)
+
 ### Runtime Internals (must not appear in generated SKILL.md or playbooks/*.md)
 이 어시스턴트의 플레이북에서만 의미 있는 런타임 메커니즘 설명이 대상 프로젝트 생성 파일에 복제되면 안 된다:
 - "자동 디스커버리" / "auto-discovery" (Claude Code의 `.claude/skills/` 메커니즘을 설명하는 용어)
@@ -72,6 +79,7 @@ Exact-match 방어는 변형 표현에 취약하므로, 자동 스캔 시 다음
 | 질문 규율 | `질문[ ]?규율\|question[ ]?discipline` | 공백 변형 |
 | 하네스 도구 | `하네스[ ]?(설정|구축|어시스턴트)` | 이 플러그인 자칭 |
 | 플러그인 Phase | `Phase[ \-]?[0-9]\|Phase[ ]?Gate\|Orchestrator Pattern Decision` | 이 어시스턴트의 단계 명명 |
+| 모델 티어 UX | `기본[ ]?성능[ ]?수준\|모델[ ]?티어\|Model[ ]?Tier\|Model Confirmation Gate\|경제형.{0,40}균형형.{0,40}고성능형` | Phase 0 A5 질문 및 Confirmation Gate 라벨 복제 감지 |
 
 정규식 히트는 키워드 리스트 히트와 동일하게 `[BLOCKING]`으로 처리한다.
 

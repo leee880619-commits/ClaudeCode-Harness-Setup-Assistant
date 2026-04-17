@@ -25,12 +25,12 @@ PATTERNS_IN_GENERATED=(
 )
 
 # 명시적으로 제외 (이 플러그인 내부 파일은 허용 — 인자로 이 레포를 주지 않으면 해당 없음)
-EXCLUDE_PATTERN='/(knowledge|checklists|commands/harness-setup\.md|CONTRIBUTING\.md|ARCHITECTURE\.md|CHANGELOG\.md|docs/redteam-review-)'
+EXCLUDE_PATTERN='/(knowledge|checklists|commands/harness-setup\.md|CONTRIBUTING\.md|ARCHITECTURE\.md|CHANGELOG\.md|docs/redteam-review-|docs/[^/]+/[0-9]{2}[a-z]?-[a-z-]+\.md)'
 
 # 정규식 히트 규칙 (meta-leakage-keywords.md의 Regex Hints 섹션과 동기화)
 # NOTE: `Phase[ -]?[0-9]` 는 대상 프로젝트의 정당한 도메인 단어("Phase 1 릴리스" 등)와 충돌하여
 # 과탐을 일으키므로 제거. `Phase Gate` 같은 관용구만 고정 포착한다.
-REGEX='모든.{0,5}(결정|설정).{0,10}(먼저|반드시).{0,10}(질문|확인)|메타[ -]?누수|meta[ -]?leak(age)?|점진[ ]?적.{0,3}공개|질문[ ]?규율|question[ ]?discipline|하네스[ ]?(설정|구축|어시스턴트|에이전트)|Orchestrator Pattern Decision|BLOCKING REQUIREMENT|Phase[ ]?Gate'
+REGEX='모든.{0,5}(결정|설정).{0,10}(먼저|반드시).{0,10}(질문|확인)|메타[ -]?누수|meta[ -]?leak(age)?|점진[ ]?적.{0,3}공개|질문[ ]?규율|question[ ]?discipline|하네스[ ]?(설정|구축|어시스턴트|에이전트)|Orchestrator Pattern Decision|BLOCKING REQUIREMENT|Phase[ ]?Gate|기본[ ]?성능[ ]?수준|모델[ ]?티어|Model[ ]?Tier|Model Confirmation Gate|경제형.{0,40}균형형.{0,40}고성능형'
 
 # 직접 키워드 (meta-leakage-keywords.md의 Tool Identity / Behavioral Rules)
 KEYWORDS=(

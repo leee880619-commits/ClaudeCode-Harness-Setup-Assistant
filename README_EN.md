@@ -96,13 +96,14 @@ If the session is interrupted, state is persisted under `docs/{request-name}/` i
 
 | Phase | Responsibility | Agent |
 |-------|----------------|-------|
-| 0 | Collect target path, generate request name | (orchestrator) |
+| 0 | Collect target path, generate request name, **capture performance-tier hint (economy/balanced/performance)** | (orchestrator) |
 | 1-2 | Scan + interview + base harness | `phase-setup` |
 | 2.5 | Domain research (optional) | `phase-domain-research` |
 | 3 | Workflow design (step sequence) | `phase-workflow` |
 | 4 | Pipeline design (per-step execution chain) | `phase-pipeline` |
-| 5 | Agent team assembly | `phase-team` |
+| 5 | Agent team assembly + model-tier matrix assignment | `phase-team` |
 | 6 | SKILL / playbook authoring | `phase-skills` |
+| 6+ | **Model Confirmation Gate** — single final approval of the agent·model·skill table | (orchestrator) |
 | 7-8 | Hooks / MCP installation | `phase-hooks` |
 | 9 | Final validation | `phase-validate` |
 | every phase | Independent critical review | `red-team-advisor` |

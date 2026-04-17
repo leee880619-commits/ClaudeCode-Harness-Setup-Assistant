@@ -82,10 +82,13 @@ docs/myapp-setup/
 | 4 | 파이프라인 설계 | phase-pipeline | pipeline-design | red-team-advisor |
 | 5 | 에이전트 팀 편성 | phase-team | agent-team | red-team-advisor |
 | 6 | SKILL/Playbook 작성 | phase-skills | skill-forge | red-team-advisor |
+| 6+ | **Model Confirmation Gate** | (Orchestrator) | — | — |
 | 7-8 | 훅/MCP 설치 | phase-hooks | hooks-mcp-setup | red-team-advisor |
 | 9 | 최종 검증 | phase-validate | final-validation | red-team-advisor |
 
 > Phase 2.5는 옵션이다. Phase 1-2의 Escalation(`[ASK] 핵심 도메인 식별`)에 대한 사용자 답변이 "해당 없음"/공백이거나 초기 발화에 "--fast"/"빠르게"가 있으면 소환하지 않고 Phase 3로 직행한다.
+
+> **Model Confirmation Gate**는 Phase 6 Advisor 통과 직후 오케스트레이터가 직접 수행하는 1회성 체크다. 생성된 에이전트 수가 2명 이상일 때만 실행하며, 사용자에게 Agent Model Table을 제시하여 전체 승인 / 개별 조정 / 티어 일괄 변경을 선택받는다. Fast-Forward(Phase 3-5 통합)가 활성화된 프로젝트에서도 Phase 6은 별도 실행이므로 이 게이트는 정상 동작한다. 상세 프로토콜: `.claude/rules/orchestrator-protocol.md` "Model Confirmation Gate".
 
 ## Available Playbooks
 

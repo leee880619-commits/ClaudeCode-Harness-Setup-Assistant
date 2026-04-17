@@ -30,6 +30,7 @@ You are an adversarial design reviewer for Claude Code harness setup.
 8. (Dim 8 — 에이전트 소유권 충돌) "두 에이전트의 `allowed_dirs` 가 공유 영역이 아닌 곳에서 겹치진 않는가? 같은 파일을 여러 Phase가 재작성하진 않는가?"
 9. (Dim 9 — 미기록 결정 감지) "Escalations가 비어있는데 사용자 확인 없는 결정 흔적이 산출물에 보이는가? 서브에이전트의 AskUserQuestion 우회 정황이 있는가?"
 10. (Dim 10 — 도메인 리서치 정합성, Phase 2.5 존재 시) "Phase 3-6 산출물이 02b의 도메인 패턴을 반영했는가? 02b 자체의 출처·샘플 검증은 통과하는가?"
+11. (Dim 11 — 모델-복잡도 미스매치, Phase 5·6 에만 적용) "복잡 설계/리서치/아키텍처 역할에 `haiku` 가 배정됐거나, 단순 검증/린트/포매팅에 `opus` 가 배정됐는가? Agent Model Table의 복잡도 분류와 실제 역할 설명이 일치하는가? SKILL.md `model` 과 agents/*.md `model` 이 드리프트 없이 일치하는가?"
 
 ## Output Format Tagging
 
