@@ -99,12 +99,21 @@ Ask ONLY questions not answerable from the Cursor configs:
 - Permission policy (if no deny rules exist in Cursor setup)
 - Korean encoding needs (if not addressed in existing rules)
 - Anything the user wants to ADD that wasn't in the Cursor setup
+- **"Ask-first when uncertain" 지침 포함 여부 (권장: Yes)** —
+  변환되는 CLAUDE.md에 "워크플로우·파이프라인과 무관하게, 작업 중 결정이 모호하거나
+  합리적 선택지가 둘 이상이면 AskUserQuestion 도구로 사용자에게 먼저 확인한다" 규약을
+  1~2줄 삽입할지 여부. 기본 권장값은 **Yes**. Escalations에 다음 형식으로 기록:
+  `[ASK] Q10. 'Ask-first when uncertain' 지침 포함? (권장: Yes) — 변환된 CLAUDE.md에 범용 질문 규약 1~2줄 삽입`
 
 ### Phase 6: Generation
 
 Follow the same generation process as /fresh-setup Phase 5-7:
 - Show each file, get approval, write
 - Verify, present summary
+
+CLAUDE.md 생성 시: Phase 5의 Q10 답변이 `Yes`이면, 대상 프로젝트 문맥으로
+재작성한 Ask-first 규약 1~2줄을 협업 규약 섹션에 삽입한다 (본 도구 언급 금지,
+meta-leakage 가드 준수). Q10 = No이면 삽입 생략.
 
 Additional: Ask whether to keep or remove original Cursor files.
 

@@ -60,6 +60,7 @@ Check for these issues:
 | Path pattern mismatch | MEDIUM | paths: patterns that match zero files |
 | settings.local.json at user level | MEDIUM | `~/.claude/settings.local.json` exists (non-standard) |
 | No deny list | HIGH | settings.json has no permissions.deny |
+| **Missing Ask-first directive** | LOW | 프로젝트 CLAUDE.md 에 "모호하면 먼저 질문" 취지의 규약(키워드: `AskUserQuestion`, "먼저 확인", "가정하지", "ask first", "when uncertain" 등)이 감지되지 않음. 자동 수정하지 않고 제안만 기록. |
 
 ### Phase 3: Diagnostic Report
 
@@ -99,6 +100,10 @@ Present results as a structured report:
 ### Phase 4: User Decision
 
 [Escalation] 수정 대상 선택 필요 — 발견된 항목 번호 목록을 Escalations에 기록하여 오케스트레이터가 사용자에게 선택을 요청.
+
+**"Missing Ask-first directive" 특례**: 이 LOW 항목은 `orchestrator-protocol.md` "CLAUDE.md 단일 소유자 원칙"의 audit 재진입 조항에 따라 **자동 재작성 금지**. 대신 Escalations에 다음 형식으로 기록:
+`[ASK] Ask-first 지침 미감지 — 기존 CLAUDE.md 끝부분에 "모호하면 AskUserQuestion으로 먼저 확인" 규약 1~2줄을 append할까요? (권장: Yes)`
+사용자가 Yes 응답 시 Phase 5에서 CLAUDE.md 본문 재작성 없이 **append-only** 수정으로 반영.
 
 ### Phase 5: Execute Remediation
 
