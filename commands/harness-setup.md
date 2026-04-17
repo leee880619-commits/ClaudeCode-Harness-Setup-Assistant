@@ -6,14 +6,18 @@ description: Build a complete Claude Code harness for any project via a 9-phase 
 
 대상 프로젝트를 분석하여 Claude Code 하네스(CLAUDE.md, settings, rules, agents, playbooks, hooks, MCP)를 9단계로 구축합니다. 이 커맨드는 메인 세션(Orchestrator) 역할만 수행하며, 실질 작업은 서브에이전트(`subagent_type`)에 위임합니다.
 
-## 세션 시작 시 필수 로드
+## 세션 시작 규칙 로딩
 
-다음 규칙 파일을 순서대로 Read하여 컨텍스트에 적재하세요. 이후 모든 Phase 실행의 기준이 됩니다.
+아래 4개 규칙 파일은 `.claude/rules/` 아래에 **YAML frontmatter 없이** 배치되어 있어 Claude Code 플러그인 런타임이 **always-apply**로 자동 로딩합니다. 별도 Read 호출이 필요하지 않습니다 — 오케스트레이터 세션 시작 시점에 이미 컨텍스트에 들어있다고 가정하고 진행하세요.
+
+참고 파일 목록 (진단·수정 목적으로 참조 시 경로):
 
 1. `${CLAUDE_PLUGIN_ROOT}/.claude/rules/orchestrator-protocol.md` — Phase 전환/에스컬레이션/피드백 프로토콜
 2. `${CLAUDE_PLUGIN_ROOT}/.claude/rules/question-discipline.md` — AskUserQuestion 사용 규율
 3. `${CLAUDE_PLUGIN_ROOT}/.claude/rules/output-quality.md` — 생성물 품질/보안 기준
 4. `${CLAUDE_PLUGIN_ROOT}/.claude/rules/meta-leakage-guard.md` — 메타 누수 방지 가이드
+
+만약 always-apply 로딩이 작동하지 않는 환경(예: 플러그인 로더 미지원 버전)이면 해당 파일을 직접 Read하되, 일반적으로는 중복 로딩을 피합니다.
 
 ## 핵심 개념 정의
 
@@ -157,4 +161,16 @@ Fast-Forward(Phase 3-5 통합)가 활성화된 경우에도 각 내부 단계의
 
 ---
 
+## 시작
+
 준비되면 Phase 0부터 시작하세요. Orchestrator Protocol에 정의된 AskUserQuestion 한 번으로 대상 프로젝트 경로와 핵심 인터뷰 질문(이름/유형/팀 규모)을 묶어 받으세요.
+
+### 인자로 경로를 받은 경우 (`$ARGUMENTS`)
+
+사용자가 슬래시 커맨드 뒤에 경로를 붙여 호출한 경우(예: `/harness-architect:harness-setup /path/to/project`), 그 인자를 **`$ARGUMENTS`** 로 전달받습니다. 이때는 Phase 0 AskUserQuestion 중 "경로" 항목을 **생략**하고, 나머지 인터뷰 질문(프로젝트 이름·유형·솔로/팀)만 묶어 1회 AskUserQuestion으로 받습니다.
+
+- `$ARGUMENTS` 가 비어있는 경우: 기존 방식대로 경로를 AskUserQuestion 한 질문에 포함.
+- `$ARGUMENTS` 가 유효 디렉터리가 아닌 경우: 사용자에게 경로를 다시 요청하며 입력값을 그대로 에러 메시지에 포함해 제시.
+- 경로에 공백·한글·특수문자가 있을 수 있으므로 절대 경로로 정규화한 후 `TARGET_PROJECT_ROOT` 환경변수로 export.
+
+이 경로는 사용자가 터미널 파일 탐색기로 이동하지 않고도 빠르게 흐름에 들어올 수 있게 해줍니다.

@@ -79,9 +79,15 @@ claude
 /harness-architect:harness-setup
 ```
 
+경로를 미리 정해놓았다면 **인자로 전달**할 수 있습니다. 이 경우 Phase 0의 "프로젝트 경로" 질문이 생략되어 바로 인터뷰로 진입합니다:
+
+```
+/harness-architect:harness-setup /path/to/your/project
+```
+
 오케스트레이터가 Phase 0부터 진행합니다. 필요한 의사결정(프로젝트 유형, 팀 여부, 훅 범위 등)은 `AskUserQuestion`으로 묶어 묻고, 설정 파일·에이전트·플레이북·훅을 단계별로 생성합니다.
 
-세션이 중단되어도 `docs/{요청명}/`에 저장된 Phase 산출물로부터 자동 재개할 수 있습니다.
+세션이 중단되어도 `docs/{요청명}/`에 저장된 Phase 산출물로부터 자동 재개할 수 있습니다. 재개 시 이전 세션의 Advisor BLOCK·ASK 미해결 항목도 함께 복원해 묻습니다 — 상세는 [ARCHITECTURE.md §5](./ARCHITECTURE.md).
 
 ## 9-Phase 워크플로우 (요약)
 

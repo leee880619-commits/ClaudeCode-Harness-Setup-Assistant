@@ -161,6 +161,8 @@ Phase 0은 오케스트레이터 직접 처리이므로 Advisor 불필요.
 - Phase 3-6: Advisor 전체 실행 (설계 품질이 중요)
 - Fast-Forward 통합 실행 시: 통합 완료 후 1회만 전체 실행
 
+**보안 항목은 복잡도 게이트와 무관하게 항상 전체 실행한다.** 구체적으로 Advisor의 Dimension 6(보안 권한 적절성), `final-validation` 플레이북의 Step 5(보안 감사 — `Bash(*)` / `Bash(sudo *)` 등 위험 allow 패턴, 필수 deny 존재, 비밀값 패턴)는 단순 프로젝트에서도 경량화하지 않는다. 경량화는 "설계 질 평가"에만 적용되며, 보안 가드는 게이트 우회가 금지된다.
+
 ### 실행 흐름
 
 ```
@@ -191,8 +193,9 @@ Agent(
     [User's Original Request]
     {Phase 0에서 수집한 사용자 요구사항 원문}
 
-    [Previous Phases Summary]
-    {이전 Phase들의 핵심 결정사항}
+    [직전 Phase Summary]
+    {N-1 Phase의 Summary ~200단어만 포함. 누적 금지.}
+    필요 시 Advisor가 직접 docs/{요청명}/ 의 이전 산출물을 Read하여 상세 컨텍스트 확보.
 
     [Output]
     Red-team review report (BLOCK/ASK/NOTE 구분)"
@@ -207,6 +210,13 @@ Agent(
       - "반영해" → Phase N 에이전트를 피드백과 함께 재소환
       - "괜찮아, 넘어가" → 다음 Phase 진행
    c. 재소환 후 Advisor도 다시 실행 (최대 2회 루프)
+   d. **루프 소진 후에도 동일 BLOCK이 반환되는 경우** (교착 탈출):
+      - 오케스트레이터는 AskUserQuestion으로 **3개 선택지**를 제시한다:
+        1) "무시하고 진행" — BLOCK을 수용 불가능한 제약으로 간주하지 않음
+        2) "수동 개입" — 사용자가 산출물 파일을 직접 편집 후 "편집 완료" 응답
+        3) "해당 Phase 스킵" — Phase를 건너뛰고 이후 Phase를 제한된 맥락으로 진행
+      - 선택 결과를 해당 Phase 산출물의 `## Escalations` 에 `[MANUAL OVERRIDE] 사용자 선택: {1|2|3}, 미해결 BLOCK: {요약}` 로 기록
+      - "수동 개입" 선택 시 재개 프로토콜에 따라 산출물 frontmatter의 `advisor_status`를 `manual_override`로 갱신
 
 2. ASK 항목만 존재:
    a. AskUserQuestion으로 확인
@@ -229,8 +239,22 @@ Agent(
 | Phase 7-8 | docs/{name}/05-skill-specs.md |
 | Phase 9 | docs/{name}/06-hooks-mcp.md |
 
+### 파일 존재 + 섹션 스키마 검증
+
+산출물 파일 존재 확인만으로는 "에이전트가 작성 중 실패했는데 부분 파일이 남은" 경우를 거르지 못한다. 각 산출물에 대해 **필수 섹션 헤더가 실제로 존재하는지**를 함께 검증한다:
+
+- 모든 Phase 산출물: `^## Summary$`, `^## Files Generated$`, `^## Context for Next Phase$`, `^## Escalations$`, `^## Next Steps$` 5개 헤더가 정규식으로 매칭되어야 한다.
+- Phase 9 산출물(`07-validation-report.md`)은 추가로 `^## File Inventory$`, `^## Security Audit$`, `^## Simulation Trace$` 3개도 요구한다.
+- 매칭 실패 시: 해당 Phase 에이전트 재소환. 재소환 후에도 매칭 실패가 반복되면 Advisor BLOCK 루프 소진 프로토콜의 3개 선택지 중 "수동 개입"을 사용자에게 제시.
+
 산출물 미존재 시: 이전 Phase 에이전트를 재소환한다.
 사용자가 "Phase N으로 바로 가자" 요청 시 → 누락된 Phase를 안내하고 순서대로 진행.
+
+### CLAUDE.md 단일 소유자 원칙
+
+Phase 1-2(`phase-setup`)가 대상 프로젝트의 `CLAUDE.md` **본문을 단독으로 작성**한다. 후속 Phase(3~6)는 자신들의 산출물(`02-workflow-design.md`, `03-pipeline-design.md` 등)에 대해 CLAUDE.md에 `@import docs/{요청명}/NN-*.md` 참조 링크 **추가**만 할 수 있고, **본문 재작성·섹션 덮어쓰기는 금지**한다. 이는 여러 Phase가 CLAUDE.md를 경쟁 수정하여 문체·용어가 충돌하는 것을 방지한다. 소유권을 벗어난 수정 시도는 `ownership-guard`/`final-validation`에서 일관성 검증 실패로 잡혀야 한다.
+
+**적용 시점**: 이 원칙은 신규 `fresh-setup` 으로 생성되는 하네스에만 적용된다. **기존에 배포된 하네스를 `harness-audit` 로 재진입**하는 경우, 기존 CLAUDE.md 구조가 이 원칙을 따르지 않더라도 자동 재작성하지 않는다. `harness-audit` 플레이북은 사용자에게 "기존 CLAUDE.md가 여러 Phase에 걸쳐 수정된 구조입니다. 단일 소유자 원칙으로 재구성하시겠습니까?" 를 Escalation으로 올려 확인받는다.
 
 ## 에이전트 반환 포맷
 
@@ -277,6 +301,30 @@ Agent(
 | 7-8 | 설치된 훅 목록, MCP 서버 목록, 검증 대상 파일 목록 |
 
 이 명세를 통해 다음 Phase 에이전트가 이전 Phase 산출물을 Read하면 필요한 모든 컨텍스트를 확보할 수 있다.
+
+### 공통 필수: 기각된 대안(Rejected Alternatives)
+
+모든 Phase는 위 표의 고유 항목에 더해, Context for Next Phase 섹션에 **"기각된 대안"** 하위 항목을 포함한다. 형식:
+
+```
+## Context for Next Phase
+...
+### 기각된 대안 (Rejected Alternatives)
+- {대안 A}: 기각 이유 — {근거}
+- {대안 B}: 기각 이유 — {근거}
+- (검토한 대안이 없으면 "검토된 대안 없음")
+```
+
+이유: 200단어 Summary는 **채택된 결정**만 담으므로 후속 Phase가 "왜 그 경로를 안 갔는지"를 모른다. 후속 Phase가 이미 기각된 대안을 다시 제안하거나, 채택된 결정과 충돌하는 설계를 펼치는 것을 방지한다.
+
+### 상태의 단일 진실 (Single Source of Truth)
+
+서브에이전트 반환의 Summary와 산출물 파일(`docs/{요청명}/NN-*.md`) 내용이 불일치하는 경우 **산출물 파일을 항상 우선**한다. Summary는 다음 에이전트 프롬프트에 포함되는 힌트일 뿐이며 정보 손실을 전제한다.
+
+오케스트레이터의 책임:
+1. Phase 전환 직전 산출물 파일의 `## Context for Next Phase` 섹션이 Summary와 모순되지 않는지 1회 눈으로 검증 (해당 섹션 상단 50줄 Read).
+2. 모순 발견 시 해당 Phase 에이전트 재소환하여 파일을 권위 있는 상태로 재정비. Summary 갱신이 아닌 **파일 기준 재작성**을 지시.
+3. 다음 Phase 에이전트에게는 "파일이 source of truth, Summary는 지표"임을 프롬프트로 강조하지 않아도 되지만, 산출물을 Read해 `## Context for Next Phase` 블록 전체를 참조하도록 설계한다.
 
 ## 상태 전달 규약
 
@@ -330,13 +378,15 @@ docs/myapp-setup/
 
 ### 3. 일괄 질문 (AskUserQuestion)
 - blocking 항목: 즉시 AskUserQuestion (최대 4개씩)
-- non-blocking 항목: Phase 전환 시점에 묶어서 AskUserQuestion
+- non-blocking 항목: **다음 Phase의 Advisor 리뷰 종료 직후까지만** 묶어서 AskUserQuestion (즉 "Phase N Advisor 결과 처리 직후, Phase N+1 에이전트 소환 이전" 지점). 2개 이상의 Phase를 건너뛰며 보류하지 않는다 — 사용자가 원래 맥락을 잃고 답변 품질이 떨어진다.
 - informational: 텍스트로 보고만
 
-### 4. 검증
+### 4. 검증 (서브에이전트의 AskUserQuestion 우회 감지 포함)
 Escalations와 생성된 파일의 일관성 확인:
 - Escalation에서 "미결정"이라고 했는데 파일에 이미 값이 있으면 → 재확인
-- Escalation 수가 0이면 → 에이전트가 모든 결정을 자체 처리한 것 → 핵심 결정 목록 확인
+- Escalation 수가 0인데 산출물(Summary / `## Context for Next Phase` / 본문)에 **사용자 확인 없이 임의 결정**한 흔적이 있거나, 대화 흐름에 "사용자 답변 반영" 문구가 있지만 오케스트레이터가 해당 답변을 AskUserQuestion으로 받은 기록이 없으면 → 서브에이전트의 AskUserQuestion 직접 호출을 의심.
+  - 이 경우 오케스트레이터는 해당 결정을 `[재확인]` 태그로 AskUserQuestion에 올려 사용자에게 직접 확인한다.
+  - 불일치가 확인되면 해당 Phase 에이전트를 재소환하면서 프롬프트에 "AskUserQuestion 절대 금지 — 불확실 시 Escalations에 기록만" 문구를 강조한다.
 
 ## 에이전트 실패 처리
 
@@ -346,18 +396,22 @@ Escalations와 생성된 파일의 일관성 확인:
 
 ## 진행 상황 피드백
 
-각 Phase 전환 시 오케스트레이터가 표시:
+각 Phase 전환 시 오케스트레이터가 표시. 사용자가 "멈춘 건 아닐까" 반복 질문하지 않도록 **재시도 상한과 예상 소요**를 함께 노출한다.
 
 Phase 시작:
-"📍 Phase {N}/9: {phase 이름}"
+"📍 Phase {N}/9: {phase 이름} — 최대 재시도 2회, 예상 소요 {1~3분 / 에이전트 소환 규모에 비례}"
 
 Phase 완료:
 "✅ Phase {N} 완료. Advisor 리뷰 중..."
+
+Advisor 재소환(교착 가능):
+"🔁 Advisor 재검토 ({M}/2회차). 한도 소진 시 사용자 개입을 요청합니다."
 
 Advisor 완료:
 - BLOCK 있으면: "⚠️ Advisor가 {건수}건 BLOCK 발견. 확인이 필요합니다."
 - ASK 있으면:  "💬 Advisor가 {건수}건 추가 확인을 제안합니다."
 - NOTE만:      "✅ Advisor 리뷰 통과. 다음 Phase로 진행합니다."
+- 루프 한도 초과: "🛑 Advisor BLOCK 2회 재시도 후에도 해소되지 않음. '무시/수동개입/스킵' 중 선택을 요청합니다."
 
 ## 컨텍스트 예산 관리
 
@@ -372,13 +426,57 @@ Advisor 완료:
 
 ### 세션 시작 시 감지
 오케스트레이터가 대상 프로젝트 경로를 받으면:
-1. `docs/` 디렉터리에 기존 작업 폴더가 있는지 확인
-2. 있으면 최신 산출물 파일의 번호로 마지막 완료 Phase 판별
-3. AskUserQuestion: "이전 작업 발견 (Phase {N}까지 완료). 계속 / 새로 시작?"
-4. 계속 선택 시: 마지막 완료 Phase 다음부터 재개
+1. `docs/` 디렉터리에 기존 작업 폴더 목록 수집 (여러 개 가능)
+2. 작업 폴더가 1개: 곧바로 마지막 완료 Phase 판별
+   작업 폴더가 2개 이상: AskUserQuestion으로 "어느 요청을 재개할까요? 또는 새로 시작할까요?" 선택지 제시
+3. 재개 대상 폴더 내 파일들을 아래 "상태 판별" 절차로 분석
+4. AskUserQuestion: "이전 작업 발견 (Phase {N}까지 완료, 미해결 BLOCK/ASK {K}건). 계속 / 새로 시작?"
+5. 계속 선택 시: 마지막 완료 Phase 다음부터 재개. 단 수정 감지/Advisor 미해결 항목이 있으면 해당 Phase부터 재실행.
+
+### 상태 판별 (재개 시 매번 수행)
+
+1. **산출물별 frontmatter 파싱** (frontmatter 없으면 HTML 주석으로 fallback — 역호환):
+   ```yaml
+   ---
+   phase: 3
+   completed: 2026-04-17T14:32:00Z
+   status: done | in_progress | manual_override
+   advisor_status: pass | block | ask | note | manual_override
+   ---
+   ```
+2. **수정 감지**: 각 파일의 `mtime` > `completed` 필드면 "마지막 완료 이후 사용자가 편집함"으로 간주 → 해당 Phase Advisor를 재실행 대상에 포함. 추가로 **편집된 Phase 의 번호보다 큰 모든 하류 Phase (예: Phase 3 편집 시 Phase 4, 5, 6, ...)의 산출물**도 "상류 전제 변경" 상태로 표시하여 재개 시 사용자에게 "하류 Phase 산출물을 어떻게 처리할까요? 유지 / 해당 Phase부터 재실행" 선택지를 AskUserQuestion으로 묻는다. 상류 편집이 하류 설계에 구조적 영향을 주는 경우를 놓치지 않기 위함.
+3. **미해결 Escalation 수집**: 각 산출물의 `## Escalations` 섹션에서 `[BLOCKING]` / `[ASK]` 태그를 읽어 미해결 목록 구성. 재개 직후 사용자에게 일괄 AskUserQuestion으로 해소 요청.
+4. **Advisor 리포트 확인**: 산출물에 `advisor_status: block | manual_override` 가 있으면 해당 Phase는 "미완" 상태로 간주 — "계속 선택 시 이 Phase부터 재개"로 분기.
 
 ### Phase 완료 시 저장
-각 Phase 완료 시 산출물 파일에 메타데이터 포함:
+각 Phase 완료 시 산출물 파일 최상단에 **YAML frontmatter** 를 기록한다 (기존 HTML 주석은 역호환을 위해 두어도 무방하나, 신규 파일부터는 frontmatter를 기본으로):
+
+```yaml
+---
+phase: 3
+completed: 2026-04-17T14:32:00Z
+status: done
+advisor_status: pass
+---
+
+# Phase 3 — Workflow Design
+...
 ```
-<!-- phase: {N}, completed: {timestamp}, status: done -->
-```
+
+frontmatter 필드 정의:
+- `phase`: Phase 번호 (0, 1-2 → 2, 2.5, 3, ... 9)
+- `completed`: 에이전트가 반환을 마친 ISO8601 timestamp
+- `status`: `done` | `in_progress` (에이전트 실행 중 중단) | `manual_override` (BLOCK 루프 소진 후 사용자가 수동 개입)
+- `advisor_status`: `pass` | `block` | `ask` | `note` | `manual_override`
+
+재개 시 오케스트레이터는 이 필드를 **재개 판단의 단일 소스**로 사용한다. HTML 주석만 있는 구형 파일은 frontmatter 없이 존재 여부만으로 Phase 완료로 취급(레거시 호환).
+
+### 비표준 파일명 처리 (`01-discovery-answers-v2.md` 등)
+
+사용자가 실험적으로 만든 파일(예: `02-workflow-design-alt.md`, `01-discovery-answers-v2.md`)이나 에이전트가 다른 이름으로 저장한 파일은 **권위 있는 Phase 산출물로 취급하지 않는다.**
+
+- 재개 시 `docs/{요청명}/` 스캔은 정규식 `^[0-9]{2}[a-z]?-[a-z-]+\.md$` 로 엄격 매칭되는 파일만 권위 있는 산출물로 인정한다.
+- 매칭되지 않는 `.md` 파일이 있으면 오케스트레이터는 "비표준 파일 {N}건 발견: {목록}. 무시하고 재개 / 사용자가 편집할 파일로 간주 / 정리" 를 AskUserQuestion으로 묻는다.
+- 매칭된 파일 중에서도 YAML frontmatter가 **누락된 파일**은 "존재는 하되 상태 불명"으로 분류 — `status` 를 사용자에게 확인받아 결정.
+
+이 규약으로 "파일 번호 엇갈림" 위험(수동 재작성·재생성·실험 파일 혼입)을 부분 완화한다. 완전 해결은 `docs/{요청명}/.state.json` 인덱스 도입이 필요하나, 도입 시 하네스 배포본 호환성 이슈가 커지므로 이 단계에서는 도입을 유보한다.

@@ -44,6 +44,8 @@ CI가 준비되기 전까지는 로컬에서 다음을 확인해 주세요.
 # 1) 훅 스크립트 문법
 bash -n .claude/hooks/ownership-guard.sh
 bash -n .claude/hooks/syntax-check.sh
+bash -n scripts/validate-settings.sh
+bash -n scripts/validate-meta-leakage.sh
 
 # 2) JSON parse
 python3 -c "import json; [json.load(open(p)) for p in ['.claude-plugin/plugin.json', '.claude-plugin/marketplace.json', '.claude/hooks/hooks.json', '.claude/settings.json']]"
@@ -52,7 +54,58 @@ python3 -c "import json; [json.load(open(p)) for p in ['.claude-plugin/plugin.js
 for f in .claude/agents/*.md; do
   head -n 20 "$f" | awk '/^---$/{c++} END{exit c!=2}'
 done
+
+# 4) agents 파일명 ↔ frontmatter name 일치 (명명 규약)
+for f in .claude/agents/phase-*.md .claude/agents/red-team-advisor.md; do
+  stem=$(basename "$f" .md)
+  declared=$(awk -F': *' '/^name:/{print $2; exit}' "$f" | tr -d '\r')
+  [[ "$stem" == "$declared" ]] || { echo "명명 위반: $f → name=$declared"; exit 1; }
+done
+
+# 5) 정적 보안/메타누수 검증 (jq 필요)
+bash scripts/validate-settings.sh .          # 이 레포 자신
+bash scripts/validate-meta-leakage.sh .      # 이 레포 자신
 ```
+
+`validate-settings.sh`, `validate-meta-leakage.sh` 는 기여자가 수동으로 실행하거나 대상 프로젝트에 설치된 하네스를 사후 감사할 때 사용합니다. 인자로 스캔 루트를 받을 수 있습니다 (`bash scripts/validate-meta-leakage.sh /path/to/target`).
+
+> ⚠ `validate-meta-leakage.sh` 를 **이 레포 루트** 에 대고 돌리면 플러그인 내부 설명이 허용 문맥임에도 자기참조 히트가 다수 발생합니다. 이는 스크립트 동작 확인용이지 regression 이 아닙니다. 실제 감사는 **외부 대상 프로젝트 루트** 에 대해서만 수행하세요.
+
+## Phase / 규칙 변경 체크리스트
+
+Phase를 추가·제거하거나 오케스트레이터 규칙을 바꿀 때 아래 파일들이 **묶음으로 변경**되어야 합니다. 누락 시 런타임(`orchestrator-protocol.md`)과 기여자용 요약(`CLAUDE.md`) 간 드리프트가 발생합니다.
+
+| 변경 유형 | 함께 수정해야 하는 파일 |
+|-----------|-----------------------|
+| Phase 추가/제거 | `.claude/agents/phase-{name}.md` / `playbooks/{name}.md` / `.claude/rules/orchestrator-protocol.md` (Phase-to-Agent 매핑 + Phase Gate + Context for Next Phase 테이블) / `commands/harness-setup.md` (마스터 워크플로우 테이블) / `CHANGELOG.md` / 필요 시 `CLAUDE.md` 요약 |
+| 규칙 추가/제거 (`.claude/rules/*.md`) | `CLAUDE.md` 요약 섹션 / `commands/harness-setup.md` 참고 목록 / `CONTRIBUTING.md` 파일 유형 체크포인트 |
+| 에이전트 Rules 변경 | 해당 `.claude/agents/phase-*.md` / `orchestrator-protocol.md` AskUserQuestion 섹션 일관성 확인 |
+| 체크리스트 변경 | `checklists/*.md` / `playbooks/final-validation.md` Step 4-5 / `scripts/validate-*.sh` |
+
+각 변경 PR에는 위 파일 중 **어느 것이 함께 변경됐는지** 본문에 명시하세요.
+
+## 명명 규약
+
+- `.claude/agents/{stem}.md` 파일의 frontmatter `name:` 필드는 파일명 stem과 **반드시 일치**해야 합니다. 오케스트레이터가 `Agent(subagent_type: "{name}")` 로 소환할 때 이 `name` 이 그대로 `subagent_type` 값으로 쓰입니다.
+- 예: `phase-setup.md` → `name: phase-setup` → `subagent_type: "phase-setup"`.
+- 이 규약은 위 "테스트" 섹션의 check #4 로 자동 검증됩니다.
+
+## 외부 의존성 리스크 (읽어두세요)
+
+이 플러그인의 **Agent-Playbook 분리**는 Claude Code 런타임의 자동 디스커버리 동작("`.claude/skills/` 및 `commands/` 아래 파일만 스킬/커맨드로 노출")에 의존합니다. 방법론 파일을 `playbooks/`에 두는 이유는 이 디스커버리 범위 밖이기 때문입니다.
+
+Claude Code 버전 업데이트로 디스커버리 경로가 확장되면(예: `playbooks/` 자동 로딩) 이 분리 원칙이 무력화되고, 메인 세션이 서브에이전트 소환을 우회할 수 있습니다. 버전 업데이트 시 다음 테스트를 수행해 주세요:
+
+1. `playbooks/*.md` 가 메인 세션의 "사용 가능한 스킬" 목록에 노출되는지 확인
+2. 노출되면 즉시 이슈 등록 + 설계 대안 논의 (예: `playbooks/` 파일에 frontmatter `visibility: hidden` 같은 방어 메타 추가)
+
+## knowledge 수정 시
+
+`knowledge/*.md` 는 Claude Code 공식 문서에서 파생된 derivative commentary 입니다. 수정 시:
+
+1. `knowledge/VERSION.md` 의 버전을 semver 규칙에 따라 범프 (문구 수정은 PATCH, 섹션 추가는 MINOR, 스키마 변경은 MAJOR)
+2. `CHANGELOG.md` 의 `[Unreleased]` 섹션에 `knowledge: ...` 항목 추가
+3. 공식 문서와의 매핑(파일 상단 `Source: ... Original section mapping: N`)이 여전히 유효한지 확인
 
 ## 커밋 / PR
 

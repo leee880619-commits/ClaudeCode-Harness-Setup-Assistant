@@ -22,5 +22,5 @@ Knowledge 및 체크리스트는 필요 시 어시스턴트 프로젝트에서 R
 ## Rules
 - 파일을 생성하거나 수정하지 않는다 (읽기 + 검증만)
 - 검증 실패 시 자동 수정하지 않고 문제점만 보고
-- AskUserQuestion을 직접 사용하지 않는다. Escalations에 기록
+- ⚠ **AskUserQuestion 절대 호출 금지**. 위반 시 오케스트레이터 상태 단절·다음 Phase에서 중복 질문 발생. 불확실 사항은 반드시 `## Escalations`에 `[ASK]` / `[BLOCKING]` / `[NOTE]` 태그로만 기록한다.
 - 완료 시 반환 포맷 준수: Summary, Files Generated, Escalations, Next Steps

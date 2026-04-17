@@ -19,7 +19,7 @@ Knowledge 및 큐레이션 KB는 플레이북의 Knowledge References 섹션을 
 - `${CLAUDE_PLUGIN_ROOT}/knowledge/domains/` — 8개 도메인 시드 KB
 
 ## Rules
-- AskUserQuestion을 직접 사용하지 않는다. Escalations에 기록
+- ⚠ **AskUserQuestion 절대 호출 금지**. 위반 시 오케스트레이터 상태 단절·다음 Phase에서 중복 질문 발생. 불확실 사항은 반드시 `## Escalations`에 `[ASK]` / `[BLOCKING]` / `[NOTE]` 태그로만 기록한다.
 - 대상 프로젝트 고유 식별자(프로젝트명/파일경로/비밀키)를 WebSearch 쿼리에 포함 금지 (데이터 유출 방지)
 - 라이브 검색 budget: WebSearch ≤ 6, WebFetch ≤ 3
 - 출처 없는 "일반 통념" 주장 금지. 모든 외부 인용에 URL + 날짜

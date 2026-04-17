@@ -9,7 +9,11 @@ have leaked into the target project's configuration files.
 ### Tool Identity (must not appear)
 - "Harness Setup"
 - "Setup Assistant"
+- "harness-architect"
 - "하네스 에이전트"
+- "하네스 설정 도구"
+- "하네스 구축 어시스턴트"
+- "구축 어시스턴트"
 - "설정 도구"
 - "메타 도구"
 
@@ -17,11 +21,20 @@ have leaked into the target project's configuration files.
 - "ask everything"
 - "assume nothing"
 - "질문을 먼저"
+- "모든 것을 먼저 질문"
+- "모든 결정 전에"
 - "가정하지 마세요"
+- "암묵적 합의 금지"
 - "no implicit assumptions"
 - "question discipline"
+- "질문 규율"
 - "progressive disclosure"
+- "점진적 공개 방식"
+- "점진적 공개"
 - "meta-leakage"
+- "메타 누수"   <!-- 공백 삽입 변형 -->
+- "메타누수"
+- "meta leakage"
 
 ### Claude Code Architecture Terms (should not appear in CLAUDE.md)
 - "4-Tier Scope"
@@ -46,6 +59,21 @@ have leaked into the target project's configuration files.
 이 키워드들은 이 어시스턴트의 내부 구조를 설명하는 데 쓰인다. 대상 프로젝트 파일에는 **대상 프로젝트 고유의 용어**로 재작성되어야 한다 (예: "에이전트는 playbooks/ 파일을 Read한다" 같이 사실만 서술, 메커니즘 설명은 배제).
 
 These terms belong in documentation, not in project instructions.
+
+## Regex Hints (for `scripts/validate-meta-leakage.sh`)
+
+Exact-match 방어는 변형 표현에 취약하므로, 자동 스캔 시 다음 정규식 패턴도 함께 사용한다:
+
+| 범주 | 정규식 (grep -Ei) | 의미 |
+|------|-------------------|------|
+| 질문 강제 | `모든.{0,5}(결정|설정).{0,10}(먼저|반드시).{0,10}(질문|확인)` | "모든 결정 전에 먼저 질문" 계열 |
+| 메타 누수 | `메타[ \-]?누수\|meta[ \-]?leak(age)?` | 공백/하이픈 변형 |
+| 점진 공개 | `점진[ ]?적.{0,3}공개` | "점진적 공개 방식" 변형 |
+| 질문 규율 | `질문[ ]?규율\|question[ ]?discipline` | 공백 변형 |
+| 하네스 도구 | `하네스[ ]?(설정|구축|어시스턴트)` | 이 플러그인 자칭 |
+| 플러그인 Phase | `Phase[ \-]?[0-9]\|Phase[ ]?Gate\|Orchestrator Pattern Decision` | 이 어시스턴트의 단계 명명 |
+
+정규식 히트는 키워드 리스트 히트와 동일하게 `[BLOCKING]`으로 처리한다.
 
 ## Allowed Content
 

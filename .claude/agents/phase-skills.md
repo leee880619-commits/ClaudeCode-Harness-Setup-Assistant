@@ -23,7 +23,7 @@ Knowledge는 플레이북 파일의 Knowledge References 섹션을 참조하여 
 - 2개 이하이거나 스킬 간 참조가 있으면 순차 제작이 안전하다.
 
 ## Rules
-- AskUserQuestion을 직접 사용하지 않는다. Escalations에 기록
+- ⚠ **AskUserQuestion 절대 호출 금지**. 위반 시 오케스트레이터 상태 단절·다음 Phase에서 중복 질문 발생. 불확실 사항은 반드시 `## Escalations`에 `[ASK]` / `[BLOCKING]` / `[NOTE]` 태그로만 기록한다.
 - 스킬 내용을 임의로 채우지 않음. 이전 Phase 산출물 기반
 - 생성된 SKILL.md에 이 도구의 메타 규칙을 포함하지 않음
 - 완료 시 반환 포맷 준수: Summary, Files Generated, Escalations, Next Steps

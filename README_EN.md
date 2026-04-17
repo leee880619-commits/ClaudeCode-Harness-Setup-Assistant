@@ -65,9 +65,15 @@ From **inside your target project** (not this repo), open Claude Code and run:
 /harness-architect:harness-setup
 ```
 
+You can pass the target-project path as an **argument** to skip Phase 0's path question and jump straight into the interview:
+
+```
+/harness-architect:harness-setup /path/to/your/project
+```
+
 The orchestrator starts at Phase 0 and advances through nine phases. Required decisions (project type, solo/team, hook scope, etc.) are collected via batched `AskUserQuestion` calls; settings, agents, playbooks, and hooks are written to your target project.
 
-If the session is interrupted, state is persisted under `docs/{request-name}/` inside your target project and is resumed on the next invocation.
+If the session is interrupted, state is persisted under `docs/{request-name}/` inside your target project and is resumed on the next invocation. Unresolved Advisor BLOCK/ASK items from the previous session are also restored and re-surfaced — see [ARCHITECTURE.md §5](./ARCHITECTURE.md).
 
 ## Phases at a glance
 

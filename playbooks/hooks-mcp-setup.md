@@ -126,6 +126,20 @@ Phase 6 산출물의 **Context for Next Phase** 섹션에서 스킬별 allowed_d
    - `sk-`, `ghp_`, `AKIA`, `xoxb-` 등 비밀값 패턴 감지
 4. 설치 후 동작 확인
 
+#### Step 7.1: 설치 실패 복구 프로토콜
+
+MCP 설치 커맨드(`npm i -g ...`, `uvx ...` 등) 실행 결과가 **non-zero**이거나, `claude mcp list`에서 서버가 보이지 않으면:
+
+1. **즉시 롤백**: settings.json에 이미 추가한 해당 MCP 서버 항목을 제거한다. `settings.json.bak`을 Step 7 시작 전에 저장해 두었다면 복원, 없으면 `jq 'del(.mcpServers["{server-name}"])'`로 제거.
+2. **실패 원인 분류** (stderr/로그 기반):
+   - 네트워크/권한: "수동 설치 가이드"를 Escalations에 기록 (설치 명령 + 환경변수 세팅 예시 포함)
+   - 버전 호환: 요구되는 Node.js / Python 버전 명시
+   - 인증 누락: 필요한 API 키 이름과 획득 경로 명시 (settings.local.json에 사용자가 직접 넣도록)
+3. Escalations에 `[BLOCKING] MCP 설치 실패: {서버명} — 수동 설치 가이드 첨부` 로 기록. 설치 성공 없이 Phase 8을 완료 처리하지 않는다.
+4. 사용자가 "수동 설치 완료"를 응답하면, Phase 9 검증에서 해당 MCP의 실 동작을 재확인한다.
+
+이 프로토콜이 없으면 Phase 8이 "설치한 것처럼" 통과해 Phase 9에서 뒤늦게 장애가 발견된다.
+
 ### Step 8: Phase 9로 전환
 
 훅과 MCP 설정이 완료되면 Phase 9 검증으로 전환한다.

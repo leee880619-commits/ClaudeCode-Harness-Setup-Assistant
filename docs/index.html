@@ -681,11 +681,16 @@
         <div>
           <h4>프로젝트 설명과 함께 설치 커맨드 실행</h4>
           <p>프로젝트에 대한 설명을 함께 적어서 호출합니다. 러프해도 동작하지만, 구체적일수록 인터뷰가 짧아집니다.</p>
-<pre class="code"><button class="copy" data-copy>복사</button><code>/harness-architect:harness-setup
-<span class="cmt"># 예시</span>
+<pre class="code"><button class="copy" data-copy>복사</button><code><span class="cmt"># 1) 인자 없이 — 모든 질문을 AskUserQuestion으로 받음</span>
+/harness-architect:harness-setup
+
+<span class="cmt"># 2) 프로젝트 설명을 함께 — 러프해도 OK, 구체적일수록 인터뷰가 짧아짐</span>
 /harness-architect:harness-setup 이 프로젝트는 Next.js + tRPC 로 만드는 내부 운영 대시보드야.
-테스트는 Vitest, 배포는 Vercel. 솔로 개발이고, DB는 Supabase.</code></pre>
-          <div class="hint"><i class="fa-solid fa-circle-info"></i> 프로젝트 폴더에 이미 진행 중이던 산출물이 있으면 자동으로 감지하고 재개할지 묻습니다.</div>
+테스트는 Vitest, 배포는 Vercel. 솔로 개발이고, DB는 Supabase.
+
+<span class="cmt"># 3) 경로 인자 — Phase 0의 "경로 입력" 질문이 생략됨</span>
+/harness-architect:harness-setup /path/to/your/project</code></pre>
+          <div class="hint"><i class="fa-solid fa-circle-info"></i> 세 가지 호출 방식 중 상황에 맞는 하나만 쓰면 됩니다. 프로젝트 폴더에 이미 진행 중이던 산출물이 있으면 자동으로 감지하고 재개할지 묻습니다.</div>
         </div>
       </div>
 
