@@ -14,7 +14,7 @@ jobs:
     name: Plugin structure + JSON / YAML / playbook checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Verify JSON files parse
         shell: bash
@@ -106,11 +106,12 @@ jobs:
     name: Shell script lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: shellcheck
         uses: ludeeus/action-shellcheck@2.0.0
         with:
           scandir: .claude/hooks
+          severity: error
 
       - name: Shebang / LF sanity on hooks
         shell: bash
@@ -128,7 +129,7 @@ jobs:
     name: Security / meta-leakage sanity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: No dangerous Bash allow patterns in settings.json
         shell: bash
@@ -176,17 +177,37 @@ jobs:
           # The checklist file lists keywords that must NOT appear in *generated* files
           # (templates under .claude/templates/). We scan templates only — not docs about
           # the plugin itself (which legitimately discuss these concepts).
+          #
+          # We extract only phrases that the checklist quotes as literal forbidden strings
+          # (double-quoted), and only from the "Forbidden Keywords" sections. Backtick
+          # tokens in the checklist are explanatory paths (e.g. `.claude/skills/`) and
+          # must not be treated as forbidden content.
           checklist=checklists/meta-leakage-keywords.md
           if [ ! -f "$checklist" ]; then
             echo "SKIP: $checklist not found"
             exit 0
           fi
-          # Extract backticked phrases from the checklist; require at least one to be absent.
-          mapfile -t phrases < <(grep -oE '`[^`]+`' "$checklist" | tr -d '`' | sort -u)
+          mapfile -t phrases < <(
+            awk '
+              /^## Forbidden Keywords/ {in_block=1; next}
+              /^## / && !/^## Forbidden Keywords/ {in_block=0}
+              in_block {print}
+            ' "$checklist" \
+            | grep -oE '"[^"]+"' | tr -d '"' | sort -u
+          )
+          if [ "${#phrases[@]}" -eq 0 ]; then
+            echo "SKIP: no forbidden phrases extracted from checklist"
+            exit 0
+          fi
+          echo "Scanning .claude/templates/ against ${#phrases[@]} forbidden phrases:"
+          printf '  - %s\n' "${phrases[@]}"
+          # Exclude README.md files — those are contributor-facing docs that
+          # legitimately explain the forbidden keywords; only files that actually
+          # get copied into target projects count as potential leakage.
           fail=0
           for p in "${phrases[@]}"; do
-            if grep -rnF --include='*.md' -- "$p" .claude/templates/ 2>/dev/null; then
-              echo "FAIL: meta-leakage phrase '$p' appears in .claude/templates/ (should not)"
+            if grep -rnF --include='*.md' --exclude='README.md' -- "$p" .claude/templates/ 2>/dev/null; then
+              echo "FAIL: meta-leakage phrase '$p' appears in .claude/templates/ (non-README)"
               fail=1
             fi
           done
