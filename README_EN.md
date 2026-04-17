@@ -1,5 +1,9 @@
 # harness-architect
 
+[![ci](https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/leee880619-commits/ClaudeCode-Harness-Setup-Assistant?include_prereleases&sort=semver)](https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases)
+[![license](https://img.shields.io/github/license/leee880619-commits/ClaudeCode-Harness-Setup-Assistant)](./LICENSE)
+
 > A meta-tool plugin for Claude Code that scans a project and builds a complete harness — CLAUDE.md, settings, rules, agents, playbooks, hooks, MCP — through a 9-phase orchestrated workflow.
 
 > 🇰🇷 Korean: [README.md](./README.md) · 🧭 Internals: [ARCHITECTURE.md](./ARCHITECTURE.md) · 📜 Changes: [CHANGELOG.md](./CHANGELOG.md)

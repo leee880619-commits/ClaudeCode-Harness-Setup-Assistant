@@ -1,5 +1,9 @@
 # harness-architect
 
+[![ci](https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/leee880619-commits/ClaudeCode-Harness-Setup-Assistant?include_prereleases&sort=semver)](https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases)
+[![license](https://img.shields.io/github/license/leee880619-commits/ClaudeCode-Harness-Setup-Assistant)](./LICENSE)
+
 > 프로젝트를 분석해 완벽한 Claude Code 하네스를 9단계로 구축하는 메타-도구 플러그인.
 
 > 📖 영어 버전: [README_EN.md](./README_EN.md) · 🧭 아키텍처 상세: [ARCHITECTURE.md](./ARCHITECTURE.md) · 📜 변경 이력: [CHANGELOG.md](./CHANGELOG.md)
