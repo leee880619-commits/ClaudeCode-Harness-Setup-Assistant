@@ -76,7 +76,7 @@ claude
 세션 내에서:
 
 ```
-/harness-setup
+/harness-architect:harness-setup
 ```
 
 오케스트레이터가 Phase 0부터 진행합니다. 필요한 의사결정(프로젝트 유형, 팀 여부, 훅 범위 등)은 `AskUserQuestion`으로 묶어 묻고, 설정 파일·에이전트·플레이북·훅을 단계별로 생성합니다.
