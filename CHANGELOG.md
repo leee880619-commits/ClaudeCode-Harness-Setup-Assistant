@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-04-18
+
+### Changed
+- **Blackbox QA 서버 종료 지침 강제화** (`strict-coding-6step` 템플릿) — 테스트 종료 후 서버가 좀비 프로세스로 남는 문제를 방지하기 위해 다음 변경 적용:
+  - `agents/qa-blackbox-agent.md` Rules — Cleanup(서버 종료)을 필수 단계로 명시. 종료 대상을 "서버, 자식 프로세스, 브라우저 자동화 세션, 임시 컨테이너"로 구체화. PASS/FAIL·예외·중단 무관 반환 직전 필수 실행. 직접 기동하지 않은 프로세스는 종료 금지. Cleanup 실패 시 PID·포트를 보고서 Regressions 섹션에 명시.
+  - `playbooks/qa-blackbox.md` Workflow — Step 2(환경 준비)에 포트 충돌 사전 확인 및 PID·포트 즉시 기록 의무화 추가. Step 7(Verdict) 직후 Step 8 **"Cleanup (필수)"** 신규 삽입 (docker-compose 포함, 포트 해제 확인, 종료 실패 시 보고 포함). 기존 Step 8 보고서 작성은 Step 9로 이동.
+  - `playbooks/qa-blackbox.md` Guardrails — 동일 종료 지침을 이중 방어로 추가. "직접 기동하지 않은 프로세스 종료 금지" 명시.
+
 ## [0.4.0] - 2026-04-18
 
 ### Added
