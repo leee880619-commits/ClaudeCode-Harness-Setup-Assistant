@@ -71,6 +71,13 @@ Fast Track 완료 목표: 10분 이내.
 - Test setup: jest/vitest/pytest 등
 - Git: .git 존재 여부, .gitignore 내용
 - Existing Claude/Cursor: .claude/, .cursor/, AGENTS.md, CLAUDE.md 존재 여부
+- **복잡도 신호 (경량 트랙 판별용)**:
+  - 소스 파일 수: `find {루트} -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.py" -o -name "*.go" -o -name "*.java" -o -name "*.rs" \) | wc -l`
+  - 최대 디렉터리 깊이: `find {루트} -type d | awk -F/ '{print NF}' | sort -n | tail -1`
+  - 환경 파일 목록: `.env*` 파일 열거 (`.env.staging`, `.env.production` 존재 여부 확인)
+  - CI 워크플로우 수: `.github/workflows/*.yml` 파일 수 카운트
+  - docker-compose 서비스 수: `docker-compose.yml` 존재 시 `services:` 블록 하위 항목 수
+  - 루트 외 추가 `package.json`/`requirements.txt`: `find {루트} -name "package.json" -not -path "*/node_modules/*" | grep -v "^{루트}/package.json" | wc -l`
 ```
 
 스캔 결과를 산출물(`docs/{요청명}/01-discovery-answers.md`)에 구조화하여 기록한다.
@@ -242,8 +249,8 @@ Next Steps에 기록:
   - 기술 스택 (언어, 프레임워크, 빌드/테스트 도구)
   - 솔로/팀 및 인원
   - **에이전트 프로젝트 여부** (Fast-Forward 권장 여부 포함)
-  - 디렉터리 구조 요약 (핵심 경로 목록)
-  - 기존 .claude/.cursor 설정 존재 여부
+  - 디렉터리 구조 요약 (핵심 경로 목록, **소스 파일 수 [N]개**, **최대 디렉터리 깊이 [N]레벨** 포함)
+  - 기존 .claude/.cursor 설정 존재 여부 (**환경 파일 목록 [.env, .env.staging, .env.production 등]**, **CI 워크플로우 수 [N]개**, **docker-compose 서비스 수 [N]개** 또는 없음, **루트 외 추가 package.json 수 [N]개** 포함)
 - [ ] `## Files Generated` — 작성된 모든 파일 절대경로 + 한 줄 설명
 - [ ] `## Escalations` — `[BLOCKING]`/`[ASK]`/`[NOTE]` 태그된 항목 (없으면 "없음")
 - [ ] `## Next Steps` — Phase 3 또는 Fast-Forward 권장

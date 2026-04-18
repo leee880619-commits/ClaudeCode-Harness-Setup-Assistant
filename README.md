@@ -23,6 +23,47 @@
 여러 프로젝트에서 **실제로 잘 작동했던 패턴들**을 바탕으로, 프로젝트를 스캔하고
 필요한 질문만 던진 뒤 하네스 전체를 단계적으로 구축합니다.
 
+## 30초 퀵스타트
+
+```bash
+# 1) 플러그인 설치 (한 번만)
+/plugin marketplace add leee880619-commits/ClaudeCode-Harness-Setup-Assistant
+/plugin install harness-architect@harness-architect-marketplace
+
+# 2) 하네스를 만들 프로젝트 디렉터리에서 Claude 실행
+cd /path/to/your/project
+claude
+
+# 3) 슬래시 커맨드 실행
+/harness-architect:harness-setup
+```
+
+**완료 후 생성되는 파일:**
+
+```
+your-project/
+├── CLAUDE.md                    ← Claude의 프로젝트 이해 기반
+├── .claude/
+│   ├── settings.json            ← 권한·환경변수·훅·MCP
+│   ├── rules/                   ← 항상 적용되는 규칙
+│   ├── agents/                  ← 에이전트 정의 (에이전트 프로젝트)
+│   └── skills/                  ← 재사용 가능한 스킬
+└── docs/{요청명}/               ← 설계 산출물 (참고용)
+```
+
+**예상 소요 시간:**
+
+| 프로젝트 유형 | 경로 | 예상 소요 |
+|---|---|---|
+| 솔로 웹앱·CLI | Fast Track | 10–15분 |
+| 팀 웹앱 | 표준 | 20–45분 |
+| 에이전트 파이프라인 | Fast-Forward | 30–40분 |
+
+(사용자 응답 속도·프로젝트 복잡도에 따라 달라질 수 있습니다)
+
+실제 예시 파일: [`examples/generated/`](./examples/generated/)
+기여자라면: [CLAUDE.md](./CLAUDE.md) 참조
+
 ## 언제 쓰면 좋은가
 
 - **처음부터 제대로** 된 Claude Code 하네스를 구축하고 싶을 때

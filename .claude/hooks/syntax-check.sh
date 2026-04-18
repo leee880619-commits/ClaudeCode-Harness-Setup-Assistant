@@ -84,4 +84,17 @@ if [[ "$TARGET_FILE" == *.md ]]; then
   fi
 fi
 
+# --- Phase 산출물 패턴 감지: docs/*/NN[a-z]?-*.md ---
+# 훅은 "경고 신호 생성" 역할만 수행한다 (exit 0 유지 — 에이전트 Write 차단 금지).
+# 실제 강제 검증은 오케스트레이터가 Phase Gate 진입 전 별도 Bash 호출로 수행한다.
+if [[ "$TARGET_FILE" == *.md ]]; then
+  if echo "$TARGET_FILE" | grep -qE '/docs/[^/]+/[0-9]{2}[a-z]?-[a-z-]+\.md$'; then
+    PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-}"
+    if [[ -n "$PLUGIN_ROOT" && -f "${PLUGIN_ROOT}/scripts/validate-phase-artifact.sh" ]]; then
+      bash "${PLUGIN_ROOT}/scripts/validate-phase-artifact.sh" "$TARGET_FILE" >&2 || \
+        echo "⚠️  Phase 산출물 구조 경고 — 오케스트레이터가 Phase Gate에서 재검증 필요: $TARGET_FILE" >&2
+    fi
+  fi
+fi
+
 exit 0

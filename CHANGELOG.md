@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-18
+
+### Added
+- **경량 트랙 (Phase L)** — 8개 AND 조건(솔로, 웹앱/CLI, 비에이전트, 에이전트·Strict Coding 신호 없음, 소스 파일 ≤100개·깊이 ≤5, 배포 단순, 단일 서비스) 충족 시 Phase 3-6을 단일 에이전트 `phase-setup-lite`가 25~35분에 처리. 신규: `playbooks/setup-lite.md`, `.claude/agents/phase-setup-lite.md`. Phase L 완료 후 "Phase 7-8 스킵 가능" 플래그 기반 분기 명시.
+- **`scripts/validate-phase-artifact.sh`** — Phase 산출물 Markdown 구조 자동 검증. frontmatter 4필드 + 공통 5섹션 + Phase 9 전용 3섹션. Phase Gate에서 오케스트레이터가 명시적 Bash 호출(exit 0/1).
+- **`examples/generated/`** — `web-app-solo`(솔로 React/Node 경량 트랙) + `agent-pipeline`(멀티에이전트 딥리서치) 두 가지 참조 예시. `CLAUDE.md` · `settings.json` · rules/agents 포함. sanitized + 버전 메타데이터.
+- **`README.md` 30초 퀵스타트** — 설치·실행 3단계 + 생성 파일 트리 + 예상 소요 시간 표(트랙별) 삽입.
+- **Phase 9 완료 안내** (`commands/harness-setup.md`) — 완료 후 생성 파일 목록 + 사용법 1~4단계 + 재실행 명령어 출력 지시 추가.
+- **Phase 0 소요 시간 고지** (`commands/harness-setup.md`) — 트랙 결정 직후 예상 소요 시간 자동 출력 지시 추가.
+- **`CONTRIBUTING.md` 예시 파일 업데이트 체크리스트** — sanitization·버전 메타데이터·파일 수 ≤3개 확인 의무화.
+
+### Changed
+- **경량 트랙 판별 조건 5개 → 8개** (`orchestrator-protocol.md`) — 코드베이스 규모(소스 파일 ≤100개·깊이 ≤5), 배포/환경 복잡도(`.env.staging` 없음·CI ≤1개), 서비스 복잡도(단일 서비스) 3개 조건 추가. "솔로=단순" 가정 제거 및 경고 명문화.
+- **`fresh-setup.md` 복잡도 신호 스캔 추가** — 소스 파일 수·최대 디렉터리 깊이·환경 파일 목록·CI 워크플로우 수·docker-compose 서비스 수·루트 외 `package.json` 수 6종 스캔 항목 + Context for Next Phase 숫자 형식 기록 명세.
+- **Phase Gate 검증 3단계 절차** (`orchestrator-protocol.md`) — 파일 존재 → `validate-phase-artifact.sh` Bash 호출(포맷 루프, 1회) → Advisor BLOCK 루프(2회) 명시적 분리. 소환 템플릿에 `[Output Contract]` 자기점검 체크리스트 추가.
+- **`syntax-check.sh`** — Phase 산출물 패턴(`/docs/*/NN-*.md`) 감지 시 `validate-phase-artifact.sh` 경고 신호 출력. exit 0 유지(차단 아닌 경고 전용).
+- **`ARCHITECTURE.md`** — Dimensions 표 Dim 11(모델 드리프트)·Dim 12(파이프라인 리뷰 게이트) 추가. Phase L 행, 경량 트랙 8조건, 복잡도 게이트 기준 `track: lightweight` 기반으로 갱신.
+- **모델 버전 업데이트** — `claude-sonnet-4-5` → `claude-sonnet-4-6`, `claude-opus-4-6` → `claude-opus-4-7` (에이전트 정의, examples 예시 파일, knowledge 참조 예시).
+
 ## [0.3.3] - 2026-04-18
 
 ### Changed
@@ -138,7 +157,10 @@ Initial public release (soft launch).
 - English README (`README_EN.md`) and `examples/` scenarios are incomplete in this release — see Unreleased.
 - Submission to the official Anthropic plugin marketplace has not been completed; installation currently relies on GitHub-hosted marketplace path.
 
-[Unreleased]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/compare/v0.3.3...v0.4.0
+[0.3.3]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/tag/v0.3.3
+[0.3.2]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/tag/v0.3.2
 [0.3.1]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/tag/v0.3.1
 [0.3.0]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/tag/v0.3.0
 [0.2.2]: https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/tag/v0.2.2

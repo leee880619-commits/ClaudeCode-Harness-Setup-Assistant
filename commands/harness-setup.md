@@ -158,6 +158,31 @@ Fast-Forward(Phase 3-5 통합)가 활성화된 경우에도 각 내부 단계의
 | 8 | `.claude/settings.local.json` | 1-2 |
 | 9 | `.gitignore` 업데이트 | 1-2, 9 |
 
+## Phase 9 완료 후 오케스트레이터 출력
+
+Phase 9(`phase-validate`)가 반환을 완료하고 Advisor 리뷰가 통과되면, 오케스트레이터는 다음 안내문을 텍스트로 출력합니다 (AskUserQuestion이 아닌 일반 텍스트):
+
+```
+✅ 하네스 구축 완료! ({요청명})
+
+생성된 파일:
+{phase-validate의 Files Generated 목록 그대로 인용}
+
+이제 어떻게 사용하나요?
+1. 대상 프로젝트 디렉터리에서 `claude` 실행 — CLAUDE.md와 rules가 자동 로딩됩니다.
+2. 생성된 스킬은 `/{skill-name}`으로 호출합니다.
+3. 에이전트가 생성된 경우 Agent(subagent_type: "{agent-name}") 패턴으로 소환합니다.
+4. 훅은 파일 저장(Write/Edit) 또는 세션 종료 시 자동 실행됩니다.
+
+하네스 수정/기능 추가가 필요하면: `/harness-architect:harness-setup {대상경로}` 재실행
+도움말: `/harness-architect:help`
+```
+
+조건부 출력:
+- 에이전트 파일(`.claude/agents/*.md`)이 생성된 경우에만 3번 항목(Agent 소환 패턴)을 포함합니다.
+- 스킬 파일(`.claude/skills/*/SKILL.md`)이 생성된 경우에만 2번 항목을 포함합니다.
+- 훅 파일이 생성된 경우에만 4번 항목을 포함합니다.
+
 ## Language
 
 한국어로 응답. 코드 내용과 파일명은 영어.
@@ -166,7 +191,27 @@ Fast-Forward(Phase 3-5 통합)가 활성화된 경우에도 각 내부 단계의
 
 ## 시작
 
-준비되면 Phase 0부터 시작하세요. Orchestrator Protocol에 정의된 AskUserQuestion 한 번으로 대상 프로젝트 경로와 핵심 인터뷰 질문(이름/유형/팀 규모)을 묶어 받으세요.
+Phase 0 시작 전, 아래 안내문을 텍스트로 출력하세요 (AskUserQuestion이 아닌 일반 텍스트):
+
+```
+대상 프로젝트의 Claude Code 하네스를 구축합니다.
+프로젝트 유형을 알려주시면 최적 경로로 안내합니다.
+중단 시 docs/{요청명}/에 저장되어 나중에 언제든 재개 가능합니다.
+```
+
+AskUserQuestion으로 대상 프로젝트 경로와 핵심 인터뷰 질문(이름/유형/팀 규모)을 묶어 받으세요.
+AskUserQuestion 완료 직후, 결정된 트랙에 따라 아래 텍스트를 출력하세요:
+
+- Fast Track 선택 또는 "빠르게"/"--fast" 키워드: `"Fast Track으로 진행합니다. 예상 소요: 10–15분."`
+- 에이전트 파이프라인 프로젝트: `"에이전트 파이프라인 경로로 진행합니다. 예상 소요: 30–40분."`
+- 그 외 표준 경로: `"표준 경로로 진행합니다. 예상 소요: 20–45분 (프로젝트 복잡도에 따라)."`
+
+### Phase 0 성능 수준 옵션 description 기준
+
+AskUserQuestion으로 성능 수준을 물을 때 options의 description 필드:
+- 경제형: "Haiku 위주. 빠르고 저렴 (Opus 대비 약 1/15 비용). 단순 프로젝트·빠른 프로토타입에 적합."
+- 균형형 (권장): "Sonnet 중심, 복잡 설계 판단만 Opus 사용. 대부분 프로젝트에 최적."
+- 고성능형: "Opus 중심. 균형형 대비 약 5배 비용. 복잡한 에이전트 아키텍처 설계에 적합."
 
 ### 인자로 경로를 받은 경우 (`$ARGUMENTS`)
 

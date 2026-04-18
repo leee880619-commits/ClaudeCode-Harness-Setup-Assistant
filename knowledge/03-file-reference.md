@@ -353,7 +353,7 @@ paths:
 ---
 name: researcher
 description: Use this agent when you need to research topics, search documentation, or analyze large codebases
-model: claude-opus-4-6
+model: claude-opus-4-7
 ---
 
 You are a research specialist. Your job is to...

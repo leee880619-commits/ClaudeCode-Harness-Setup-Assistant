@@ -1,0 +1,25 @@
+{
+  "_comment": "generated-with: harness-architect v0.3.3 | sanitized for public use",
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git log *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Read(*)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(sudo rm *)",
+      "Bash(git push --force *)"
+    ]
+  },
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "_comment": "generated-with: harness-architect v0.3.3 | sanitized for public use",
+  "permissions": {
+    "allow": [
+      "WebSearch(*)",
+      "WebFetch(*)",
+      "Read(*)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(mkdir -p output/reports)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(sudo rm *)",
+      "Bash(git push --force *)"
+    ]
+  },
+  "env": {
+    "OUTPUT_DIR": "output/reports"
+  }
+}
