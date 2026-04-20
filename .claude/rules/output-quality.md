@@ -49,7 +49,7 @@ After generating each file, before writing to disk:
 - 오케스트레이터가 Advisor 리뷰 후 사용자에게 핵심 파일을 제시
 - AskUserQuestion으로 승인/수정 요청
 - 수정 필요 시 서브에이전트를 피드백과 함께 재소환
-- 서브에이전트는 "파일을 보여주고 승인 받으라"는 규칙을 따르지 않는다 (서브에이전트는 AskUserQuestion 사용 불가)
+- 서브에이전트는 AskUserQuestion을 사용할 수 없으므로, 승인 절차는 오케스트레이터가 대행한다
 
 ### 파일 제시 규칙
 - 파일을 FULL로 제시. 한 번에 하나씩.

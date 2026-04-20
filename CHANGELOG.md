@@ -6,6 +6,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-04-20
+
+항상 로드되는 규칙 파일·CLAUDE.md·red-team-advisor 에이전트 정의에서 TMI·중복 정의·과도한 예시 제거. 기능 동작 변경 없음.
+
+### Changed (문서 슬림화)
+- **AskUserQuestion 소유권 중복 제거** (`orchestrator-protocol.md`) — `question-discipline.md`와 이중 정의되어 있던 섹션 본문을 링크 한 줄로 축약. 드리프트 위험원 제거.
+- **컨텍스트 예산 관리 섹션 삭제** (`orchestrator-protocol.md`) — 규칙이 아닌 정보성 서술이라 제거.
+- **Phase별 Context for Next Phase 표 뒤 마무리 문장 / 반환 포맷 섹션별 bullet 설명 제거** (`orchestrator-protocol.md`) — 코드블록 예시로 충분.
+- **"스펙 대비 강화된 조건" 이력성 괄호주석 제거** (`orchestrator-protocol.md`) — 판별 기준은 그대로.
+- **도메인 식별 절차 서술 압축** (`orchestrator-protocol.md`).
+- **Rejected Alternatives 이유 설명 축약** (`orchestrator-protocol.md`).
+- **meta-leakage-guard.md 압축** — 영문 장문 해설을 한국어 핵심 규칙으로 재작성. Self-Check 3문항은 유지.
+- **pipeline-review-gate.md 원칙/리뷰어 예시/Guardrails 서술 압축** — 리뷰어 예시 3종 → 1종 (research-redteam). 도그푸딩 맥락 설명 제거. 규칙 본문은 그대로.
+- **output-quality.md 서브에이전트 실행 모드 플로우 명료화** — 6개 bullet 구조 유지.
+- **CLAUDE.md 중요 원칙 섹션 해설 축약** — 각 원칙 1줄 + 규칙 파일 참조.
+- **red-team-advisor.md Output Format Tagging 예시 축약** — BLOCK 4건/ASK 2건 → 각 1건.
+
+### Preserved (건드리지 않은 것)
+- Phase Gate 필수 산출물 표, 트랙 판별 8조건, Advisor Skip Gate 5조건, Model Confirmation Gate 8단계, 에스컬레이션 래더 3회차, 프론트매터 필드 정의, Dim 1~12 상세 정의, Complexity Gate S/M/L 계약.
+- `scripts/validate-phase-artifact.sh`, `scripts/validate-meta-leakage.sh` 등 외부 검증 스크립트.
+
+### Metrics
+- 항상 로드되는 규칙 파일·CLAUDE.md 합산 ~53줄 절감 (~1,100 tokens). 세션당 API 비용 절감은 미미(Sonnet ~$0.01, Opus ~$0.06)하나 cache write 페널티 완화 + 장기 세션 compaction 트리거 지연 + 규칙 파일 가독성 향상 효과.
+
 ## [0.5.0] - 2026-04-20
 
 실측 비용 데이터 기반의 대대적 비용 최적화 릴리즈. 단일 세션 $12.52 → ~$5 수준을 목표.

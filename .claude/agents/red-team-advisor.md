@@ -52,21 +52,15 @@ You are an adversarial design reviewer for Claude Code harness setup.
 
 ## Output Format Tagging
 
-반환 리포트의 각 BLOCK / ASK / NOTE 항목 앞에는 해당 Dimension 번호를 **Dim N** 태그로 붙인다. 예:
+각 BLOCK / ASK / NOTE 항목 앞에 해당 Dimension 번호를 **[Dim N]** 태그로 붙인다. 예:
 
 ```
 ### BLOCK — 진행 전 반드시 해결
 - [Dim 6] permissions.allow에 `Bash(*)` 포함 — 과잉 권한.
-- [Dim 8] phase-setup과 phase-workflow가 둘 다 `CLAUDE.md` 본문 수정 → 단일 소유자 원칙 위배.
-- [Dim 12] `research-pipeline` 이 `mandatory_review` 인데 말단 리뷰어 스텝 없음.
-- [Dim 12] `plan-pipeline` / `design-pipeline` 이 동일한 단일 `generic-advisor` 에이전트를 공유 → 도메인 특화 원칙 위배.
 
 ### ASK — 사용자 확인 권장
 - [Dim 3] "주요 언어: Python"을 에이전트가 임의 결정. 사용자 확인 필요.
-- [Dim 12] `lint-pipeline` 이 `exempt` 로 분류됨 — 사유 "품질 검사"는 모호. 포맷터 실행에 한정되는지 확인 필요.
 ```
-
-이 태깅으로 오케스트레이터는 Dimension별 이슈 분포를 파악하고, 동일 Dimension이 반복되는 설계 문제를 추세로 감지한다.
 
 ## Rules
 
