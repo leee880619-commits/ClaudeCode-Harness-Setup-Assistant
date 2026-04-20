@@ -217,6 +217,25 @@ Phase 0은 오케스트레이터 직접 처리이므로 Advisor 불필요.
 
 **보안 항목과 파이프라인 리뷰 게이트는 복잡도 게이트와 무관하게 항상 전체 실행한다.** 구체적으로 Advisor의 Dimension 6(보안 권한 적절성), Dimension 12(파이프라인 리뷰 게이트 준수), `final-validation` 플레이북의 Step 5(보안 감사 — `Bash(*)` / `Bash(sudo *)` 등 위험 allow 패턴, 필수 deny 존재, 비밀값 패턴)는 단순 프로젝트·경량 트랙에서도 경량화하지 않는다. 경량화는 "설계 질 평가"에만 적용되며, 보안 가드와 Dim 12 파이프라인 리뷰 가드는 게이트 우회가 금지된다.
 
+### Advisor Skip Gate (풀 트랙 Phase 3-8 한정 비용 절감)
+
+풀 트랙에서도 Phase N 에이전트의 반환이 "매우 깨끗"한 경우 Advisor 전체 실행을 생략하고 **경량 Advisor(Dim 6+12만 검사)** 로 대체한다. 비용 절감 효과: Phase당 ~$0.6~0.8, 세션당 최대 $2.9 (세션당 Advisor 6회 실행 기준).
+
+**Skip Gate 진입 조건 (AND — 하나라도 불충족 시 전체 Advisor 실행)**:
+1. Phase N은 `{3, 4, 7-8}` 중 하나 (Phase 5·6은 설계 품질이 중요하므로 skip 금지)
+2. Phase N 에이전트 산출물의 `## Escalations` 섹션이 "없음" 또는 `[NOTE]` 항목만 존재 (`[BLOCKING]`/`[ASK]` 0건)
+3. 산출물 구조 검증(`validate-phase-artifact.sh`)이 1회차에 exit 0 통과
+4. 이전 Phase들의 누적 Advisor 결과에 미해결 `manual_override` 가 없음
+5. 해당 Phase 산출물이 `review_exempt: false` (Phase 4의 경우) 또는 파이프라인 리뷰 게이트 관련 변경을 도입하지 않음
+
+**경량 Advisor 동작**:
+- `[Scope] Dim 6 (보안) + Dim 12 (파이프라인 리뷰 게이트, Phase 4에만) 만 검사. 나머지 Dimension은 pass 간주.` 프롬프트로 호출
+- Phase 1-2, 2.5, 5, 6, 9는 Skip Gate 대상이 아님 — 항상 전체 Advisor 실행 (설계 질 + 보안 모두 검증)
+
+**감사 기록**: Skip Gate를 통과해 경량 Advisor로 대체했으면 해당 Phase 산출물 frontmatter의 `advisor_status` 뒤에 `:skip-gate` 접미사를 붙인다 (예: `advisor_status: pass:skip-gate`). 이후 재개 시 "경량 검증만 받았음"을 식별 가능.
+
+**솔로 / 에이전트 프로젝트에서의 효과**: 이런 프로젝트는 보통 Phase 3 Escalation이 적어 Skip Gate 진입률이 높다 (예상 40~60%). 이를 통해 기존 풀 트랙의 Advisor 비용 ~$4.3 → ~$2.0 수준으로 경감.
+
 ### 실행 흐름
 
 ```
@@ -247,14 +266,33 @@ Agent(
     [User's Original Request]
     {Phase 0에서 수집한 사용자 요구사항 원문}
 
+    [Confirmed User Decisions]
+    이전 Phase들에서 AskUserQuestion을 통해 사용자가 이미 확정한 결정 목록.
+    Advisor는 이 항목들에 대해 BLOCK/ASK를 발행하지 않는다 (발행 시 재작업을 유발하나 이미 사용자가 승인한 사항).
+    포맷:
+    - [Phase {M}] {결정 주제}: {채택 값} (사유: {사용자 답변 요약})
+    - (예: [Phase 0] 성능 수준: 균형형(Sonnet 중심), [Phase 1-2] 도메인: "딥 리서치", [Phase 5] specialist redteam 6개 신설 대신 체크리스트 통합)
+    오케스트레이터가 Phase 0부터 직전 Phase까지의 AskUserQuestion 답변을 누적하여 전달.
+
     [직전 Phase Summary]
     {N-1 Phase의 Summary ~200단어만 포함. 누적 금지.}
     필요 시 Advisor가 직접 docs/{요청명}/ 의 이전 산출물을 Read하여 상세 컨텍스트 확보.
 
     [Output]
-    Red-team review report (BLOCK/ASK/NOTE 구분)"
+    Red-team review report (BLOCK/ASK/NOTE 구분). Confirmed User Decisions에 포함된 사항은 재질문하지 않는다."
 )
 ```
+
+### [Confirmed User Decisions] 누적 관리
+
+오케스트레이터는 Phase 0부터 모든 AskUserQuestion 응답을 내부 컨텍스트에 누적한다:
+- Phase 0 사전 인터뷰 답변(A1~A5, 도메인 후보 확정)
+- Phase 1-2 Escalation 처리 응답(Strict Coding, code-navigation 등)
+- 각 Phase의 Advisor 결과 처리 응답
+- Model Confirmation Gate 응답
+
+Red-team 소환 직전 이 목록을 구조화하여 `[Confirmed User Decisions]` 필드로 전달한다.
+이렇게 하지 않으면 Advisor가 오케스트레이터 맥락을 보지 못해 이미 결정된 사항에 BLOCK을 발행하고, 루프 재작업 비용(실측 ~$0.8/세션)이 발생한다.
 
 ### Advisor 결과 처리
 

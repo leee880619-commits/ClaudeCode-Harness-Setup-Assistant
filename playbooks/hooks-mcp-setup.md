@@ -38,6 +38,39 @@ Phase 6 산출물의 **Context for Next Phase** 섹션에서 스킬별 allowed_d
 
 **다중 에이전트 프로젝트 기본 권장 훅 (자동 설치 후보):**
 - `ownership-guard.sh` (PreToolUse Write|Edit): 각 에이전트의 쓰기 범위를 SKILL.md allowed_dirs에 따라 강제. 본 어시스턴트 프로젝트의 `.claude/hooks/ownership-guard.sh`를 **대상 프로젝트 컨텍스트로 재작성**하여 템플릿으로 제공 (복사 금지 — 메타 누수). 핵심 구조: `$CLAUDE_TOOL_INPUT`에서 file_path 추출 → 심볼릭 링크/`..` 차단 → allow 리스트와 매칭.
+
+  **필수 포함 — Complexity Gate S 등급 예외 (ORCHESTRATOR_DIRECT, 보안 강화형)**: 대상 프로젝트 워크플로우에 Complexity Gate(workflow-design Step 4-B)가 포함된 경우 아래 블록을 삽입한다. 단순 환경변수 플래그는 세션 시작 시 1회 설정하면 세션 전체가 무방비가 되는 순환 고리 취약점이 있으므로 **per-task 토큰 + 민감 파일 블랙리스트 + deny 선처리** 3중 가드로 구성한다.
+
+  ```bash
+  # 1) deny 패턴 선처리 — S 등급 여부와 무관하게 파괴적 액션은 항상 차단
+  case "$FILE_PATH" in
+    *.env|*.env.*|*/.env|*/.env.*|*/.git/*|*/secrets/*|*/credentials/*|*/private-keys/*)
+      echo "denied: sensitive path ($FILE_PATH) — S-grade override disabled for sensitive paths" >&2
+      exit 2
+      ;;
+  esac
+
+  # 2) S-grade Complexity Gate 예외 — per-task 토큰 매칭 필수
+  # 토큰 생성: Complexity Gate 판정 시점에 사용자가 AskUserQuestion으로 S 등급을 승인하면
+  # 오케스트레이터가 $(uuidgen || head -c 16 /dev/urandom | xxd -p) 로 1회성 토큰을 발급하고,
+  # docs/complexity-gate.lock 파일에 해시만 기록한 뒤 해당 작업 완료 시 파일을 삭제한다.
+  if [ -n "${ORCHESTRATOR_DIRECT_TOKEN:-}" ] && [ -f docs/complexity-gate.lock ]; then
+    expected_hash=$(cat docs/complexity-gate.lock 2>/dev/null)
+    actual_hash=$(printf '%s' "$ORCHESTRATOR_DIRECT_TOKEN" | sha256sum | awk '{print $1}')
+    if [ "$expected_hash" = "$actual_hash" ]; then
+      exit 0
+    fi
+    echo "denied: ORCHESTRATOR_DIRECT_TOKEN mismatch" >&2
+    exit 2
+  fi
+  ```
+
+  **보안 설계 근거**:
+  - 1) deny 선처리가 `.env` · `.git/config` · secrets 경로를 S 등급 여부와 무관하게 **항상** 차단 (ownership-guard가 유일 방어선인 경로들).
+  - 2) 단순 `ORCHESTRATOR_DIRECT=1` 환경변수는 메인 세션 또는 프롬프트 인젝션으로 자가 설정 가능한 취약점이 있어 per-task 토큰 + 락 파일 기반으로 변경. 락 파일 생성/해제 시점을 Complexity Gate 판정 플로우가 유일하게 소유하도록 오케스트레이터 프로토콜에 명시.
+  - 3) S 등급 판정은 반드시 AskUserQuestion 경유 사용자 명시 승인 — "작은 작업인 것 같으니 직접 가겠다" 같은 메인 세션 자가 판단은 금지.
+
+  이 예외가 없거나 보안 설계를 누락하면 S 등급 작은 패치(파일 5개 이하)도 에이전트 소환이 강제되어 실측 $18/세션 수준의 비용이 발생하거나, 반대로 보안이 형해화된다.
 - `syntax-check.sh` (PostToolUse Write|Edit): JSON parse, YAML frontmatter 닫힘, settings.json 위험 패턴 감지. 동일하게 템플릿으로 제공.
 
 두 훅 모두 Escalations에 `[ASK] 기본 훅 설치 제안 — 설치/스킵` 항목으로 기록. 단독 에이전트나 솔로 프로젝트에서는 훅을 **자동 제안하지 않는다**.

@@ -161,6 +161,64 @@ Phase 1 인터뷰 결과를 기반으로 프로젝트 유형을 판별한다.
                      [Integration]
 ```
 
+### Step 4-B: Complexity Gate 필수 포함 (멀티 에이전트 / strict-coding-6step / 대규모 코드베이스)
+
+**적용 대상 확대 기준 (OR — 하나라도 충족 시 필수)**:
+- 멀티 에이전트 / 에이전트 파이프라인 / 오케스트레이터 패턴 채택 (프로젝트 유형이 "에이전트 파이프라인")
+- Step 0에서 strict-coding-6step 채택 (웹앱이더라도 복잡 코딩 6단계 워크플로우면 해당)
+- 코드베이스 규모 LoC ≥ 5,000 또는 파일 ≥ 100개
+
+실측으로 비용 $18.29 오버런이 발생한 세션이 바로 "복잡 웹앱의 보안 패치 4줄" 이었다 — 웹앱 타입이라고 Complexity Gate에서 제외하면 목적을 달성하지 못한다. 초기 설계 시 "에이전트 파이프라인 한정" 으로 좁혔던 것을 이번 단계에서 수정.
+
+위 OR 조건 중 하나라도 해당되면 **반드시** 워크플로우 최상단에 "STEP -1: Complexity Gate (태스크 크기 분류)" 를 추가한다. 이 게이트 누락은 작은 작업에도 풀 파이프라인이 강제되어 단순 패치 비용이 수십 배로 증가하는 구조적 결함이다.
+
+**판정 주체 (보안 Dim 6 순환 고리 방지)**:
+- 메인 세션은 "S/M/L 등급 추정"만 수행하고 **자가 확정 금지**.
+- 등급 확정은 반드시 AskUserQuestion으로 사용자 명시 승인을 받는다 (`header: 작업 등급`, 옵션: `S (직접 구현)` / `M (단축 파이프라인)` / `L (전체 파이프라인)` / `메인이 제안한 등급 유지`).
+- S 등급 승인 시점에 오케스트레이터가 per-task 토큰(`ORCHESTRATOR_DIRECT_TOKEN`)을 발급하고 `docs/complexity-gate.lock` 에 sha256 해시를 기록. 작업 완료 시 락 파일 삭제. (상세: hooks-mcp-setup.md Step 2)
+- **판정 기본값**: 메인 세션이 확신 못 하면 **M**. 절대 자가 S등급 선언 금지.
+
+**Complexity Gate 스펙** (대상 프로젝트의 `orchestrator-workflow.md` 또는 해당하는 워크플로우 규칙 파일 최상단에 그대로 삽입):
+
+```
+## STEP -1: Complexity Gate (태스크 크기 분류)
+
+작업 시작 전 다음 기준으로 경로를 선택한다.
+
+| 등급 | 기준 | 경로 |
+|------|------|------|
+| S (소형) | 파일 5개 이하 + 해법 자명 + 외부 API/신규 의존성 없음 | 메인 세션 직접 구현 허용 (ORCHESTRATOR_DIRECT=1) |
+| M (중형) | 파일 5~15개 또는 설계 결정 1~2개 | 단축 파이프라인 (planner 병합 → implementer → QA) |
+| L (대형) | 신규 기능, 외부 라이브러리 도입, 복잡 의존성, UI 재구성 | 전체 파이프라인 |
+
+S 등급은 ownership-guard 우회를 자동 허용 (ORCHESTRATOR_DIRECT=1 환경변수).
+등급 판단이 애매하면 상향(M→L, S→M) 기본. 다운그레이드는 사용자 명시 요청 시에만.
+```
+
+Escalations에 `[ASK] Complexity Gate 기본 임계값 확정 — 기본 제안 유지 / 사용자 커스텀` 기록하여 오케스트레이터가 사용자에게 임계값을 재확인한다.
+
+Phase 4(pipeline-design)에는 "S 등급 경로 = 에이전트 소환 0, M 등급 경로 = 에이전트 소환 3회 이하, L 등급 경로 = 전체 파이프라인"을 제약으로 전달한다.
+
+### Step 4-C: Specialist Review 트리거 조건 강화 (풀 파이프라인 설계 시)
+
+풀 파이프라인(L 등급) 안에 Specialist Review(design/ux/security) 가 포함되는 경우, 무조건 병렬 호출을 지양한다. 다음 **AND 조건을 모두 충족할 때만** 트리거되도록 Phase 4에 제약을 전달:
+
+1. 등급 L (Complexity Gate에서 L로 분류됨)
+2. `src/components/` 또는 `src/app/` (또는 대상 프로젝트의 UI 디렉터리 equivalent) 파일이 변경 범위에 포함됨
+3. plan.md / research.md 등의 상위 설계 산출물에 `[design-review]` / `[security-review]` / `[ux-review]` 플래그가 명시됨
+
+S/M 등급 작업에는 Specialist 소환 없이 QA(whitebox/blackbox) 단독으로 진행. 보안 패치·config 변경·타입 수정은 QA 단독으로 충분(실측으로 Specialist 3종이 loop-back 포함 전체 비용의 ~30% 차지).
+
+### Step 4-D: Handoff 문서 분리 원칙 (세션 간 컨텍스트 유지가 필요한 프로젝트)
+
+대상 프로젝트가 세션 간 상태를 handoff 문서로 전달하는 경우(예: `docs/product/next-session-handoff.md`), CLAUDE.md 또는 해당 규칙 파일에 다음 원칙을 명시한다:
+
+1. **현재 상태 파일 (`next-session-handoff.md`)**: 최신 상태 + 직전 1개 세션 요약만 보관. 목표 10KB 이내
+2. **히스토리 아카이브 (`session-history.md`)**: 오래된 세션 요약을 누적. CLAUDE.md @import 대상이 **아니며**, 필요 시에만 명시적으로 Read
+3. **N 세션 경과 시 이관 규칙**: handoff의 prev 항목이 2개를 초과하면 가장 오래된 항목을 `session-history.md` 로 이동
+
+이 원칙 누락 시 handoff 파일이 누적 증가하여 매 세션 cache write 비용이 지속 상승한다(실측: 60KB handoff → 세션당 cache write 추가 비용 ~$2~3).
+
 ### Step 5: 워크플로우를 대상 프로젝트 CLAUDE.md에 기록
 
 워크플로우를 대상 프로젝트의 docs/{요청명}/02-workflow-design.md에 저장한다.

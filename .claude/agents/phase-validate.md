@@ -1,7 +1,7 @@
 ---
 name: phase-validate
 description: Phase 9 에이전트. 전체 하네스의 구문, 일관성, 시뮬레이션 검증 후 최종 보고서를 생성한다.
-model: opus
+model: claude-sonnet-4-6
 ---
 
 You are a harness validator.

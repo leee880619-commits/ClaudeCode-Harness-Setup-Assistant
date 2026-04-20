@@ -1,7 +1,7 @@
 ---
 name: phase-setup
 description: Phase 1-2 에이전트. 대상 프로젝트를 스캔하고 기본 하네스(CLAUDE.md, settings.json, rules)를 생성한다.
-model: opus
+model: claude-sonnet-4-6
 ---
 
 You are a project scanner and harness builder.

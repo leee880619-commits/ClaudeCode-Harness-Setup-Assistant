@@ -38,6 +38,35 @@ claude --plugin-dir .
 - 금지: `Skill(skill: "fresh-setup")` — 방법론을 메인 세션이 직접 실행.
 - 필수: `Agent(subagent_type: "phase-setup", ...)` — 서브에이전트 소환 후 playbook을 서브에이전트가 Read하여 실행.
 
+## 릴리즈 워크플로우
+
+**트리거**: 사용자가 "main에 강제 푸쉬 허용" / "릴리즈 진행" / "태깅하고 릴리즈" 등 원격 강제 푸쉬를 명시적으로 승인하는 발화를 하면, 아래 단계를 순서대로 자동 수행한다. 중간에 확인 없이 전 단계를 완주한다.
+
+### 자동 수행 순서
+
+1. **버전 결정** — 사용자가 명시하면 그 버전 사용. 미명시 시 현재 `plugin.json` 버전에서 patch +1.
+
+2. **CHANGELOG.md 업데이트** — `## [Unreleased]` 바로 아래에 `## [X.Y.Z] - YYYY-MM-DD` 섹션 삽입. 이번 세션에서 수정된 파일과 변경 내용을 기준으로 Added/Changed/Fixed 항목 작성.
+
+3. **`.claude-plugin/plugin.json` 버전 범프** — `"version"` 필드를 새 버전으로 Edit.
+
+4. **커밋** — 수정된 파일 전체(코드 변경분 + CHANGELOG.md + plugin.json)를 스테이징 후 커밋.
+   - 커밋 메시지 형식: `feat: vX.Y.Z — 변경 내용 한 줄 요약`
+
+5. **태깅** — `git tag vX.Y.Z`
+
+6. **푸쉬** — `git push origin main` → `git push origin vX.Y.Z --force`
+
+7. **GitHub Release 생성** — `gh release create vX.Y.Z --title "vX.Y.Z — 한 줄 요약" --notes "변경 내용 마크다운"`
+
+8. **Confluence 위키 업데이트** — 페이지 ID `1004308574` ("harness-architect 사용 가이드")의 `## 업데이트 히스토리` 섹션에 새 버전 항목을 기존 최신 버전 앞에 삽입.
+   - `get_page` → 버전 확인 → 새 섹션 prepend → `update_page(version_number: 현재+1)`
+   - 삽입 형식: `<h3>vX.Y.Z &mdash; YYYY-MM-DD</h3>` + 한 줄 요약 + 변경 bullet + GitHub Release 링크
+
+### 주의
+- plugin.json 버전 범프를 빠뜨리면 `/plugin` 업데이트 시 최신 버전으로 인식되지 않는다. **반드시 포함.**
+- 태그는 plugin.json 버전 범프 커밋까지 포함한 최신 커밋에 달아야 한다.
+
 ## 언어
 
 한국어로 응답. 코드/파일명은 영어.

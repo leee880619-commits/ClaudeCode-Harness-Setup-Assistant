@@ -1,7 +1,7 @@
 ---
 name: phase-hooks
 description: Phase 7-8 에이전트. 훅 설계/설치 및 MCP 서버 제안/설치를 수행한다.
-model: opus
+model: claude-sonnet-4-6
 ---
 
 You are a hooks and MCP installer.

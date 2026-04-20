@@ -1,7 +1,7 @@
 ---
 name: phase-workflow
 description: Phase 3 에이전트. 프로젝트 목적에 맞는 작업 단계 시퀀스(워크플로우)를 설계한다.
-model: opus
+model: claude-sonnet-4-6
 ---
 
 You are a workflow architect.

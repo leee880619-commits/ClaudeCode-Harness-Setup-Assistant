@@ -6,6 +6,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-20
+
+실측 비용 데이터 기반의 대대적 비용 최적화 릴리즈. 단일 세션 $12.52 → ~$5 수준을 목표.
+
+### Changed (비용 최적화 — 이 플러그인 자체)
+- **Red-team Advisor 모델 다운그레이드** (`red-team-advisor.md`) — `model: opus` → `model: claude-sonnet-4-6`. 6회 Advisor 실행이 전체 비용의 ~34%를 차지하던 최대 드라이버 제거. 예상 절감 ~$3.4/세션. 설계 질 검증보다 체크리스트·패턴 매칭이 주 업무이므로 Sonnet으로 충분.
+- **단순 Phase 에이전트 모델 다운그레이드** — `phase-setup`, `phase-workflow`, `phase-hooks`, `phase-validate` 를 `opus` → `claude-sonnet-4-6` 로 변경. 스캔·워크플로우 스텝 나열·훅 wiring·구조 검증은 Sonnet으로 충분. 예상 절감 ~$3.2/세션. 복잡 설계를 요하는 `phase-pipeline`/`phase-team`/`phase-skills`/`phase-domain-research` 는 Opus 유지.
+
+### Added (Advisor 정확도 개선)
+- **[Confirmed User Decisions] 필드** (`orchestrator-protocol.md`) — Red-team 소환 템플릿에 이전 Phase들의 AskUserQuestion 응답 누적 목록 전달. Advisor가 이미 사용자가 확정한 사항에 BLOCK/ASK를 잘못 발행하는 구조적 문제(실측 ~$0.8/세션 재작업) 해결. 오케스트레이터는 Phase 0 사전 인터뷰·Escalation 처리·Model Confirmation Gate 응답을 누적해 전달 의무.
+- **Advisor Skip Gate** (`orchestrator-protocol.md`) — 풀 트랙 Phase 3/4/7-8 한정, 에이전트 반환 Escalations가 `[BLOCKING]`/`[ASK]` 0건이고 산출물 구조 검증 1회 통과 시 경량 Advisor(Dim 6 보안 + Dim 12 파이프라인 리뷰 게이트만)로 대체. Phase 5·6(설계 중요)·Phase 1-2·2.5·9(전체 검증 필요)는 스킵 금지. 예상 절감 ~$1.5~2.9/세션 (Skip Gate 진입률에 비례).
+
+### Added (대상 프로젝트 하네스 생성 품질)
+- **Complexity Gate S/M/L 필수 포함** (`workflow-design.md` Step 4-B) — 에이전트 파이프라인 / 멀티 에이전트 프로젝트는 워크플로우 최상단에 STEP -1 Complexity Gate(태스크 크기 S/M/L 분류)를 **반드시** 포함하도록 강제. 누락 시 보안 패치 4줄 작업도 풀 파이프라인 강제되어 실측 $18.29 수준의 오버비용 발생. S 등급은 메인 세션 직접 편집 허용(`ORCHESTRATOR_DIRECT=1`).
+- **ORCHESTRATOR_DIRECT 예외 필수 포함** (`hooks-mcp-setup.md` Step 2) — 대상 프로젝트 `ownership-guard.sh` 템플릿에 S 등급 early-exit 블록 삽입을 필수화. Complexity Gate와 짝을 이뤄 동작. 파괴적 패턴(`rm -rf /` 등)은 계속 차단되도록 위치 지정.
+- **Specialist Review 트리거 조건 강화** (`workflow-design.md` Step 4-C) — L 등급 + UI 디렉터리 변경 + 명시적 플래그 3조건 AND 시에만 design/ux/security review 병렬 호출. S/M 등급은 QA 단독. 실측으로 Specialist 3종이 loop-back 포함 L 등급 비용의 ~30% 점유.
+- **Handoff 문서 분리 원칙** (`workflow-design.md` Step 4-D) — 세션 간 상태 전달 문서는 `next-session-handoff.md`(최신+직전 1개, 10KB 이내) + `session-history.md`(아카이브, @import 비대상) 분리. 누적 증가 방지. 실측으로 60KB 단일 파일 → 세션당 cache write ~$2~3 추가 비용.
+
+### Technical Notes
+- 다운그레이드 대상 4개 Phase 에이전트(phase-setup/phase-workflow/phase-hooks/phase-validate)는 작업 성격이 스캔·나열·wiring·구조 검증 중심이므로 Sonnet으로 충분하다고 판단. **A/B 비교 실측은 아직 수행되지 않음** — v0.5.x 기간 중 누적 세션 데이터로 재검증 예정. 품질 저하가 관측되면 Model Confirmation Gate로 개별 재조정 가능.
+- Red-team Advisor 다운그레이드는 Dim 1~12 체크리스트 기반 검증이라 패턴 매칭 성격이 강하다고 판단했으나, **긴 산출물(>500줄) 검토에서 section miss 가능성**이 자체 검증 과정에서 관측됨. 실사용 중 false negative가 누적되면 재조정 필요.
+- Skip Gate는 `advisor_status: pass:skip-gate` 접미사로 감사 추적 가능. 재개 시 "경량 검증만 받았음" 식별.
+- ORCHESTRATOR_DIRECT는 단일 환경변수가 아니라 **per-task 토큰 + 민감 경로 블랙리스트 + 사용자 명시 승인** 3중 가드로 설계 (hooks-mcp-setup.md Step 2 참조).
+
 ## [0.4.1] - 2026-04-18
 
 ### Changed
