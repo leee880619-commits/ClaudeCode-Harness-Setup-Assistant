@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-04-20
+
+CI 오탐지 수정 — `red-team-advisor.md` 환경 이식성 예시 경로가 플러그인 내 하드코딩 경로 검사 grep에 걸리는 문제를 해소.
+
+### Fixed
+- **CI false-positive 수정** (`.claude/agents/red-team-advisor.md`) — Dim 13 "환경 이식성" 체크 항목의 예시 경로(`/Users/`, `/home/`, `C:\Users\`)가 CI `Verify plugin-internal references use ${CLAUDE_PLUGIN_ROOT}` 단계의 grep 패턴(`/Users/[A-Za-z0-9._-]`, `C:\\Users`)에 오탐지되던 문제 수정. 예시를 플레이스홀더 형식(`/Users/{user}/`, `/home/{user}/`, `%USERPROFILE%`)으로 변경하여 의미 보존하면서 false-positive 제거.
+
 ## [0.5.2] - 2026-04-20
 
 런타임·운영 관점의 하네스 가드를 대규모로 추가. 세션 연속성·실패 복구 종료 조건·산출물 버저닝·에이전트-스킬 이중 관리 부채·크로스 워크플로우 구조 중복·절대 경로 이식성을 설계(Phase 3·4) / 검증(Phase 9) / 사후 감사(신규 커맨드) 세 층위에서 교차 점검하도록 체계화.
