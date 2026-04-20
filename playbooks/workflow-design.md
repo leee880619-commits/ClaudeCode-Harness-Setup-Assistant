@@ -219,6 +219,22 @@ S/M 등급 작업에는 Specialist 소환 없이 QA(whitebox/blackbox) 단독으
 
 이 원칙 누락 시 handoff 파일이 누적 증가하여 매 세션 cache write 비용이 지속 상승한다(실측: 60KB handoff → 세션당 cache write 추가 비용 ~$2~3).
 
+### Step 4-E: Session Recovery Protocol 명시 (다중 에이전트·오케스트레이터 프로젝트)
+
+오케스트레이터 패턴 또는 다중 에이전트 워크플로우는 세션 리셋(/clear·프로세스 종료·장시간 중단) 시 상태 소실 리스크가 있다. 다음 중 하나 이상에 해당하면 산출물에 **Session Recovery Protocol** 섹션을 필수 포함한다:
+
+- 리더가 메인 세션으로 지정된 경우 (D-1 오케스트레이터 패턴)
+- 워크플로우 스텝이 5개 이상이거나 Phase 간 상태 전달이 필요한 경우
+- 세션 간 handoff 문서(`docs/`, `_state.json` 등)를 사용하는 경우
+
+**섹션 내용 요구사항**:
+1. **상태 체크포인트 위치**: 상태를 저장하는 파일 경로와 갱신 시점 (예: 각 스텝 완료 시 `docs/{요청명}/{NN}-*.md` 저장)
+2. **재개 감지 로직**: 새 세션 시작 시 어느 스텝부터 재개할지 판별 방법 (예: 최신 산출물 번호 + frontmatter `status` 필드 확인)
+3. **리더 교체 프로토콜**: 메인 세션이 리더이면, 세션 교체 시 새 세션이 컨텍스트를 재구성하는 절차 (체크포인트 파일 Read → 상태 요약 재생성)
+4. **실패 시나리오**: 체크포인트 쓰기 중 실패 / 상태 파일 파손 / 충돌 감지 시 복구 방법
+
+Escalation 기록: 위 조건에 해당하는데 사용자가 복구 프로토콜을 원치 않는 경우 `[NOTE] Session Recovery 미정의 — 세션 중단 시 처음부터 재실행 필요` 로 기록.
+
 ### Step 5: 워크플로우를 대상 프로젝트 CLAUDE.md에 기록
 
 워크플로우를 대상 프로젝트의 docs/{요청명}/02-workflow-design.md에 저장한다.
@@ -237,11 +253,13 @@ Next Steps에 "Phase 4: pipeline-design 에이전트 소환 권장"을 기록한
 - [ ] `## Summary` (~200단어)
 - [ ] `## Workflow Steps` — 각 스텝: 이름, 목적, 입력, 출력, 완료 조건, 관련 도메인
 - [ ] `## Dependencies` — 순차/병렬/반복/게이트 의존성 다이어그램
+- [ ] `## Session Recovery Protocol` — Step 4-E 조건 해당 시 필수. 체크포인트 위치·재개 감지 로직·리더 교체 프로토콜·실패 시나리오 4개 소항목 포함. 미해당 시 "단일 세션 완결 워크플로우 — 복구 프로토콜 미필요" 한 줄 명시.
 - [ ] `## Context for Next Phase` — Phase 4가 필요한 정보:
   - 스텝 목록 (이름, 사용자 트리거 여부)
   - 스텝 간 의존성 맵
   - 각 스텝의 완료 조건
   - 사용자 승인 게이트 위치 (해당 시)
+  - 세션 복구 요구사항 (Step 4-E 적용 여부)
 - [ ] `## Files Generated`
 - [ ] `## Escalations`
 - [ ] `## Next Steps` — "Phase 4: pipeline-design 에이전트 소환 권장"

@@ -49,6 +49,15 @@ You are an adversarial design reviewer for Claude Code harness setup.
       - M 등급 경로에 Specialist Review(design/ux/security) 소환이 포함되어 있으면 BLOCK (M 등급에서는 금지)
       - L 등급 Specialist Review 트리거가 workflow-design Step 4-C의 3조건 AND(L등급 + UI 디렉터리 변경 + 명시 플래그)를 모두 명시했는가
       - S/M/L 등급의 **판정 주체**가 명시됐는가 — 메인 세션 자가 판정 금지, "사용자 명시 승인" 경유 필수 (Dim 6 보안 순환 고리 방지)
+13. (Dim 13 — 상태 지속성 & 실패 복구 & 운영 부채, **대상 프로젝트 자체가 에이전트 파이프라인/오케스트레이터 구조를 채택한 경우에 한해 Phase 3·4·5·6 산출물에 적용** — 일반 웹앱/CLI 하네스 설계에는 스킵하여 메타 누수 방지)
+    - **상태 지속성 (Phase 3)**: `## Session Recovery Protocol` 섹션 + 4개 소항목(체크포인트 위치·재개 감지 로직·리더 교체 프로토콜·실패 시나리오)이 채워졌는가? 스크립트는 헤더 존재만 확인하므로 Advisor가 **1차 품질 게이트**
+    - **실패 복구 종료 조건 (Phase 4)**: `## Failure Recovery & Artifact Versioning` 섹션에 각 파이프라인별 `max_retries`·에스컬레이션 분기·timeout 명시 여부. "재설계 요청", "Builder에게 넘김" 등 행위자·조건·종료 없는 개방형 서술은 `[BLOCK]` (잠재적 무한 루프)
+    - **리더 연속성 가정 (Phase 3·4)**: "리더 = 메인 세션" 가정 시 세션 교체 시 컨텍스트 재구성 절차 문서화 여부
+    - **환경 이식성 (전 Phase)**: 설계 문서·CLAUDE.md에 `/Users/`, `/home/`, `/mnt/c/Users/`, `C:\Users\` 같은 머신 특정 절대 경로 하드코딩 여부
+    - **W5 — 에이전트-스킬 이중 관리 (Phase 5·6)**: 방법론이 `.claude/agents/*.md` 인라인 + `playbooks/*.md` 양쪽 중복 정의되거나 스킬 파일에 Identity/Persona 중복 존재 시 `[ASK]` (Agent-Playbook 분리 원칙 위반)
+    - **W6 — 산출물 덮어쓰기 (Phase 4)**: 각 파이프라인 버저닝 전략(`overwrite_ok`/`timestamp`/`version`/`archive`) 명시 여부. `overwrite_ok` 시 idempotency 사유 명시 필수
+    - **경량화 조건**: 경량 트랙 단순 프로젝트는 상태 지속성·리더 연속성·W5를 NOTE 수준으로 완화 가능. W6(덮어쓰기)는 데이터 손실 리스크이므로 **완화 금지**
+    - 세부 기준 및 등급 예시는 `playbooks/design-review.md` Dimension 13 본문 참조
 
 ## Output Format Tagging
 

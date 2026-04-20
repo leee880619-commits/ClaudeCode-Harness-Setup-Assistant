@@ -56,6 +56,24 @@ if [[ "$BASE" == "07-validation-report.md" ]]; then
   done
 fi
 
+# --- Phase 3 전용 운영 가드 섹션 (풀 트랙 워크플로우 설계 산출물) ---
+# 경량 트랙 산출물(02-lite-design.md)은 단일 패스이므로 제외 (setup-lite.md Output Contract의
+# session_recovery: not_applicable 필드로 대체 명시됨).
+# 일반 웹앱/CLI 프로젝트에서도 섹션 헤더만 요구 — 본문에 "단일 세션 완결 — 복구 프로토콜 미필요"
+# 한 줄로 도피 가능. 다중 에이전트 여부 판정은 Advisor Dim 13이 품질 검증.
+if [[ "$BASE" == "02-workflow-design.md" ]]; then
+  if ! grep -qE "^## Session Recovery Protocol$" "$FILE"; then
+    err "Phase 3 필수 섹션 누락: ^## Session Recovery Protocol$ — ${BASE} (단일 세션 완결 시 해당 섹션 아래 한 줄 명시로 통과)"
+  fi
+fi
+
+# --- Phase 4 전용 운영 가드 섹션 (파이프라인 실패 복구 완결성) ---
+if [[ "$BASE" == "03-pipeline-design.md" ]]; then
+  if ! grep -qE "^## Failure Recovery & Artifact Versioning$" "$FILE"; then
+    err "Phase 4 필수 섹션 누락: ^## Failure Recovery & Artifact Versioning$ — ${BASE} (각 파이프라인별 max_retries·timeout·버저닝 전략 품질은 Advisor Dim 13이 검증)"
+  fi
+fi
+
 # --- Escalations 섹션 비어있음 경고 (fail 올리지 않음) ---
 # "없음" 미기록 시 오케스트레이터가 Escalation 없음으로 오판할 수 있음
 ESCAL_CONTENT="$(awk '/^## Escalations$/{p=1;next} /^## /{p=0} p{print}' "$FILE" | tr -d '[:space:]')"

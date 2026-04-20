@@ -6,6 +6,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-04-20
+
+런타임·운영 관점의 하네스 가드를 대규모로 추가. 세션 연속성·실패 복구 종료 조건·산출물 버저닝·에이전트-스킬 이중 관리 부채·크로스 워크플로우 구조 중복·절대 경로 이식성을 설계(Phase 3·4) / 검증(Phase 9) / 사후 감사(신규 커맨드) 세 층위에서 교차 점검하도록 체계화.
+
+### Added
+- **`/harness-architect:ops-audit` 커맨드 신설** — 기존 하네스 사후 런타임 감사. 5개 Dimension(A: 세션 연속성, B: 실패 복구 완결성, C: Agent-Skill 이중 관리, D: 산출물 덮어쓰기, E: 크로스 워크플로우 구조 중복). RISK-HIGH/MED/LOW 등급 보고서. 파일 수정 금지 (read-only). 신규: `commands/ops-audit.md`, `playbooks/ops-audit.md`, `.claude/agents/ops-auditor.md`. `plugin.json` agents 배열에 등록.
+- **Advisor Dim 13 신설** (`.claude/agents/red-team-advisor.md`, `playbooks/design-review.md`) — "상태 지속성 & 실패 복구 & 운영 부채". **대상 프로젝트 자체가 에이전트 파이프라인/오케스트레이터 구조인 경우에 한해** Phase 3·4·5·6 산출물에 적용 (일반 웹앱/CLI 하네스 설계 산출물에는 스킵하여 메타 누수 방지). 경량 트랙은 상태 지속성·리더 연속성·W5를 NOTE 수준으로 완화하되 W6(덮어쓰기)는 완화 금지.
+- **Advisor Dim 12 본문 신설** (`playbooks/design-review.md`) — "파이프라인 리뷰 게이트 준수". `.claude/rules/pipeline-review-gate.md` 규약을 참조 형식으로 요약하여 Phase 4·5·9 각각의 검사 체크리스트만 인라인. 래더·분류 기준 본문은 규약 파일이 SSoT.
+- **Phase 3 산출물 필수 섹션**: `## Session Recovery Protocol` — 체크포인트 위치·재개 감지 로직·리더 교체 프로토콜·실패 시나리오 4개 소항목. `playbooks/workflow-design.md` Step 4-E 신설.
+- **Phase 4 산출물 필수 섹션**: `## Failure Recovery & Artifact Versioning` — 각 파이프라인별 `max_retries`·timeout·에스컬레이션 분기·버저닝 전략(overwrite_ok/timestamp/version/archive). `playbooks/pipeline-design.md` Step 4.6 신설.
+- **Phase 9 Step 15·16 신설** (`playbooks/final-validation.md`) — 절대 경로 하드코딩 감지(`/Users/`, `/home/`, `/mnt/c/Users/`, `C:\Users\` 패턴, 코드 예시 블록 제외), 스킬·플레이북 간 Jaccard 70% 이상 구조 중복 감지.
+- **`scripts/validate-phase-artifact.sh` 확장** — 파일명 기반 조건부 필수 섹션 검증. `02-workflow-design.md` → `## Session Recovery Protocol`, `03-pipeline-design.md` → `## Failure Recovery & Artifact Versioning`. 경량 트랙 `02-lite-design.md`는 제외.
+- **경량 트랙 공식 운영 가드 선언** (`playbooks/setup-lite.md`) — YAML frontmatter에 `session_recovery: not_applicable` + `artifact_versioning: idempotent` 고정 필드. ops-audit Dim A·D가 이 필드를 감지하여 RISK-LOW 자동 분류 (경량 트랙 사후 감사 오판정 방지). Summary 서두에 "단일 에이전트 단일 패스 — 세션 중단 시 처음부터 재실행 (25~35분)" 명시 필수.
+- **harness-audit ↔ ops-audit 역할 경계 공식화** (`playbooks/harness-audit.md` Guardrails) — harness-audit은 설계·구성 진단, 런타임/운영 부채 5개 Dimension은 ops-audit에 위임. Phase 3 진단 리포트 말미에 `/harness-architect:ops-audit` 실행 권장 1줄 안내.
+- **커맨드 간 양방향 See also** (`commands/ops-audit.md` description + 본문 "관련 커맨드" 표) — harness-setup/harness-audit/ops-audit 3개의 역할·실행 시점·출력 등급 매트릭스.
+- **RISK ↔ BLOCK 등급 매핑 명시** (`commands/ops-audit.md`) — RISK-HIGH ≈ 시급 권장(진행 중단 아님), red-team-advisor BLOCK은 빌드 중 게이팅 전용으로 사후 감사에 대응 개념 없음을 설명.
+
+### Changed
+- **소요 시간 고지 확장** (`commands/harness-setup.md`) — 에이전트 파이프라인/표준 경로에 "Advisor 재검토 발생 시 Phase당 +5~8분 추가" 각주 추가. Phase 3·4 운영 가드 섹션 누락 시 Dim 13 BLOCK 루프로 최악 60분+ 소요 가능함을 명시.
+- **경량 트랙 고지 강화** (`.claude/rules/orchestrator-protocol.md`) — 트랙 판별 AskUserQuestion 문구에 "단일 에이전트 단일 패스 — 세션 중단 시 재개 불가, 처음부터 재실행 필요" 주의사항 추가.
+- **SSoT 양방향 교차 참조 명확화** (`playbooks/final-validation.md` Step 16 ↔ `playbooks/ops-audit.md` Dim E) — Jaccard 70% 임계값과 비교 로직이 두 파일의 양방향 SSoT이며 한쪽 변경 시 다른 쪽 동반 갱신 필수임을 양쪽 주석에 명시.
+
+### Fixed
+- **Dim 번호 순서 꼬임 3곳 수정** — `.claude/agents/red-team-advisor.md`의 `11→13→12` 역순, `playbooks/design-review.md`의 `9→11→10→13` 비연속(Dim 12 섹션 누락), `playbooks/final-validation.md`의 `13→15→16→14` 순서. 모두 순방향 연속 재배치. Dim 번호 자체는 불변 유지 (`orchestrator-protocol.md`의 Skip Gate `[Scope] Dim 6+12만 검사` 같은 기존 인용 보존).
+
+### Migration Notes (기존 사용자 주의)
+- **기존 하네스 재개 시**: 이 릴리즈로 업데이트 후 재개하는 세션이 Phase 3·4 산출물을 가지고 있으면, `validate-phase-artifact.sh` 가 `## Session Recovery Protocol` 또는 `## Failure Recovery & Artifact Versioning` 섹션 부재로 실패한다. 이 경우 오케스트레이터가 해당 Phase 에이전트를 재소환하여 섹션을 보완한다 — Advisor Dim 13이 "단일 세션 완결 — 복구 프로토콜 미필요" 한 줄 도피를 감지하여 다중 에이전트 프로젝트에서 BLOCK을 재발행할 수 있다.
+- **경량 트랙 재진입**: 기존 `02-lite-design.md` 는 `session_recovery`·`artifact_versioning` 필드가 없다. Phase L 에이전트 재소환 또는 사용자 수동 frontmatter 편집 필요.
+- **에이전트 파이프라인 프로젝트의 Advisor 비용**: 운영 가드 누락 시 Phase 3·4에서 Advisor 루프가 Phase당 최대 2회 추가 발생할 수 있다 (기존 비용 대비 +$0.8~1.6). 단순 웹앱/CLI 프로젝트는 Dim 13 스킵으로 비용 변화 없음.
+- **후속 리팩터링 이슈**: `validate-phase-artifact.sh` 의 Phase별 필수 섹션 목록 하드코딩은 향후 `scripts/artifact-schema.yaml` 분리 검토 대상 (현재는 파일명 4건 분기만 존재하여 drift 리스크 낮음).
+
 ## [0.5.1] - 2026-04-20
 
 항상 로드되는 규칙 파일·CLAUDE.md·red-team-advisor 에이전트 정의에서 TMI·중복 정의·과도한 예시 제거. 기능 동작 변경 없음.

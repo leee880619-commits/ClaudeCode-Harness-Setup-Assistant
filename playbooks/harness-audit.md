@@ -126,3 +126,11 @@ After all changes:
 - Do not redesign the entire harness unless user asks
 - Do not modify application code
 - Do not remove existing configurations without explicit approval
+- **스코프 경계 — 런타임/운영 부채 위임**: 본 플레이북은 **설계·구성 중심 진단** (파일 존재 여부, 권한, anti-pattern, scope 분포, 에이전트-플레이북 매핑)에 집중한다. 다음은 본 플레이북의 스코프가 **아니다**:
+  - 세션 연속성·체크포인트 메커니즘·재개 프로토콜 (→ Dim A)
+  - 실패 복구 종료 조건 (`max_retries`·timeout·무한 루프 방지) (→ Dim B)
+  - 에이전트-스킬 이중 관리 부채 drift (→ Dim C)
+  - 산출물 덮어쓰기·버저닝 전략 (→ Dim D)
+  - 크로스 워크플로우 구조 중복 (Jaccard 유사도) (→ Dim E)
+  
+  위 5개 런타임/운영 부채는 `/harness-architect:ops-audit` 에 위임한다. harness-audit 완료 후 사용자에게 "구성 진단은 완료되었습니다. 런타임/운영 부채 감사를 원하면 `/harness-architect:ops-audit` 을 실행하세요." 를 Phase 3 진단 리포트의 Recommendations 말미에 1줄로 안내할 것.

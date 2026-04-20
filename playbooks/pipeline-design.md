@@ -168,6 +168,32 @@ qa-agent:
 | format-code | exempt | - | 결정론적 포맷팅 스크립트 실행 |
 ```
 
+### Step 4.6: 실패 복구 종료 조건 & 산출물 버저닝 전략
+
+각 파이프라인 설계 시 런타임 운영 부채를 예방하기 위해 다음 두 항목을 명시한다:
+
+**1. 실패 복구 종료 조건**
+
+파이프라인 내 재시도 루프·에러 핸들링·재설계 요청 흐름은 반드시 **종료 조건**을 포함한다:
+
+- **재시도 상한**: `max_retries: N` 형태의 정수 상한. "재시도"만 적고 상한 없는 설계는 BLOCK 대상
+- **에스컬레이션 분기**: 상한 도달 시 어느 에이전트·사용자에게 넘기는지 명시 (예: `max_retries: 3 → orchestrator_ask`)
+- **금지 패턴**: "Builder에게 재설계 요청", "QA가 다시 검증" 등 **행위자·조건·종료 없는 개방형 서술**은 잠재적 무한 루프 → BLOCK
+- **timeout 수용**: 외부 호출이 있으면 timeout 값 명시 (예: `timeout: 60s`)
+
+**2. 산출물 경로 버저닝 전략**
+
+파이프라인이 생성하는 산출물(분석 리포트·결정서·설계 문서)의 출력 경로는 재실행 시 덮어쓰기·오염 리스크가 있다. 다음 중 하나를 명시:
+
+- **덮어쓰기 허용 (idempotent)**: 동일 입력→동일 출력이 보장되는 결정론적 파이프라인만 가능. `versioning: overwrite_ok + idempotency_guarantee: "..."`
+- **타임스탬프 suffix**: `output_path: docs/analysis/{YYYY-MM-DD-HHmm}-report.md`
+- **버전 넘버링**: `output_path: docs/analysis/v{N}/report.md` + 버전 증가 규칙
+- **히스토리 디렉터리**: 최신 파일은 `current/`, 이전 실행본은 `archive/{timestamp}/`로 이동
+
+미명시 시 Escalation `[ASK] 파이프라인 {이름}의 산출물 버저닝 전략 미정의 — 재실행 시 이전 결과 오염 가능성. 어느 전략을 적용할지 확인 필요`.
+
+**기록 위치**: 위 두 항목을 `## Pipeline Review Gate` 표 바로 아래 또는 각 파이프라인 항목 내부에 기록한다.
+
 ### Step 5: 전체 파이프라인 다이어그램
 
 모든 워크플로우 스텝의 파이프라인을 통합 다이어그램으로 제시. **mandatory_review 파이프라인은 말단에 리뷰어 스텝을 명시**한다:
@@ -207,6 +233,7 @@ Next Steps에 "Phase 5: agent-team 에이전트 소환 권장"을 기록한다.
 - [ ] `## Summary` (~200단어)
 - [ ] `## Per-Step Pipelines` — 스텝별 에이전트 목록, 실행 순서, 패턴(순차/병렬 등). **mandatory_review 파이프라인은 말단 리뷰어 스텝 포함 필수**
 - [ ] `## Pipeline Review Gate` — 파이프라인별 분류 표 (mandatory_review / exempt), 리뷰어 에이전트명, 면제 사유. 에스컬레이션 래더는 `.claude/rules/pipeline-review-gate.md` 참조 명시 (래더 본문 복붙 금지)
+- [ ] `## Failure Recovery & Artifact Versioning` — Step 4.6 결과. 각 파이프라인: `max_retries`, 에스컬레이션 분기, timeout, 산출물 버저닝 전략 (overwrite_ok / timestamp / version / archive). 미정의 항목은 Escalation으로 연결
 - [ ] `## Agent-Skill Mapping` — 에이전트별 모델/쓰기 범위/스킬명 (스킬 1:N). 리뷰어 에이전트는 `allowed_dirs` 를 비우거나 read-only 경로로 제한
 - [ ] `## Communication Points` — SendMessage/공유파일/훅/핸드오프 사용 위치
 - [ ] `## Main Session Role` — 메인 세션이 이 파이프라인에서 수행하는 역할:

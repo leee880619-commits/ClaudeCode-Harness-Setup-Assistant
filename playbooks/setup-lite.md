@@ -161,18 +161,22 @@ MCP가 0개이면 Phase 7-8을 스킵 가능함을 Next Steps에 명시.
 
 산출물 파일: `{대상 프로젝트}/docs/{요청명}/02-lite-design.md`
 
-YAML frontmatter:
+YAML frontmatter (경량 트랙 전용 확장 필드 포함):
 ```yaml
 ---
 phase: L
 completed: {ISO8601 timestamp}
 status: done
 advisor_status: pending
+session_recovery: not_applicable    # 경량 트랙 고정값 — 단일 에이전트 단일 패스 설계
+artifact_versioning: idempotent     # 경량 트랙 고정값 — docs/{요청명}/ 번호 기반 고정 경로, 재실행 시 덮어쓰기 OK
 ---
 ```
 
+> `session_recovery: not_applicable` 과 `artifact_versioning: idempotent` 는 **경량 트랙 고정 선언**이다. 사후 `/harness-architect:ops-audit` 실행 시 Dim A(세션 연속성)와 Dim D(산출물 덮어쓰기)가 이 필드를 감지하여 RISK-LOW로 자동 분류한다. 풀 트랙과 구별되는 **공식 경량화 근거**이므로 임의 삭제 금지.
+
 필수 섹션 (공통 5섹션):
-- `## Summary` — 핵심 결정사항 (~200단어)
+- `## Summary` — 핵심 결정사항 (~200단어). 서두에 "**경량 트랙 — 단일 에이전트 단일 패스 설계. 세션 중단 시 처음부터 재실행 필요 (소요 25~35분).**" 한 문장 명시 필수.
 - `## Files Generated` — 작성된 파일 절대경로 + 설명 (이 에이전트는 `02-lite-design.md` 1개만 생성)
 - `## Context for Next Phase` — 아래 항목 전부:
   - 워크플로우 개요 (스텝 목록)
@@ -182,6 +186,9 @@ advisor_status: pending
   - 훅/MCP 후보
   - Phase 7-8 스킵 가능 여부
   - 업그레이드 경로
+  - **운영 가드 선언 (경량 트랙 고정)** — 아래 2줄 고정 문구 복사하여 기록:
+    - `Session Recovery: not applicable — single-pass lightweight track. 세션 중단 시 처음부터 재실행.`
+    - `Artifact Versioning: idempotent — docs/{요청명}/ 번호 기반 고정 경로. 재실행 시 덮어쓰기 안전.`
   - 기각된 대안 (Rejected Alternatives)
 - `## Escalations` — [BLOCKING]/[ASK]/[NOTE] 태그 항목 (없으면 "없음")
 - `## Next Steps` — Phase 7-8 진행 또는 스킵 권장
@@ -193,3 +200,5 @@ advisor_status: pending
 - Step 3 (파이프라인 리뷰 게이트 판단)은 경량 게이트에서도 전체 실행 (생략 금지)
 - `02-lite-design.md`가 유일한 산출물이다. 추가 파일 생성 금지 (Phase 1-2가 이미 CLAUDE.md·settings.json 생성 완료)
 - 에이전트·스킬이 없으면 없다고 명확히 선언한다 (미기록이 아닌 "없음 선언")
+- **운영 가드 필드 고정**: YAML frontmatter의 `session_recovery: not_applicable` / `artifact_versioning: idempotent` 는 경량 트랙 공식 선언으로 수정 금지. 풀 트랙 업그레이드 시 `phase-workflow` 에이전트가 재판정하여 본격 `## Session Recovery Protocol` 섹션을 신설한다.
+- **Advisor 루프 상한**: 경량 트랙에서도 Advisor 재검토 상한은 orchestrator-protocol의 2회 규약을 따른다 (풀 트랙과 동일). 경량 게이트는 BLOCK 범위만 축소될 뿐 루프 제한은 유효.
