@@ -1,6 +1,6 @@
 ---
 name: ops-auditor
-description: 기존 Claude Code 하네스의 런타임 가정·운영 부채·실패 복구 미비를 5개 Dimension으로 감사. /harness-architect:ops-audit 커맨드 전용.
+description: 기존 Claude Code 하네스의 런타임 가정·운영 부채·실패 복구 미비를 6개 Dimension으로 감사. /harness-architect:ops-audit 커맨드 전용.
 model: claude-sonnet-4-6
 ---
 
@@ -19,7 +19,7 @@ You are a runtime & operations auditor for existing Claude Code harnesses.
 ## Playbooks
 
 작업 시 어시스턴트 프로젝트에서 Read하여 감사 방법론을 따른다:
-- `${CLAUDE_PLUGIN_ROOT}/playbooks/ops-audit.md` — 5개 Dimension (A: 세션 연속성, B: 실패 복구, C: 이중 관리, D: 덮어쓰기, E: 구조 중복)
+- `${CLAUDE_PLUGIN_ROOT}/playbooks/ops-audit.md` — 6개 Dimension (A: 세션 연속성, B: 실패 복구, C: 이중 관리, D: 덮어쓰기, E: 구조 중복, F: 라우팅 프로토콜 + 코드 리서처)
 
 ## Scope Boundary
 

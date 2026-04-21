@@ -5,7 +5,7 @@
 이 플레이북은 서브에이전트에서 실행된다. **AskUserQuestion 사용 금지**. 모든 발견 사항은 보고서의 해당 등급 섹션에 기록한다.
 
 ## Goal
-대상 프로젝트 하네스의 **런타임 가정·운영 부채·실패 복구 미비**를 5개 Dimension으로 감사하여 RISK 등급별 보고서를 작성한다.
+대상 프로젝트 하네스의 **런타임 가정·운영 부채·실패 복구 미비**를 6개 Dimension으로 감사하여 RISK 등급별 보고서를 작성한다.
 
 Phase 9 final-validation이 "구조가 올바른가"를 묻는다면, 이 감사는 "실제 실행 시 어디서 문제가 생기는가"를 묻는다.
 
@@ -126,14 +126,60 @@ Phase 9 final-validation이 "구조가 올바른가"를 묻는다면, 이 감사
 
 **False Positive 주의**: 헤더 이름이 유사해도 본문이 프로젝트 특성을 반영한 고유 내용이면 중복 아님. 보고서에 "섹션 구조 기반 추정치이며 내용 중복 여부는 수동 확인 필요" 주석 추가.
 
+### Dim F: 오케스트레이터 라우팅 프로토콜 + 코드 리서처 베이스라인
+
+**원칙**: 생성된 하네스가 사용자 요청을 무조건 풀 파이프라인으로 태우는 구조이면 단순 요청에도 과도한 비용·문서 생산이 누적된다(실측 $18.29 오버런 사례 근거). 라우팅 프로토콜 섹션이 CLAUDE.md 에 존재하고, 오케스트레이터가 코드 확인 시 직접 Read 대신 경유할 `code-researcher` 에이전트가 베이스라인으로 존재하는지 점검한다.
+
+**Pre-check — 코드 프로젝트 여부 판별**:
+다음 OR 조건 중 하나라도 충족 시 코드 프로젝트로 분류. 모두 불충족이면 Dim F 전체 스킵, `[RISK-LOW] — 비코드 프로젝트 / 해당 사항 없음` 으로 자동 분류:
+- 루트에 소스 디렉터리 존재: `src/`, `lib/`, `app/`, `backend/`, `frontend/`, `server/`, `client/` 중 하나 이상
+- 패키지 매니페스트 존재: `package.json`, `requirements.txt`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `Gemfile`, `pom.xml`, `composer.json`, `build.gradle` 중 하나 이상
+- `.claude/agents/` 에 역할이 코드 관련(구현·리뷰·리팩터)인 에이전트 존재 (파일명 또는 description grep)
+
+**검사 절차 (코드 프로젝트일 때)**:
+
+1. **F-1: 라우팅 프로토콜 섹션 존재**
+   - ATX 헤더 확인: `grep -En "^## 오케스트레이터 라우팅 프로토콜|^## Orchestrator Routing" {대상}/CLAUDE.md`
+   - 헤더가 아닌 평문 언급은 인정하지 않음 (FP 가드)
+   - 섹션 본문에 `{등급 기준}`·`{경로}` 같은 placeholder 잔존 시 "미완성" 으로 간주
+
+2. **F-2: code-researcher 에이전트 존재 (frontmatter 기반 대체자 감지)**
+   - 기본 경로: `test -f {대상}/.claude/agents/code-researcher.md`
+   - **부재 시 대체자 감지**: 각 `{대상}/.claude/agents/*.md` 의 YAML frontmatter 를 파싱하여
+     - `allowed_tools` 필드가 존재하고
+     - 쓰기 도구(`Write`, `Edit`, `Bash`, `NotebookEdit`, `MultiEdit`) 가 **포함되지 않고**
+     - 읽기 도구(`Read`, `Glob`, `Grep`) 중 1개 이상 **포함된** 에이전트가 1개 이상이면 F-2 통과
+   - grep 기반 키워드 매칭(`"리서치"`, `"read-only"`) 은 오탐이 많으므로 사용하지 않음
+
+3. **F-3: 라우팅 프로토콜이 code-researcher 를 참조**
+   - 섹션 본문에 `code-researcher` 문자열 포함 여부 확인
+   - 미포함 시 "프로토콜은 있으나 리서처 경유 원칙이 문서화되지 않음" 으로 부분 감점
+
+4. **F-4: 리뷰 게이트 우회 가드 문구 (BLOCK 방지)**
+   - 섹션 본문에 다음 중 하나라도 매치되어야 함:
+     - `리뷰 게이트 우회 금지` / `리뷰 게이트를 우회` / `mandatory_review` / `영구 산출`
+   - 미매치 시 "라우팅 프로토콜이 mandatory_review 파이프라인 우회를 허용할 수 있음" 으로 추가 RISK 발행
+
+**등급 판정**:
+- `[RISK-HIGH]` — 코드 프로젝트 + F-1 실패 (라우팅 프로토콜 섹션 완전 부재). 모든 요청이 풀 체인 강제 — 구조적 오버엔지니어링 직결.
+- `[RISK-MED]` — F-1 통과 + F-2 실패 (리서처/대체자 부재). 오케스트레이터 직접 Read 로 컨텍스트 오염 리스크.
+- `[RISK-MED]` — F-1 통과 + placeholder 잔존. 프로토콜 미완성.
+- `[RISK-MED]` — F-1/F-2 통과 + F-4 실패 (리뷰 게이트 우회 가드 문구 부재). 생성·결정·설계 파이프라인이 S 등급으로 우회 가능.
+- `[RISK-LOW]` — F-1/F-2/F-4 통과 + F-3 누락 (프로토콜에 code-researcher 참조 없음). 관례 미문서화.
+- `[RISK-LOW]` (면제) — Pre-check 에서 비코드 프로젝트로 분류.
+
+**False Positive 주의**: `.claude/templates/workflows/strict-coding-6step/` 같은 **템플릿 소스 경로** 존재는 채택 증거가 아님. 실제 대상 프로젝트의 CLAUDE.md 또는 생성된 에이전트 파일에 채택 기록이 있어야 유효. 또한 비코드 프로젝트의 경우 `.claude/agents/` 가 있어도 역할이 콘텐츠·문서 관련이면 코드 프로젝트로 분류하지 않음(grep 시 파일명·description 확인).
+
+**Coverage Gap 명시**: 이 Dim 은 **구조적 존재** 만 검사한다. 실제 오케스트레이터가 요청 시 라우팅 프로토콜을 따르는지, code-researcher 를 실제 선호출하는지 **런타임 동작** 은 감사하지 않는다. 보고서 Coverage Gaps 에 "라우팅 프로토콜 런타임 준수 여부는 실 세션 관찰로만 검증 가능" 명시.
+
 ## Workflow
 
 ### Step 1: 대상 하네스 스캔
 - `{대상}/CLAUDE.md`, `.claude/`, `playbooks/`, `docs/` 디렉터리 구조 파악
 - 파일 수·디렉터리 깊이 기록
 
-### Step 2: 5개 Dimension 순차 실행
-- Dim A → B → C → D → E 순으로 수행
+### Step 2: 6개 Dimension 순차 실행
+- Dim A → B → C → D → E → F 순으로 수행
 - 각 Dimension 결과를 등급별 버킷으로 수집
 
 ### Step 3: 보고서 조립
@@ -175,6 +221,11 @@ Phase 9 final-validation이 "구조가 올바른가"를 묻는다면, 이 감사
 - Phase 9 final-validation 통합 기각: 신규 harness-setup 플로우 내부에서만 실행되므로 기존 하네스 사후 감사에 부적합. 분리 커맨드로 유지.
 - 단일 범용 리뷰어 재귀 기각: 본 에이전트 자체가 리뷰어 역할이며 `pipeline-review-gate.md` 재귀 금지 원칙 준수.
 - Jaccard 기준값 별도 상수 파일화 기각: 2개 위치 동기화만 유지하면 드리프트 리스크 낮음. 각 위치에 SSoT 주석 명시로 대체.
+- Dim F 를 Dim B (실패 복구) 에 병합 기각: 실패 복구와 복잡도 라우팅은 다른 문제 영역 (전자는 에이전트 내부 재시도, 후자는 파이프라인 진입 시 취사선택). 혼합 시 등급 판정 기준이 흐려짐.
+- Dim F 를 Advisor Dim 12 에 위임 기각: Advisor 는 build-time (harness-setup Phase 산출물 리뷰), ops-audit 는 post-deployment audit (이미 배포된 하네스 진단). 실행 시점이 다르므로 독립 Dim 으로 분리.
+- Dim F F-2 를 grep 키워드 기반으로 구현 기각: `read-only` / `리서치` 같은 키워드는 FP 가 많다 (무관한 문서가 매칭). 에이전트 YAML frontmatter 의 `allowed_tools` 필드에서 쓰기 도구 부재를 확인하는 구조적 검사로 전환.
+- Complexity Gate (S/M/L) 구조 강제 검사 기각: 오케스트레이터 재량 부여 방식(라우팅 프로토콜)이 동일 목적을 달성하며, 구조 강제는 스킬·워크플로우 계약 대수술을 유발함. Dim F 는 프로토콜 섹션 존재 여부만 검사.
+- 스킬 레벨 lite 모드 검사 기각: 오케스트레이터가 에이전트를 안 부르면 문서도 안 생김. 스킬 계약 자체를 변경하지 않는 방향으로 문제 해결.
 ```
 
 ## Guardrails

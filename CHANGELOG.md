@@ -6,6 +6,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-21
+
+오케스트레이터 런타임 라우팅 레이어 신설. 생성된 하네스가 사용자 요청을 무조건 풀 워크플로우로 태우던 구조적 결함(실측 $18.29 오버런, "복잡 웹앱의 4줄 보안 패치 → 3000줄+ 문서" 사례의 근본 원인)을 해결. 기존 Complexity Gate 구조 강제 방식을 **오케스트레이터 재량 기반 라우팅 프로토콜** 로 대체하고, 코드 확인이 필요할 때 메인 세션이 직접 Read 하지 않도록 `code-researcher` 베이스라인 에이전트를 항상 설치.
+
+### Added
+- **오케스트레이터 라우팅 프로토콜 섹션** — 모든 코드 프로젝트의 생성 CLAUDE.md 에 의무 포함. 6개 하위 섹션으로 구성:
+  1. 코드 확인 시 `code-researcher` 선호출 원칙 (메인 세션 컨텍스트 오염 방지)
+  2. 작업 복잡도 3등급 평가 (S: 직접 처리 / M: 취사선택 / L: 전체 워크플로우)
+  3. 리뷰 게이트 우회 금지 — 영구 산출·`mandatory_review` 파이프라인은 S 등급 금지, 최소 M 상향
+  4. 애매 시 M 기본, 매우 애매 시 L. 다운그레이드는 사용자 명시 요청 시만
+  5. 취사선택은 이 하네스의 `.claude/agents/` 내에서만
+  6. 사용자 명시 오버라이드 허용 (Section 3 우회 금지는 오버라이드 불가)
+- **`code-researcher` 베이스라인 에이전트 템플릿 신규** (`.claude/templates/common/agents/code-researcher.md`) — `allowed_tools: [Read, Glob, Grep]`, `allowed_dirs: []` 구조적 read-only. `brief` / `standard` / `detailed` 3단계 상세도 지원. 원문 코드 덤프 금지·의견 제시 금지·요청 범위 초과 탐색 금지 가드레일.
+- **`fresh-setup` Step 3-D 신설** — 코드 프로젝트 감지 로직 (OR: 소스 디렉터리 / 패키지 매니페스트 / Language 감지). 감지 시 Step 6 에서 자동으로 CLAUDE.md 라우팅 프로토콜 섹션 삽입 + `code-researcher.md` 복사. 비코드 프로젝트는 섹션 생략 + 에이전트 스킵.
+- **`setup-lite` Step 1-bis 신설** — 경량 트랙에서 fresh-setup 산출물의 code-researcher 존재 + 라우팅 프로토콜 섹션 존재를 검증. 누락 시 `[BLOCKING]` Escalation 으로 fresh-setup 재소환 유도 (경량 트랙 "산출물 1개" 원칙 유지).
+- **ops-audit Dim F 신설** (`playbooks/ops-audit.md`) — "오케스트레이터 라우팅 프로토콜 + 코드 리서처 베이스라인" 검사. 4개 하위 검사:
+  - F-1: `## 오케스트레이터 라우팅 프로토콜` ATX 헤더 존재 + placeholder 잔존 검증
+  - F-2: `code-researcher.md` 존재, 부재 시 **frontmatter `allowed_tools` 파싱으로 대체자 감지** (grep 키워드 방식보다 FP 감소)
+  - F-3: 섹션 본문의 `code-researcher` 참조 확인
+  - F-4: 리뷰 게이트 우회 가드 문구(`mandatory_review` / `영구 산출`) 존재 확인
+  - Pre-check 로 비코드 프로젝트는 자동 스킵. RISK-HIGH (라우팅 프로토콜 완전 부재) / RISK-MED (리서처 부재·placeholder 잔존·우회 가드 누락) / RISK-LOW (완전 구성 or 면제).
+
+### Changed
+- **`workflow-design.md` Step 4-B 전면 재설계** — 기존 Complexity Gate (S/M/L) **구조 강제** 로직을 **라우팅 프로토콜 섹션 의무 포함** 으로 교체. 멀티 에이전트·strict-coding·대형 코드베이스 프로젝트는 추가로 `pipeline-design` Step 2.5 에서 S/M/L 파이프라인 계약을 생성하도록 전달 (라우팅 프로토콜은 상위 레이어).
+- **`pipeline-design.md` Step 2.5 조건 명시 강화** — workflow-design Step 4-B 가 "Complexity Gate Pipeline Contracts 생성 필요" 를 전달한 경우에만 수행. 소규모 프로젝트는 라우팅 프로토콜만으로 커버 (계약 테이블 생성 불필요).
+- **`ops-auditor.md` description 갱신** — "5개 Dimension" → "6개 Dimension (A~F)".
+
+### Fixed
+- **리뷰 게이트 우회 위험 제거** — 라우팅 프로토콜 Section 3 에서 생성·결정·설계·계획·리서치 파이프라인 또는 영구 산출물 생성 작업의 S 등급 분류를 명시적으로 금지하여, 오케스트레이터 재량 부여가 `pipeline-review-gate.md` 의 `mandatory_review` 원칙을 우회할 수 있었던 구조적 취약점 해결.
+- **`code-researcher` `allowed_dirs` 주석 정확화** — 빈 배열이 "쓰기 허용 디렉터리 없음" 이라는 의미임을 명시. 읽기 권한은 `allowed_tools` 로 제어됨을 주석에 기록 (유지보수자 오해 방지).
+
+### Migration Notes (기존 사용자 주의)
+- **기존 코드 프로젝트 하네스**: `/harness-architect:ops-audit` 실행 시 Dim F 가 라우팅 프로토콜 섹션 부재를 **RISK-HIGH** 로 발행한다. 해소하려면 CLAUDE.md 에 본 릴리스의 라우팅 프로토콜 섹션 템플릿을 수동 추가하거나, `/harness-architect:harness-setup` 재실행 (이 경우 기존 설정을 덮지 않고 섹션만 추가되는 흐름은 향후 과제 — 현재는 수동 편집 권장).
+- **기존 하네스에 `code-researcher` 없음**: Dim F 가 **RISK-MED** 발행. `.claude/templates/common/agents/code-researcher.md` 를 대상 프로젝트 `.claude/agents/code-researcher.md` 로 수동 복사하면 해소됨. 기존 리서처 에이전트(`researcher-agent` 등)가 있고 `allowed_tools` 에 쓰기 도구가 없으면 Dim F F-2 가 대체자로 인정하여 추가 설치 불필요.
+- **strict-coding-6step 프로젝트**: 기존 `researcher-agent` 와 `code-researcher` 가 공존한다. 두 에이전트는 역할이 다름 — `researcher-agent` 는 `research.md` 파일 산출 (워크플로우 스텝), `code-researcher` 는 오케스트레이터 온디맨드 호출용 (채팅 반환). `phase-team` 재실행 시 역할 중복 `[NOTE]` Escalation 이 발생할 수 있으나 병합이 필수는 아님.
+- **비코드 프로젝트(콘텐츠 자동화·순수 문서 저장소)**: 라우팅 프로토콜 섹션 생략 + code-researcher 미설치가 **설계상 정상**. Dim F Pre-check 에서 자동으로 RISK-LOW 면제 처리됨.
+
+### Rejected Alternatives (이 릴리스에서 폐기한 대안)
+- **스킬 레벨 lite 모드 분기 주입 (P4)**: 각 SKILL.md 에 "lite 모드 시 문서 생략 가능" 조항을 박는 안. 기각 사유 — 오케스트레이터가 에이전트를 안 부르면 문서도 안 생기므로, 스킬 계약 대수술 없이 오케스트레이터 재량만으로 동일 목적 달성.
+- **이중 워크플로우 병렬 설계 (heavy + light)**: 워크플로우를 2개 설계하는 안. 기각 사유 — 단일 풀 워크플로우 + 상위 라우팅 레이어 조합이 더 단순하고 오케스트레이터에게 자유도를 제공.
+- **Complexity Gate(S/M/L) 를 모든 프로젝트에 강제**: 소규모 프로젝트에도 동일한 구조 게이트를 박는 안. 기각 사유 — 소규모 프로젝트는 라우팅 프로토콜만으로 충분. 구조 강제는 과설계.
+
 ## [0.5.3] - 2026-04-20
 
 CI 오탐지 수정 — `red-team-advisor.md` 환경 이식성 예시 경로가 플러그인 내 하드코딩 경로 검사 grep에 걸리는 문제를 해소.
