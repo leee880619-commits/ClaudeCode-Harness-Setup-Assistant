@@ -5,6 +5,7 @@ CLAUDE.local.md
 
 # Internal development notes (not shared)
 dev-notes/
+improvements/
 
 # docs/ — only index.html is tracked; everything else is local-only
 docs/*
