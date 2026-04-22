@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-04-22
+
+업데이트 알림 배너를 **사용자 터미널에 실제로 표시**하도록 수정. v0.7.1 도입 이후 v0.8.2 까지의 모든 알림 훅이 구조적으로 잘못 동작하던 치명적 결함 해결 — Claude Code 의 SessionStart 훅은 stdout 을 **어시스턴트 컨텍스트(`additionalContext`)로만** 주입하며 사용자 터미널에는 표시하지 않는다는 [공식 문서](https://code.claude.com/docs/en/hooks.md) 규약을 이번에야 반영. 실제로는 Claude 만 업데이트 정보를 알고 사용자는 한 번도 배너를 본 적 없던 상태. 사용자 피드백("GSD 같이 버전 알림이 있으면 좋겠다")을 계기로 `update-notifier` npm 패키지 패턴에 맞춰 재설계.
+
+### Fixed
+- **`scripts/check-update.sh` 이중 출력 스트림 분리** — stdout 은 Claude 어시스턴트용 평문 알림(기존 호환), stderr 는 사용자 터미널용 컬러 배너(신설). stderr 는 SessionStart 훅 exit code 와 무관하게 터미널에 표시되므로 사용자가 세션을 열 때마다 즉시 눈으로 확인 가능.
+- **외부 `2>/dev/null` 래퍼 제거** — 기존 래퍼가 의도치 않게 새 stderr 배너까지 삼키던 문제 해결. 에러 억제는 python 스크립트 내부의 `try/except Exception: sys.exit(0)` 으로 이동하여 어떤 실패 시나리오(파일 없음·import 실패·argv 누락 등)에서도 사용자 흐름을 방해하지 않도록 유지.
+
+### Changed
+- **배너 스타일** — `update-notifier` 스타일 단일 라인 컬러 배너. cyan 이름 + dim 구버전 + green 신버전 + yellow 커맨드. `NO_COLOR` 환경변수 존중 및 `sys.stderr.isatty()` 체크로 파이프/리다이렉션 환경에서는 ANSI 이스케이프 코드 자동 제거.
+
+### Rationale
+- **왜 stderr 인가**: Claude Code 공식 hooks 문서에 따라 SessionStart stdout 은 `hookSpecificOutput.additionalContext` 로 파싱되어 Claude 에게만 전달되고, 사용자 UI 렌더링에는 참여하지 않는다. stderr 는 이 계약에서 제외된 스트림이므로 터미널 에뮬레이터가 그대로 렌더. 같은 이유로 Claude Code 의 다른 hook 이벤트(PreToolUse 등) 에서도 stderr 는 사용자 피드백 채널로 쓰인다.
+- **왜 Claude 컨텍스트도 유지하는가**: 사용자가 "업데이트 알림이 떴네"라고 말했을 때 Claude 가 맥락을 알고 있어야 `/plugin update` 실행을 안내할 수 있다. stdout 만 삭제하면 Claude 가 "무슨 업데이트?"로 되물을 수 있음. 중복이 아니라 양쪽 대상에 각자 포맷으로 전달.
+- **왜 v0.7.1~v0.8.2 는 눈에 띄지 않았는가**: 개발자 로컬에서 `bash scripts/check-update.sh` 로 직접 실행하면 셸이 stdout 을 터미널로 그대로 쏘기 때문에 "배너가 잘 출력된다" 고 오인하기 쉽다. 실제 Claude Code 세션의 SessionStart 훅 경로에서는 stdout 이 파싱되어 소비되므로 사용자는 아무것도 못 봄. 이 구분을 검증 단계에서 놓친 회귀.
+
+### Breaking
+- 없음. 하네스 산출물 무관. 알림 출력 채널만 stdout → stdout+stderr 로 확장.
+
 ## [0.8.2] - 2026-04-22
 
 업데이트 알림 훅 `scripts/check-update.sh` 의 캐시 검증 강화. 기존 구현은 캐시 파일 첫 줄을 버전 문자열로 간주하고 그대로 사용했는데, v0.7.2 이전 버전에서 **배너 문자열 전체**를 캐시에 저장한 사용자 환경이 남아 있으면 현재 훅이 캐시값을 정규식에 매칭 실패시켜 `LATEST=""` 로 조용히 종료 → 업데이트 배너가 영구적으로 미출력되는 문제가 있었다. v0.1.0 같은 초기 버전 사용자도 포함해 모든 구버전 설치 환경이 영향 범위.
