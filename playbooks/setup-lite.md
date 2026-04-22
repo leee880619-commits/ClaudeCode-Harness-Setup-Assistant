@@ -16,6 +16,7 @@ Phase 3-6의 전용 플레이북(workflow-design, pipeline-design, agent-team, s
 - `docs/{요청명}/01-discovery-answers.md` 존재 및 공통 5섹션 헤더 포함
 - `00-target-path.md` frontmatter의 `track: lightweight` 확인 (오케스트레이터가 8개 조건 검증 후 기록)
 - 조건 목록: 솔로, 웹앱/CLI, 비에이전트, 에이전트 신호 없음, Strict Coding 신호 없음, 소스 파일 ≤100개·깊이 ≤5, 배포 단순, 단일 서비스
+- **프리셋 주입 파일 소유권 보호**: `01-discovery-answers.md` 의 `## Context for Next Phase` 에 `프론트엔드 프리셋 주입 여부: yes` 가 있으면, 경량 트랙도 다음 파일 집합을 **주입 완료 상태** 로 보존한다 — `.claude/agents/frontend-designer.md`, `.claude/agents/frontend-ux-reviewer.md`, `.claude/skills/frontend-design/*`. 경량 트랙의 단일 설계 패스에서 해당 파일을 재작성·덮어쓰기 금지. 필요 시 보완 에이전트·스킬을 **별도 이름** 으로 추가한다. 이 규약은 풀 트랙 Phase 5·6 의 소유권 보호 규약과 동일한 취지.
 
 ## 질문 소유권
 

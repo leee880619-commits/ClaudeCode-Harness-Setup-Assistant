@@ -17,6 +17,7 @@ Phase 5에서 편성된 각 에이전트에 대해 구체적인 SKILL.md(HOW)를
 - Agent-Skill 분리 모델 채택 시: 에이전트 정의(`.claude/agents/*.md`)가 Phase 5에서 생성된 상태
 - **Phase 5 산출물(`04-agent-team.md`)의 "Orchestrator Pattern Decision"** — 대상 프로젝트가 오케스트레이터 패턴(메인 세션은 순수 라우터, 서브에이전트만 방법론 실행)인지 여부. 이 결정이 스킬 파일의 **저장 위치**를 바꾼다 (Step 7 참조).
 - (선택) Phase 2.5 산출물 `docs/{요청명}/02b-domain-research.md` — **있으면 Read**하여 도메인 표준 도구·스킬 스택을 스킬 설계의 레퍼런스(Focus / Workflow / 사용 도구 선정)로 사용. 스킵이면 무시.
+- **프리셋 스킬 소유권 보호**: Phase 1-2 산출물(`01-discovery-answers.md`)의 `## Context for Next Phase` 에 `프론트엔드 프리셋 주입 여부: yes` 가 기록돼 있으면, 대상 프로젝트 `.claude/skills/frontend-design/` 디렉터리 전체는 **이미 주입 완료** 된 상태이므로 이 Phase 에서 SKILL.md 재작성·덮어쓰기를 금지한다. Agent-Skill 매핑에는 `frontend-design` 을 포함하되 비고에 "프리셋 주입 — 재작성 제외" 기록. 보완이 필요하면 `frontend-design/references/*` 에 별도 파일로 추가한다 (본체 덮어쓰기 금지).
 
 ## Knowledge References
 필요 시 Read 도구로 로딩:

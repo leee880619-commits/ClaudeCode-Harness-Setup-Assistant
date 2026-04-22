@@ -72,3 +72,4 @@ Stub에 최소 포함:
 | webtoon-production | stub | 에피소드 콘텐츠 크리에이티브 팀 |
 | youtube-content | stub | 엔드투엔드 영상 기획 |
 | marketing-campaign | stub | 캠페인 에셋 제작 및 테스트 |
+| frontend-design | full | UI/UX 크래프트 — 토큰·상태 매트릭스·접근성·인터랙션 |

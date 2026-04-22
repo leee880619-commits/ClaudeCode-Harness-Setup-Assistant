@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-04-22
+
+프론트엔드 디자인 프리셋 신설. UI 레이어 중심 프로젝트를 대상 프로젝트로 감지하면 하네스 세팅 과정에서 `frontend-designer` + `frontend-ux-reviewer` 에이전트와 `frontend-design` 진입점 스킬이 자동 주입된다. 외부 스킬 추가 설치 없이 자체 내장 색상 규칙(OKLCH·APCA Lc≥60·WCAG AA·2계층 토큰·60-30-10·색맹 대응)만으로 완결 동작. 생성형 파이프라인은 디자이너→리뷰어 필수 페어로 실행되며 3회차 에스컬레이션 래더(1회 자동재작업·2회 사용자 3선택·3회 중단)가 내장되어 있다. Phase 5·6 및 경량 트랙 모두 프리셋 주입 파일을 재작성·덮어쓰기 금지하는 소유권 보호 규약을 준수한다.
+
+### Added
+- **프론트엔드 디자인 프리셋** — UI 레이어 중심 프로젝트 전용 에이전트·스킬·KB 번들.
+  - `knowledge/domains/frontend-design.md` (Full 품질 도메인 KB) — 표준 워크플로우 8스텝, 역할/팀 분업, 도구 스택(React/Vue/Svelte/Tailwind/shadcn/Radix 등), 안티패턴 5개, 5개 1차 출처(Refactoring UI·Design Tokens CG·WCAG 2.2·APCA·web.dev INP).
+  - `.claude/templates/frontend-design/agents/frontend-designer.md` — 토큰 2계층·상태 매트릭스·접근성·모션까지 통제하는 디자이너 에이전트 템플릿. AI 디폴트 거부 원칙.
+  - `.claude/templates/frontend-design/agents/frontend-ux-reviewer.md` — 8차원(D1~D8) 방어적 UX 감사 리뷰어 템플릿. `allowed_dirs: []` 읽기 전용, BLOCK/ASK/NOTE 출력 계약.
+  - `.claude/templates/frontend-design/skills/frontend-design/SKILL.md` — 대상 프로젝트 진입점 스킬. 7단계 작업 절차 + **자체 내장 색상 규칙**(OKLCH·APCA Lc≥60·WCAG AA·2계층 토큰·60-30-10·색맹 대응). 외부 스킬(`color-expert`·`interface-design`)은 옵션 보강일 뿐 의존 아님.
+- **자가 완결성 원칙** — 이 프리셋은 `.claude/templates/frontend-design/` 번들만으로 완결 동작. 사용자가 외부 스킬을 추가 설치하지 않아도 하네스 세팅 과정에서 전부 자동 주입된다.
+- **생성-리뷰 페어 의무화** — `frontend-designer` 의 생성 작업은 `frontend-ux-reviewer` 쌍 리뷰를 필수로 거친다. SKILL.md 와 에이전트 템플릿에 3회차 에스컬레이션 래더(1회 자동 재작업 · 2회 사용자 3선택 · 3회 작업 중단) 내장. 리뷰어 부재는 오류로 처리.
+- **프리셋 소유권 보호** — Phase 5(`agent-team.md`)·Phase 6(`skill-forge.md`)·경량 트랙(`setup-lite.md`) Prerequisites 에 "주입된 프리셋 파일은 재작성·덮어쓰기 금지" 규약 추가. Agent Model Table / Agent-Skill 매핑에 "프리셋 주입 — 재작성 제외" 비고 기록. 보완은 `references/` 하위 별도 파일로만.
+- **백엔드 역가중치** — `fresh-setup` Step 3-E 가중 점수에 역신호 추가: `server/`/`backend/` 디렉터리(−1), 루트 `Dockerfile`+`docker-compose.yml`(−1), 루트 외 추가 백엔드 매니페스트(−1). 풀스택 모노레포에서 백엔드가 메인일 때의 프리셋 오탐 제안 억제.
+- **`allowed_dirs` 자동 재조정** — 프리셋 주입 시 `phase-setup` 에이전트가 대상 프로젝트 실제 디렉터리를 Glob 확인하여 `frontend-designer.md` 의 `allowed_dirs` 를 Edit. 경로 전무 시 `[ASK] 쓰기 권한 디렉터리 확인` Escalation 으로 사용자 답변 대기(안전한 읽기 전용 폴백 유지).
+
+### Security
+- `frontend-designer` 의 `allowed_tools` 에서 무제한 `Bash` 권한 제거. 필요 시 `Bash(npm run lint)` 등 구체 패턴으로만 추가 허용.
+- **`fresh-setup` Step 3-E 신설** — 프론트엔드 디자인 프리셋 신호 감지 (가중 점수). UI 프레임워크(+2), 메타 프레임워크(+2), 스타일링·UI 컴포넌트·모션·디자인 시스템 디렉터리·외부 토큰 파일 감지(각 +1). 점수 ≥ 3 시 Escalation `[ASK] 프론트엔드 디자인 프리셋 주입?`.
+- **도메인 slug 매핑 확장** (`playbooks/domain-research.md`) — "프론트엔드 디자인" / "UI 디자인" / "UI/UX" / "frontend design" → `frontend-design`.
+- **시드 KB 표 갱신** (`knowledge/domains/README.md`) — `frontend-design` (full) 항목 추가.
+
+### Research / Credits
+- 외부 공개 자료 참고 (번들 없음, 원칙 일반화 재작성): `meodai/skill.color-expert` (MIT, 색상 이론·토큰 아키텍처), `oikon48/cc-frontend-skills` (MIT, Anthropic 공식 블로그 참조 구현), `Dammyjay93/interface-design` (MIT, 토큰 메모리 패턴), `pbakaus/impeccable` (MIT, 동사형 액션 분해 영감).
+
 ## [0.6.0] - 2026-04-21
 
 오케스트레이터 런타임 라우팅 레이어 신설. 생성된 하네스가 사용자 요청을 무조건 풀 워크플로우로 태우던 구조적 결함(실측 $18.29 오버런, "복잡 웹앱의 4줄 보안 패치 → 3000줄+ 문서" 사례의 근본 원인)을 해결. 기존 Complexity Gate 구조 강제 방식을 **오케스트레이터 재량 기반 라우팅 프로토콜** 로 대체하고, 코드 확인이 필요할 때 메인 세션이 직접 Read 하지 않도록 `code-researcher` 베이스라인 에이전트를 항상 설치.

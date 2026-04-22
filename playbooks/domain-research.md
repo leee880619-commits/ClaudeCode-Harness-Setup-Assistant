@@ -38,6 +38,7 @@
    - "기술 문서" → `technical-docs`
    - "데이터 파이프라인" → `data-pipeline`
    - "마케팅 캠페인" → `marketing-campaign`
+   - "프론트엔드 디자인" / "UI 디자인" / "UI/UX" / "frontend design" → `frontend-design`
    - 매칭 실패 → Step 3 라이브 검색 only 모드
 
 ### Step 2: 큐레이션 KB 매칭
