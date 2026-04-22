@@ -219,6 +219,28 @@ Phase 0은 오케스트레이터 직접 처리이므로 Advisor 불필요.
 
 **보안 항목과 파이프라인 리뷰 게이트는 복잡도 게이트와 무관하게 항상 전체 실행한다.** 구체적으로 Advisor의 Dimension 6(보안 권한 적절성), Dimension 12(파이프라인 리뷰 게이트 준수), `final-validation` 플레이북의 Step 5(보안 감사 — `Bash(*)` / `Bash(sudo *)` 등 위험 allow 패턴, 필수 deny 존재, 비밀값 패턴)는 단순 프로젝트·경량 트랙에서도 경량화하지 않는다. 경량화는 "설계 질 평가"에만 적용되며, 보안 가드와 Dim 12 파이프라인 리뷰 가드는 게이트 우회가 금지된다.
 
+**Dim 6 시행 시점 localization (v0.8.1~)**: Dim 6 의 "항상 전체 실행" 원칙은 유지하되, **시행 지점**은 Phase 7-8 (실제 `settings.json`/`hooks.json` 확정) 과 Phase 9 (final-validation Step 5) 로 localize 되었다. Phase 3-6 Advisor 는 설계 마크다운의 **서술적 언급**을 `[NOTE]` 로 기록하며 `[BLOCK]` 으로 승격하지 않는다 — 이는 경량화가 아닌 **시행 시점 명확화**. 실제 하드 텍스트 JSON 위반과 실제 비밀값 패턴은 여전히 어디서든 즉시 `[BLOCK]`. 매트릭스 상세는 `playbooks/design-review.md` Dimension 6 본문.
+
+**Phase 9 security-auditor 병렬 소환 (v0.8.1~)**: Phase 9 진입 시 오케스트레이터는 다음을 병렬 소환할 수 있다:
+- `phase-validate` (Sonnet) — `final-validation.md` 풀 워크플로우
+- `security-auditor` (Haiku) — Dim 6 패턴 매칭만 (저비용 1차 필터)
+
+소환 템플릿:
+```
+Agent(
+  subagent_type: "security-auditor",
+  description: "Phase 9 Dim 6 pattern audit",
+  prompt: "[Target]
+    대상 프로젝트: {대상 경로}
+    검사 파일: .claude/settings.json, .claude/settings.local.json, .claude/agents/*.md,
+              .claude/skills/**/SKILL.md, .claude/hooks/hooks.json, .claude/hooks/*.sh
+    [Scope] Dim 6 패턴 매칭 전용.
+    [Output] BLOCK/ASK/NOTE 구조화 리포트. 판정 애매 시 [BLOCK] 대신 [ASK] 사용."
+)
+```
+
+security-auditor 결과는 phase-validate 가 `## Security Audit` 섹션에 통합한다. 소환 실패(타임아웃·미지원·에러) 시 phase-validate 는 자체 수동 체크(Step 5-B) + 자동 도구(Step 5-C) 로 Dim 6 완수. security-auditor 는 **보조 저비용 경로**이며 Phase 9 완결성은 `phase-validate` 가 최종 책임.
+
 ### Advisor Skip Gate (풀 트랙 Phase 3-8 한정 비용 절감)
 
 풀 트랙에서도 Phase N 에이전트의 반환이 "매우 깨끗"한 경우 Advisor 전체 실행을 생략하고 **경량 Advisor(Dim 6+12만 검사)** 로 대체한다. 비용 절감 효과: Phase당 ~$0.6~0.8, 세션당 최대 $2.9 (세션당 Advisor 6회 실행 기준).

@@ -1,6 +1,6 @@
 {
   "name": "harness-architect",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Meta-tool that analyzes a project and builds a complete Claude Code harness (CLAUDE.md, settings, rules, agents, playbooks, hooks, MCP) through a 9-phase orchestrated workflow with Agent-Playbook separation and a red-team advisor.",
   "author": {
     "name": "leee880619-commits",
@@ -28,7 +28,8 @@
     "./.claude/agents/phase-validate.md",
     "./.claude/agents/red-team-advisor.md",
     "./.claude/agents/phase-setup-lite.md",
-    "./.claude/agents/ops-auditor.md"
+    "./.claude/agents/ops-auditor.md",
+    "./.claude/agents/security-auditor.md"
   ],
   "commands": "./commands/",
   "hooks": "./.claude/hooks/hooks.json"

@@ -6,6 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-04-22
+
+Advisor 비용 최적화. 실측 세션(`frontend-forge` 하네스 세팅, $9.17)에서 13% 비용($1.2)이 Phase 3-6 Advisor 의 "Dim 6 보안 BLOCK 조기 발행 → 재작업 루프" 에서 발생한 점을 근거로, **Dim 6 시행 시점 localization** 과 **Haiku security-auditor 분리** 두 가지를 적용. 세션당 ~$1.0 절감 예상. "Dim 6 복잡도 게이트 무관 전체 실행" 원칙과 "비밀값 즉시 BLOCK" 원칙은 유지 — 이번 변경은 경량화가 아닌 **시행 지점 명확화**.
+
+### Added
+- **신규 에이전트 `security-auditor`** (`.claude/agents/security-auditor.md`) — Haiku 기반 Dim 6 패턴 매칭 전용 보조 에이전트. Phase 9 final-validation Step 5 에서 병렬 소환 가능. Read-only, 검사 대상을 대상 프로젝트의 실제 하네스 파일(`settings.json`, `agents/*.md`, `SKILL.md`, `hooks.json`)로 엄격 제한. 판정 애매 시 `[BLOCK]` 금지, `[ASK]` 로 에스컬레이션하여 Haiku false-positive 리스크 방어. `plugin.json` `agents` 배열에 등록.
+- **`playbooks/design-review.md` Dimension 6 재작성** — Phase별 등급 매트릭스 도입. 5열 표(산출물 유형·실제 JSON 패턴·서술적 언급·실제 비밀값·더미 비밀값)로 Phase 3-6/7-8/9 각각의 [BLOCK]/[ASK]/[NOTE] 등급을 명시. "실제 비밀값 vs 더미 플레이스홀더" 판정 기준(난수성+맥락) 추가.
+- **`playbooks/final-validation.md` Step 5 3단계 fallback 구조화** — 5-A(security-auditor 소환, 선택적) → 5-B(수동 체크, 항상 수행) → 5-C(자동 도구). security-auditor 실패 시 5-B 로 자동 fallback. 최소 2개 경로 성공해야 Dim 6 게이트 통과로 인정.
+- **`.claude/rules/orchestrator-protocol.md` Phase 9 security-auditor 병렬 소환 문구** — 소환 템플릿 인라인. Dim 6 localization 원칙(`[NOTE]` 처리 후 Phase 7-8/9 시행) 명시. `phase-validate` 가 Phase 9 완결성에 대한 최종 권위 유지.
+
+### Changed
+- **Red-team Advisor Dim 6 항목 업데이트** (`.claude/agents/red-team-advisor.md`) — "Phase 3-6 설계 마크다운의 서술적 언급은 [NOTE], 실제 JSON 하드 텍스트 위반만 [BLOCK]. 비밀값은 실제 vs 더미 구분하여 각각 [BLOCK]/[ASK]" 로 명시. 이는 "경량화"가 아닌 "시행 시점 localization" 임을 강조.
+- **Red-team Advisor Dim 11 항목에 security-auditor 적합성 노트** 추가 — Haiku 배정이 "단순 검증 역할"로 정당함을 명시하여 Model Confirmation Gate 오탐 방지.
+- **`ARCHITECTURE.md` 에이전트 집계 업데이트** — `.claude/agents/*.md` 집계를 8개에서 **12개**로 갱신(기존 9 phase workers + red-team-advisor + phase-setup-lite + ops-auditor + 신규 security-auditor). Phase 역할 표에 security-auditor 행 추가.
+
+### Security
+- **비밀값 즉시 BLOCK 원칙 불변** — 실제 비밀값(난수성 토큰) 은 Phase 무관 어디서든 즉시 [BLOCK]. 이번 변경은 **더미/플레이스홀더 구분**만 추가 (교육용 예시로 의도된 `<YOUR_API_KEY>` 등은 Phase 3-6 에서 [ASK]). Phase 7-8 실제 파일에는 더미도 [BLOCK].
+- **security-auditor Scope Boundary 엄격** — 어시스턴트 프로젝트(`${CLAUDE_PLUGIN_ROOT}`) · 대상 프로젝트 소스 코드 · `docs/` 설계 문서는 검사 범위 **외**. 플러그인 자체 파일 오검사 방지.
+- **Dim 6 "복잡도 게이트 무관 전체 실행" 원칙 유지** — 매트릭스는 시행 시점 명확화이며, 모든 위반은 최소 1회 [BLOCK] 으로 승격된다 (Phase 3-6 조기 BLOCK 또는 Phase 7-8/9 최종 BLOCK).
+
+### Rationale
+- **왜 Red-team Advisor 전체를 Haiku 로 바꾸지 않았는가**: Red-team Advisor 는 Dim 1~13 중 대다수가 **맥락 추론**(목적-수단 정합성, 암묵적 가정 식별 등) 을 요구. Haiku false-positive 리스크가 크다. 반면 Dim 6 는 grep 수준 패턴 매칭만 필요 → Haiku 로 분리가 자연스러움. `ops-auditor` 가 Sonnet 을 쓰는 이유(운영 부채 맥락 추론) 와 동일 논리.
+- **왜 Phase 3-6 [NOTE] 로 하강하는가**: Phase 3-6 산출물은 **설계 마크다운**이며 실제 `settings.json` 권한 목록은 Phase 7-8 에서 확정된다. 설계 스펙의 "이 에이전트는 쉘 실행 필요" 서술을 [BLOCK] 으로 걸면 **premature reject** — 실제 위반은 Phase 7-8 에서 확실히 판정 가능.
+- **순비용 효과**: BLOCK 루프 감소(세션당 ~$0.8 절감) + Haiku 분리(~$0.2 절감) = ~$1.0. 보수 추정 -$0.5, 낙관 추정 -$0.8 (Phase 7-8 재작업 1회 가정).
+
+### Breaking
+- 없음. 기존 하네스는 영향 없음. Dim 6 매트릭스는 **Advisor 실행 시점의 행동 변경**이며 기존 생성물 재검증 불필요.
+
 ## [0.8.0] - 2026-04-22
 
 자동 판별 로직의 구조적 결함 일괄 수정. 기존 시스템은 프론트엔드 프리셋(3-E)·Strict Coding(3-B)·code-researcher(3-D) 판별을 전적으로 **파일 아티팩트** 에만 의존하여, 빈 폴더(greenfield) 프로젝트에서 사용자가 발화로 명시한 의도가 점수 0점으로 묵살되는 맹점이 있었다. 예: 사용자가 "프론트엔드 디자인도 개선" 을 초기 발화에 명시해도 `package.json` 이 없으면 프리셋 자동 주입이 스킵되는 케이스. 이번 릴리즈는 Phase 0 사전 인터뷰에 **구조화된 "품질 축" 멀티셀렉트 질문(A6)** 을 추가하여 판별 입력을 명시적 사용자 답변으로 승격하고, 빈 폴더 greenfield 에서도 사용자 의도가 자동 판별의 공식 입력이 되도록 재설계한다. 경량 트랙 판별 기준도 8→9 로 확장되어 "대규모 마이그레이션/리라이트 의도가 있는 빈 폴더" 가 lightweight 로 오분류되던 역설을 해소한다.
