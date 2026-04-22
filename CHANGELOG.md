@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-04-22
+
+세션 시작 시 자동 버전 체크 훅 신설. 플러그인 저장소에 새 릴리즈가 올라오면 Claude Code 세션이 열릴 때 `⬆ harness-architect vX.Y.Z 출시됨` 배너를 자동으로 출력해 사용자에게 업데이트를 알린다. 네트워크·쉘·버전 비교 로직은 방어적으로 설계되어 실패 시 사용자 흐름을 방해하지 않는다.
+
+### Added
+- **`scripts/check-update.sh` 신규** — SessionStart 훅으로 실행되어 GitHub Releases API (`/repos/leee880619-commits/ClaudeCode-Harness-Setup-Assistant/releases/latest`) 에서 최신 버전을 조회하고, 현재 설치 버전보다 높으면 배너를 stdout 으로 출력한다.
+- **하루 1회 캐시** — `/tmp/harness-architect-update-check-$(id -u)` 에 24시간 캐시. 세션을 여러 번 열어도 GitHub API 호출은 사용자당 하루 1회. 사용자별 UID 분리로 공유 `/tmp` 환경 충돌 방지.
+- **`.claude/hooks/hooks.json` — `SessionStart` 훅 엔트리 추가**. `bash ${CLAUDE_PLUGIN_ROOT}/scripts/check-update.sh` 를 세션 시작 시 실행.
+
+### Security
+- **쉘 인젝션 방어** — 플러그인 경로(`CLAUDE_PLUGIN_ROOT`)와 GitHub API 응답을 python 인라인 코드 내부에 보간하지 않고 `sys.argv` 로 전달. 경로에 공백/특수문자가 포함돼도 안전.
+- **응답 크기 상한** — `curl --max-filesize 65536` (64KB) 로 악의적 응답의 메모리 소모 차단.
+- **타임아웃** — `curl --max-time 5` 로 네트워크 정체 시 세션 시작 지연 최소화.
+- **OS 무관 semver 비교** — BSD `sort` 에 없는 `-V` 플래그 대신 python3 튜플 비교 (`re.match(r"^(\d+)\.(\d+)\.(\d+)")`) 로 macOS/Linux/WSL 모두 이식성 확보.
+- **실패 시 조용히 종료** — `CLAUDE_PLUGIN_ROOT` 미설정, `plugin.json` 부재, `curl`/`python3` 실패, 네트워크 불가, 파싱 실패 등 모든 엣지케이스에서 `exit 0` 으로 사용자 흐름 비방해.
+
 ## [0.7.0] - 2026-04-22
 
 프론트엔드 디자인 프리셋 신설. UI 레이어 중심 프로젝트를 대상 프로젝트로 감지하면 하네스 세팅 과정에서 `frontend-designer` + `frontend-ux-reviewer` 에이전트와 `frontend-design` 진입점 스킬이 자동 주입된다. 외부 스킬 추가 설치 없이 자체 내장 색상 규칙(OKLCH·APCA Lc≥60·WCAG AA·2계층 토큰·60-30-10·색맹 대응)만으로 완결 동작. 생성형 파이프라인은 디자이너→리뷰어 필수 페어로 실행되며 3회차 에스컬레이션 래더(1회 자동재작업·2회 사용자 3선택·3회 중단)가 내장되어 있다. Phase 5·6 및 경량 트랙 모두 프리셋 주입 파일을 재작성·덮어쓰기 금지하는 소유권 보호 규약을 준수한다.
