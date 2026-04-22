@@ -2,11 +2,11 @@
 
 ## Goal
 
-경량 트랙 판별(8개 AND 조건 충족)을 통과한 프로젝트의 Phase 3-6 설계를 단일 에이전트가 경량 처리한다.
+경량 트랙 판별(9개 AND 조건 충족)을 통과한 프로젝트의 Phase 3-6 설계를 단일 에이전트가 경량 처리한다.
 목표: 추가 LLM 호출 최소화, 30분 이내 MVP 하네스 완성.
 
-**이 플레이북은 오케스트레이터가 8개 조건 전체를 검증한 후에만 진입한다.**
-솔로·웹앱 여부만으로 경량 트랙을 가정하지 않는다 — 코드베이스 규모·배포·서비스 복잡도까지 모두 통과해야 한다.
+**이 플레이북은 오케스트레이터가 9개 조건 전체를 검증한 후에만 진입한다.**
+솔로·웹앱 여부만으로 경량 트랙을 가정하지 않는다 — 코드베이스 규모·배포·서비스 복잡도·사용자 발화 의도까지 모두 통과해야 한다.
 
 Phase 3-6의 전용 플레이북(workflow-design, pipeline-design, agent-team, skill-forge)을
 읽지 않는다. 이 플레이북만으로 경량 결정을 완결한다.
@@ -14,8 +14,8 @@ Phase 3-6의 전용 플레이북(workflow-design, pipeline-design, agent-team, s
 ## Prerequisites
 
 - `docs/{요청명}/01-discovery-answers.md` 존재 및 공통 5섹션 헤더 포함
-- `00-target-path.md` frontmatter의 `track: lightweight` 확인 (오케스트레이터가 8개 조건 검증 후 기록)
-- 조건 목록: 솔로, 웹앱/CLI, 비에이전트, 에이전트 신호 없음, Strict Coding 신호 없음, 소스 파일 ≤100개·깊이 ≤5, 배포 단순, 단일 서비스
+- `00-target-path.md` frontmatter의 `track: lightweight` 확인 (오케스트레이터가 9개 조건 검증 후 기록)
+- 조건 목록: 솔로, 웹앱/CLI, 비에이전트, 에이전트 신호 없음, Strict Coding 신호 없음, 소스 파일 ≤100개·깊이 ≤5, 배포 단순, 단일 서비스, 사용자 발화 의도에 대규모 마이그레이션/리라이트/멀티 서비스/에이전트 체인 신호 없음
 - **프리셋 주입 파일 소유권 보호**: `01-discovery-answers.md` 의 `## Context for Next Phase` 에 `프론트엔드 프리셋 주입 여부: yes` 가 있으면, 경량 트랙도 다음 파일 집합을 **주입 완료 상태** 로 보존한다 — `.claude/agents/frontend-designer.md`, `.claude/agents/frontend-ux-reviewer.md`, `.claude/skills/frontend-design/*`. 경량 트랙의 단일 설계 패스에서 해당 파일을 재작성·덮어쓰기 금지. 필요 시 보완 에이전트·스킬을 **별도 이름** 으로 추가한다. 이 규약은 풀 트랙 Phase 5·6 의 소유권 보호 규약과 동일한 취지.
 
 ## 질문 소유권
