@@ -498,9 +498,9 @@
 
     <div class="stats reveal" aria-label="지표">
       <div class="stat"><i class="fa-solid fa-layer-group"></i><div class="n" data-count="9">0</div><div class="l">오케스트레이션 Phase (+ 옵션 2.5)</div></div>
-      <div class="stat"><i class="fa-solid fa-user-astronaut"></i><div class="n" data-count="9">0</div><div class="l">전문 에이전트</div></div>
-      <div class="stat"><i class="fa-solid fa-book"></i><div class="n" data-count="12">0</div><div class="l">Playbook 방법론</div></div>
-      <div class="stat"><i class="fa-solid fa-database"></i><div class="n" data-count="22">0</div><div class="l">Knowledge + 도메인 KB</div></div>
+      <div class="stat"><i class="fa-solid fa-user-astronaut"></i><div class="n" data-count="11">0</div><div class="l">전문 에이전트</div></div>
+      <div class="stat"><i class="fa-solid fa-book"></i><div class="n" data-count="14">0</div><div class="l">Playbook 방법론</div></div>
+      <div class="stat"><i class="fa-solid fa-database"></i><div class="n" data-count="23">0</div><div class="l">Knowledge + 도메인 KB</div></div>
     </div>
   </div>
 </section>
@@ -685,18 +685,37 @@
       <div class="step reveal">
         <div class="num">4</div>
         <div>
-          <h4>프로젝트 설명과 함께 설치 커맨드 실행</h4>
-          <p>프로젝트에 대한 설명을 함께 적어서 호출합니다. 러프해도 동작하지만, 구체적일수록 인터뷰가 짧아집니다.</p>
-<pre class="code"><button class="copy" data-copy>복사</button><code><span class="cmt"># 1) 인자 없이 — 모든 질문을 AskUserQuestion으로 받음</span>
+          <h4>슬래시 커맨드 실행</h4>
+          <p>이 플러그인이 제공하는 커맨드는 세 가지입니다. 상황에 맞는 하나만 사용하세요.</p>
+
+          <p style="margin:16px 0 6px;font-weight:600;font-size:14px;color:var(--accent)"><i class="fa-solid fa-wand-magic-sparkles" style="margin-right:6px"></i>harness-setup — 하네스 구축 (메인)</p>
+          <p style="margin:0 0 8px;font-size:13.5px;color:var(--text-dim)">신규 프로젝트·Cursor 마이그레이션·기존 하네스 감사 모두 이 커맨드로 시작합니다. 대상 폴더 상태에 따라 자동 분기됩니다.</p>
+<pre class="code"><button class="copy" data-copy>복사</button><code><span class="cmt"># 기본 — Phase 0에서 경로·프로젝트 정보를 질문으로 수집</span>
 /harness-architect:harness-setup
 
-<span class="cmt"># 2) 프로젝트 설명을 함께 — 러프해도 OK, 구체적일수록 인터뷰가 짧아짐</span>
-/harness-architect:harness-setup 이 프로젝트는 Next.js + tRPC 로 만드는 내부 운영 대시보드야.
+<span class="cmt"># 프로젝트 설명과 함께 — 구체적일수록 인터뷰가 짧아짐</span>
+/harness-architect:harness-setup 이 프로젝트는 Next.js + tRPC 내부 운영 대시보드야.
 테스트는 Vitest, 배포는 Vercel. 솔로 개발이고, DB는 Supabase.
 
-<span class="cmt"># 3) 경로 인자 — Phase 0의 "경로 입력" 질문이 생략됨</span>
-/harness-architect:harness-setup /path/to/your/project</code></pre>
-          <div class="hint"><i class="fa-solid fa-circle-info"></i> 세 가지 호출 방식 중 상황에 맞는 하나만 쓰면 됩니다. 프로젝트 폴더에 이미 진행 중이던 산출물이 있으면 자동으로 감지하고 재개할지 묻습니다.</div>
+<span class="cmt"># 경로 인자 — Phase 0의 "경로 입력" 질문이 생략됨</span>
+/harness-architect:harness-setup /path/to/your/project
+
+<span class="cmt"># "빠르게" 또는 --fast 포함 — Phase 2.5 도메인 리서치를 스킵</span>
+/harness-architect:harness-setup --fast /path/to/your/project</code></pre>
+          <div class="hint"><i class="fa-solid fa-circle-info"></i> 대상 폴더에 <code>.claude/</code>가 있으면 <b>Harness Audit</b> 모드로, <code>.cursor/</code>가 있으면 <b>Cursor Migration</b> 모드로 자동 전환됩니다. 이미 작업 중이던 산출물이 있으면 재개 여부를 묻습니다.</div>
+
+          <p style="margin:20px 0 6px;font-weight:600;font-size:14px;color:var(--accent-2)"><i class="fa-solid fa-stethoscope" style="margin-right:6px"></i>ops-audit — 런타임 부채 사후 감사</p>
+          <p style="margin:0 0 8px;font-size:13.5px;color:var(--text-dim)">구축이 끝난 하네스가 실제 운영 중 어디서 무너지는지 <b>read-only</b>로 점검합니다. RISK-HIGH/MED/LOW 등급 보고서를 텍스트로 반환하며 파일은 수정하지 않습니다.</p>
+<pre class="code"><button class="copy" data-copy>복사</button><code><span class="cmt"># 현재 폴더의 하네스를 감사 (경로 질문으로 수집)</span>
+/harness-architect:ops-audit
+
+<span class="cmt"># 경로 인자로 직접 지정</span>
+/harness-architect:ops-audit /path/to/existing/project</code></pre>
+          <div class="hint" style="border-color:rgba(125,211,252,0.3)"><i class="fa-solid fa-circle-info" style="color:var(--accent-2)"></i> <b>harness-setup Phase 9</b>가 "빌드 중 구조가 올바른가"를 검증하는 린터라면, <b>ops-audit</b>은 "빌드 후 실제 실행 시 어디서 문제가 생기는가"에 집중합니다. 세션 연속성·실패 복구·에이전트-스킬 이중 관리·산출물 덮어쓰기·크로스 구조 중복 5개 Dimension을 검사합니다.</div>
+
+          <p style="margin:20px 0 6px;font-weight:600;font-size:14px;color:var(--accent-3)"><i class="fa-solid fa-circle-question" style="margin-right:6px"></i>help — 사용법 안내</p>
+          <p style="margin:0 0 8px;font-size:13.5px;color:var(--text-dim)">커맨드 목록·9-Phase 흐름·재개 방법·생성 파일 트리를 정적으로 출력합니다. 에이전트를 소환하지 않습니다.</p>
+<pre class="code"><button class="copy" data-copy>복사</button><code>/harness-architect:help</code></pre>
         </div>
       </div>
 
@@ -754,7 +773,7 @@
       <article class="phase reveal">
         <span class="tag" style="color:var(--accent-3);background:rgba(240,171,252,0.08);border-color:rgba(240,171,252,0.22)"><i class="fa-solid fa-globe"></i> Phase 2.5 · 옵션</span>
         <h4>도메인 리서치 — 큐레이션 KB + 라이브 검색</h4>
-        <p>딥리서치·웹툰·유튜브·코드리뷰·기술문서·데이터 파이프라인·마케팅 등 도메인이 특정되면, <code>knowledge/domains/</code> 8종 KB와 <code>WebSearch</code>/<code>WebFetch</code>로 표준 워크플로우·역할·도구 스택을 수집. 출처 URL + 발췌일 강제.</p>
+        <p>딥리서치·웹툰·유튜브·코드리뷰·기술문서·데이터 파이프라인·마케팅·프론트엔드 디자인 등 도메인이 특정되면, <code>knowledge/domains/</code> 9종 KB와 <code>WebSearch</code>/<code>WebFetch</code>로 표준 워크플로우·역할·도구 스택을 수집. 출처 URL + 발췌일 강제.</p>
         <div class="icns"><span><i class="fa-solid fa-robot"></i> phase-domain-research</span><span><i class="fa-solid fa-forward"></i> "해당 없음"/Fast Track이면 스킵</span></div>
       </article>
 
@@ -947,6 +966,18 @@
         <div><h4>도메인이 뚜렷하면 Phase 2.5를 켜세요</h4><p>딥리서치·웹툰 제작·유튜브 기획·코드리뷰·기술문서·데이터 파이프라인·마케팅 캠페인 등 업계 표준이 있는 도메인이면 <code>phase-domain-research</code>가 큐레이션 KB와 라이브 검색으로 표준 워크플로우·역할·도구 스택을 모아 후속 Phase에 주입합니다. 필요 없으면 "해당 없음" 또는 "빠르게"로 자동 스킵.</p></div>
       </div>
       <div class="tip reveal">
+        <div class="ic"><i class="fa-solid fa-bolt"></i></div>
+        <div><h4>솔로 웹앱·CLI는 경량 트랙(Phase L)이 빠릅니다</h4><p>8개 기준(솔로, 웹앱/CLI, 비에이전트, 소스 파일 ≤100개 등)을 모두 충족하면 Phase 3–6을 단일 에이전트가 25–35분에 처리합니다. 단, 세션 중단 시 재개 불가 — 처음부터 재실행이 필요합니다.</p></div>
+      </div>
+      <div class="tip reveal">
+        <div class="ic" style="color:var(--accent-2);background:rgba(125,211,252,0.08);border-color:rgba(125,211,252,0.22)"><i class="fa-solid fa-palette"></i></div>
+        <div><h4>UI 레이어 프로젝트는 프론트엔드 디자인 프리셋이 자동 주입됩니다</h4><p>React/Vue/Svelte + Tailwind 등 UI 프레임워크가 감지되면 <code>frontend-designer</code>(생성) + <code>frontend-ux-reviewer</code>(리뷰) 에이전트 페어와 OKLCH·APCA Lc≥60·WCAG AA 색상 규칙이 내장된 스킬이 하네스에 자동 추가됩니다. 외부 스킬 추가 설치 없이 동작합니다.</p></div>
+      </div>
+      <div class="tip reveal">
+        <div class="ic"><i class="fa-solid fa-stethoscope"></i></div>
+        <div><h4>완성된 하네스는 ops-audit으로 사후 감사하세요</h4><p><code>/harness-architect:ops-audit</code> 커맨드로 세션 연속성·실패 복구·에이전트-스킬 이중 관리·산출물 버저닝·크로스 워크플로우 구조 중복 5개 Dimension의 런타임 감사 리포트를 받을 수 있습니다. 파일 수정 없이 읽기 전용으로 실행됩니다.</p></div>
+      </div>
+      <div class="tip reveal">
         <div class="ic"><i class="fa-solid fa-code-pull-request"></i></div>
         <div><h4>커밋/PR에는 산출물까지</h4><p><code>docs/{요청명}/</code>도 함께 커밋하면 이후에 의사결정 히스토리를 그대로 되짚을 수 있습니다.</p></div>
       </div>
@@ -969,7 +1000,7 @@
 <footer>
   <div class="wrap">
     <div>
-      <span>harness-architect v0.4.0</span> · Apache-2.0 · 사용 가이드
+      <span>harness-architect v0.7.0</span> · Apache-2.0 · 사용 가이드
     </div>
     <div>
       <a href="https://github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> github.com/leee880619-commits/ClaudeCode-Harness-Setup-Assistant</a>
