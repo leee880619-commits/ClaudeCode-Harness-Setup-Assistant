@@ -35,7 +35,13 @@ except Exception:
 ' "$PLUGIN_JSON" 2>/dev/null) || exit 0
 [[ -z "$CURRENT" ]] && exit 0
 
-# 캐시 로드 — 24h 이내면 API 스킵
+# 캐시 값 검증 — 반드시 순수 SemVer(x.y.z[...]) 만 허용
+# 구버전(v0.7.1 이하)이 저장한 배너 문자열 등 비정상 내용은 폐기하고 재조회 유도
+is_valid_version() {
+  [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]
+}
+
+# 캐시 로드 — 24h 이내 AND 내용이 유효한 버전 문자열이면 API 스킵
 LATEST=""
 SHOULD_FETCH=1
 if [[ -f "$CACHE_FILE" ]]; then
@@ -44,8 +50,14 @@ if [[ -f "$CACHE_FILE" ]]; then
     || echo 0)
   NOW=$(date +%s)
   if (( NOW - LAST_CHECK < 86400 )); then
-    LATEST=$(head -n 1 "$CACHE_FILE" 2>/dev/null | tr -d '[:space:]')
-    SHOULD_FETCH=0
+    CACHED=$(head -n 1 "$CACHE_FILE" 2>/dev/null | tr -d '[:space:]')
+    if is_valid_version "$CACHED"; then
+      LATEST="$CACHED"
+      SHOULD_FETCH=0
+    else
+      # 손상된 캐시(구버전 배너 등) — 삭제 후 재조회
+      rm -f "$CACHE_FILE" 2>/dev/null || true
+    fi
   fi
 fi
 
@@ -75,10 +87,15 @@ except Exception:
     printf '%s' "$NEW_LATEST" > "$CACHE_FILE" 2>/dev/null || true
     LATEST="$NEW_LATEST"
   else
-    # API 실패 — 기존 캐시 내용은 유지하고 타임스탬프만 갱신 (같은 날 반복 API 호출 방지)
-    touch "$CACHE_FILE" 2>/dev/null || true
+    # API 실패 — 유효한 기존 캐시만 재사용, 손상 캐시는 무시
     if [[ -s "$CACHE_FILE" ]]; then
-      LATEST=$(head -n 1 "$CACHE_FILE" 2>/dev/null | tr -d '[:space:]')
+      CACHED=$(head -n 1 "$CACHE_FILE" 2>/dev/null | tr -d '[:space:]')
+      if is_valid_version "$CACHED"; then
+        LATEST="$CACHED"
+        touch "$CACHE_FILE" 2>/dev/null || true
+      else
+        rm -f "$CACHE_FILE" 2>/dev/null || true
+      fi
     fi
   fi
 fi
