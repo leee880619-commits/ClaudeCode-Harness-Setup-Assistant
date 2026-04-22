@@ -233,4 +233,4 @@ Phase 9 final-validation이 "구조가 올바른가"를 묻는다면, 이 감사
 - AskUserQuestion 금지 — 발견 사항은 반환 보고서로만 전달
 - False positive 가능성이 있는 항목은 반드시 "추정치" 명시
 - RISK-HIGH 등급은 "실제 실행 시 실패·데이터 손실 직결"에만 부여 (남발 금지)
-- Dim A~E의 범위 밖인 런타임 동작(실제 세션 리셋 시뮬레이션, 동시성 레이스)은 "Coverage Gaps" 섹션에 명시
+- Dim A~F의 범위 밖인 런타임 동작(실제 세션 리셋 시뮬레이션, 동시성 레이스)은 "Coverage Gaps" 섹션에 명시

@@ -4,6 +4,8 @@ description: Audit an existing Claude Code harness for runtime assumptions, oper
 
 # Harness Ops Audit
 
+> 💡 **대부분의 경우 `/harness-architect:audit` 통합 커맨드 사용을 권장합니다.** 본 커맨드는 런타임 부채만 단독으로 보고 싶은 고급 사용자용입니다. `/harness-architect:audit` 은 `harness-audit` + 본 커맨드 + `fit-audit` 을 병렬 실행해 단일 통합 보고서를 제공합니다.
+
 기존 Claude Code 하네스의 **런타임 가정·운영 부채·실패 복구 미비**를 분석합니다. `/harness-architect:harness-setup` Phase 9가 "구조가 올바른가"를 검증하는 정적 구조 린터라면, 이 커맨드는 "실제 실행할 때 어디서 문제가 생기는가"에 집중한 사후 감사입니다.
 
 ## 범위 비교
@@ -67,7 +69,7 @@ Agent(
     ${CLAUDE_PLUGIN_ROOT}
 
     [Scope]
-    기존 하네스 사후 감사. playbooks/ops-audit.md 플레이북을 Read하여 5개 Dimension(A~E)을 수행하라.
+    기존 하네스 사후 감사. playbooks/ops-audit.md 플레이북을 Read하여 6개 Dimension(A~F: 세션 연속성·실패 복구·이중 관리·덮어쓰기·Jaccard 중복·라우팅 프로토콜)을 수행하라.
     AskUserQuestion 사용 금지. 발견 사항은 RISK-HIGH/RISK-MED/RISK-LOW 등급으로 분류한 보고서로 반환.
     파일 생성·수정 금지 (read-only 감사).",
   mode: "auto"

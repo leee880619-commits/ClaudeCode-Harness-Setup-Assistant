@@ -1,6 +1,6 @@
 ---
 name: ops-auditor
-description: 기존 Claude Code 하네스의 런타임 가정·운영 부채·실패 복구 미비를 6개 Dimension으로 감사. /harness-architect:ops-audit 커맨드 전용.
+description: 기존 Claude Code 하네스의 런타임 가정·운영 부채·실패 복구 미비를 6개 Dimension으로 감사. /harness-architect:ops-audit 커맨드 및 /harness-architect:audit 통합 감사에서 호출.
 model: claude-sonnet-4-6
 ---
 

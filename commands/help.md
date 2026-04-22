@@ -23,15 +23,42 @@ description: harness-architect 플러그인 사용법, 제공 커맨드, 9-Phase
 
 ---
 
-## 📋 제공 슬래시 커맨드
+## 📋 주요 커맨드 (대부분 여기서 끝남)
 
-| 커맨드 | 역할 | 실행 시점 | 출력 등급 |
-|--------|------|----------|----------|
+| 커맨드 | 역할 | 언제 쓰는가 | 출력 등급 |
+|--------|------|------------|----------|
 | `/harness-architect:harness-setup [경로]` | **9-Phase 하네스 구축** (메인 진입점) | 신규 프로젝트 | BLOCK / ASK / NOTE |
-| `/harness-architect:ops-audit [경로]` | **런타임 감사** — 세션 연속성·실패 복구·산출물 덮어쓰기·에이전트-스킬 이중 관리·크로스 구조 중복을 5개 Dimension으로 read-only 감사 | 기존 하네스 | RISK-HIGH / RISK-MED / RISK-LOW |
+| `/harness-architect:audit [경로]` | **기존 하네스 통합 감사** — 구성 정합성 + 런타임 부채 + 프로젝트 적합성을 3개 auditor 로 **병렬** 실행 후 단일 통합 보고서 | 기존 하네스 | 통합 Critical/High/Medium/Low/Aligned |
 | `/harness-architect:help` | 이 사용법 안내 | — | — |
 
-> **`ops-audit` 사용법**: `/harness-architect:harness-setup` 으로 구축한 하네스가 운영 중 실제로 문제를 일으키는지 사후 점검할 때 사용합니다. Phase 9 final-validation이 "빌드 중 구조가 올바른가"를 검증한다면, ops-audit은 "빌드 후 실제 실행 시 어디서 무너지는가"에 집중합니다. 파일을 수정하지 않고 RISK 등급 보고서만 텍스트로 제시합니다.
+> **두 시나리오**:
+> - **시나리오 A — 완전 신규 설치**: `/harness-architect:harness-setup` 만 실행. Phase 9 final-validation 이 빌드 직후 보안·실패 복구 섹션·라우팅 규약·개방형 루프 금지 문구를 모두 검증하므로 추가 감사 불필요.
+> - **시나리오 B — 기존 하네스 점검**: `/harness-architect:audit` 한 번. 3개 감사가 병렬 실행되어 통합 보고서 제공.
+
+---
+
+## 🔧 개별 감사 커맨드 (고급 사용자)
+
+특정 축만 깊게 보고 싶을 때 사용합니다. 대부분의 경우 위 `/harness-architect:audit` 하나로 충분합니다.
+
+| 커맨드 | 근본 질문 | 출력 등급 |
+|--------|----------|----------|
+| `/harness-architect:harness-audit [경로]` | "파일 구조가 올바른가" (구성 정합성·JSON·anti-pattern·매핑) | CRITICAL / HIGH / MEDIUM / LOW |
+| `/harness-architect:ops-audit [경로]` | "실행할 때 실패하는가" (세션 연속성·실패 복구·덮어쓰기·Jaccard 중복·라우팅) | RISK-HIGH / RISK-MED / RISK-LOW |
+| `/harness-architect:fit-audit [경로]` | "이 프로젝트에 여전히 맞는가" (트랙·아키타입·권한 드리프트·MCP/훅) | MAJOR-DRIFT-CRITICAL / MAJOR-DRIFT-MED / MINOR-DRIFT / ALIGN |
+
+**언제 개별 커맨드가 유용한가**:
+- 대규모 하네스 (에이전트 30+ 개·CLAUDE.md 다중 @import) 에서 통합 감사가 메인 세션 컨텍스트를 과도하게 점유할 때 → 개별 커맨드 순차 실행
+- CI 파이프라인에서 특정 축만 자동 검사할 때
+- 감사 결과 재현 · 비교가 필요해 단일 축의 보고서를 따로 저장하고 싶을 때
+
+**축 → 커맨드 매핑**:
+- **권한 안전성** (`Bash(*)` / `sudo *` / 비밀값 노출 / 필수 deny 부재) → `/harness-architect:harness-audit` (CRITICAL 등급이 보안 침해 직결 케이스를 독립 커버)
+- **운영 중 무한 루프·세션 복구 실패·산출물 덮어쓰기** → `/harness-architect:ops-audit`
+- **하네스가 프로젝트와 여전히 맞는지** (솔로→팀 전환, CLI→모노레포, 도메인 피봇, MCP 엔드포인트 변경) → `/harness-architect:fit-audit`
+- **anti-pattern·JSON 파싱·에이전트↔플레이북 매핑** → `/harness-architect:harness-audit`
+
+SSoT 공유 항목(W4 절대 경로·W16 Jaccard 중복) 에서 판정 충돌 시 **ops-audit 결과 우선** 규약이 두 감사 모두에 적용됩니다.
 
 ---
 
@@ -62,7 +89,7 @@ description: harness-architect 플러그인 사용법, 제공 커맨드, 9-Phase
 - **Meta-Leakage Guard**: 생성물에 플러그인 자체 규칙이 새지 않도록 검증
 - **경량 트랙 (Phase L)**: 8개 AND 조건 충족 시 Phase 3-6을 단일 에이전트가 25-35분에 처리. 단일 패스 설계이므로 세션 중단 시 재개 불가 — 처음부터 재실행
 - **런타임/운영 가드** (신규): 대상 프로젝트가 에이전트 파이프라인 구조인 경우 Phase 3·4 산출물에 Session Recovery Protocol·Failure Recovery & Artifact Versioning 섹션 필수. Advisor Dim 13이 세션 연속성·실패 복구 종료 조건·에이전트-스킬 이중 관리·산출물 덮어쓰기·환경 이식성을 검증. 일반 웹앱/CLI 프로젝트는 스킵 (메타 누수 방지)
-- **사후 감사** (신규): 빌드 후 운영 중 문제는 `/harness-architect:ops-audit` 이 5개 Dimension으로 read-only 점검. 경량 트랙 하네스는 `session_recovery: not_applicable` / `artifact_versioning: idempotent` 공식 선언으로 RISK-LOW 자동 분류
+- **사후 감사 통합**: 빌드 후 운영 중 문제는 `/harness-architect:audit` 이 3개 auditor(harness-auditor · ops-auditor · fit-auditor) 를 병렬 실행하여 단일 통합 보고서로 제공. 경량 트랙 하네스는 `session_recovery: not_applicable` / `artifact_versioning: idempotent` 공식 선언으로 RISK-LOW 자동 분류. 특정 축만 깊게 보려면 개별 커맨드(`harness-audit`·`ops-audit`·`fit-audit`) 직접 호출 가능
 
 ---
 
@@ -99,7 +126,7 @@ description: harness-architect 플러그인 사용법, 제공 커맨드, 9-Phase
 
 - **Phase 진행이 막힘** → Advisor가 BLOCK 2회 반환 시 "무시 / 수동 개입 / 스킵" 선택지 제공
 - **Phase 3·4 Dim 13 BLOCK 루프** → 에이전트 파이프라인 프로젝트에서 운영 가드 섹션(Session Recovery Protocol / Failure Recovery & Artifact Versioning) 누락 시 재실행 루프 발생. Phase당 +5~8분 추가 가능. 루프 한도 초과 시 사용자 선택지 제공
-- **기존 하네스 운영 문제 점검** → `/harness-architect:ops-audit` 로 사후 감사 (read-only). 구성 진단이 필요하면 `harness-setup` 재실행
+- **기존 하네스 점검** → `/harness-architect:audit` 로 통합 감사 (구성 + 런타임 + 적합성 병렬, read-only). 특정 축만 보려면 개별 커맨드 직접 호출
 - **경로 오류** → 절대 경로 필수. 공백·한글 경로도 지원
 - **플러그인 자체 수정** → `claude --plugin-dir .` 로 개발 모드 진입 (기여자 전용, `CLAUDE.md` 참조)
 

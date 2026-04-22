@@ -6,6 +6,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-04-23
+
+**UX 재편 + 신규 감사 커맨드 2개** (fit-audit · 통합 audit) + **phantom 해소** (harness-audit 실체화) + **Phase 9 Runtime Spot Check 이식**.
+
+v0.8.x 까지 사용자에게 노출된 기능은 3개 슬래시 커맨드(`harness-setup`·`ops-audit`·`help`) + phantom 참조만 되던 `/harness-architect:harness-audit` (파일 없이 5개 문서가 언급) 구조였다. 이번 릴리즈는 사용자 관점에서 **두 시나리오** 로 UX 를 정리한다:
+
+1. **시나리오 A — 완전 신규 설치**: `/harness-architect:harness-setup` 한 번으로 자기완결. Phase 9 final-validation 에 `ops-audit` Dim B(실패 복구 섹션 스팟) + Dim F(메인 세션 Skill 직접 호출 위험 탐지) 핵심 체크를 이식하여 빌드 직후 운영 중 치명 구조를 차단.
+2. **시나리오 B — 기존 하네스 점검**: 신규 `/harness-architect:audit` 한 번으로 3개 auditor 병렬 실행 + 단일 통합 보고서. 특정 축만 단독으로 보고 싶은 고급 사용자는 `/harness-architect:harness-audit`·`ops-audit`·`fit-audit` 을 직접 호출 가능.
+
+기본 노출 커맨드는 `harness-setup` + `audit` + `help` 3개로 단순화하고, 개별 감사 커맨드 3개는 `help.md` 의 "🔧 개별 감사 커맨드 (고급 사용자)" 섹션으로 계층화. 파일은 보존되어 Breaking change 없음.
+
+### Added
+- **신규 통합 커맨드 `/harness-architect:audit`** (`commands/audit.md`) — 기존 환경 감사의 단일 엔트리. Pre-flight 통과 후 `harness-auditor` + `ops-auditor` + `fit-auditor` 3개 에이전트를 **한 응답에 병렬 소환**. 반환 수신 후 severity 3체계(CRITICAL/HIGH/MEDIUM/LOW ↔ RISK-H/M/L ↔ MAJOR-DRIFT-CRITICAL/MAJOR-DRIFT-MED/MINOR-DRIFT/ALIGN)를 통합 버킷(Critical/High/Medium/Low/Aligned)으로 매핑해 단일 Markdown 보고서로 조립. **동일 항목 식별 알고리즘** 명시 (W4: `(파일경로)` 키, W16: `(정렬된 파일쌍)` 키, 기타 Jaccard ≥70% + 공통 파일 경로). SSoT 공유 항목 충돌 시 ops-audit 판정 우선, 비-SSoT 중복은 높은 등급 채택. **원본 등급 병기 원칙** (`[ops / RISK-HIGH → Critical]` 형식), **부분 실패 처리** (일부 auditor 실패 시 나머지로 부분 조립 + 실패 섹션 명시, 3개 전부 실패 시 중단), **보고서 크기 상한 300 라인** (초과 시 Medium/Low 축약 자동 적용), **heuristic-only-mode 조건부 경고** (Critical 유보 안내) 등 운영 규약 포함. 대규모 하네스에서는 개별 커맨드 순차 실행 권장 안내 포함.
+- **신규 커맨드 `/harness-architect:harness-audit`** (`commands/harness-audit.md`) — phantom 해소. v0.8.x 까지 5개 문서(`commands/ops-audit.md`·`commands/fit-audit.md`·`playbooks/final-validation.md`·`playbooks/fit-audit.md`·`playbooks/fresh-setup.md`)가 참조했지만 실제 파일은 존재하지 않던 커맨드를 실체화. 독립 실행형 구성 정합성 진단. `harness-auditor` 에이전트 소환 후 CRITICAL/HIGH/MEDIUM/LOW 4등급 보고.
+- **신규 에이전트 `harness-auditor`** (`.claude/agents/harness-auditor.md`) — Sonnet 기반 read-only 리뷰어. 기존 `playbooks/harness-audit.md` Phase 1-3(Full 4-Scope Scan → Anti-Pattern Detection → Diagnostic Report) 만 수행하고 Phase 4-5(User Decision → Execute Remediation) 는 오케스트레이터에 위임. 기존 `ops-auditor`·`fit-auditor` 와 차별화되는 근본 질문("파일 구조가 올바른가") 및 SSoT 공유 항목의 ops-audit 우선 규약 문서화. `plugin.json` `agents` 배열에 등록.
+- **신규 커맨드 `/harness-architect:fit-audit`** (`commands/fit-audit.md`) — 독립 실행 감사 커맨드. Pre-flight 진입 즉시 "이 커맨드는 진단 전용" 안내 후 `$ARGUMENTS` 경로 수집, 하네스 최소 존재 검증, `docs/*/01-discovery-answers.md` 존재 여부에 따라 `baseline-mode` / `heuristic-only-mode` 분기. 결과는 `MAJOR-DRIFT-CRITICAL / MAJOR-DRIFT-MED / MINOR-DRIFT / ALIGN` 4등급 + (발견 시) `Security Warning` 별도 섹션으로 보고.
+- **신규 에이전트 `fit-auditor`** (`.claude/agents/fit-auditor.md`) — Sonnet 기반 read-only 리뷰어. 하네스 파일·baseline 산출물·프로젝트 소스 트리(파일 수·경로·구조 신호만)·MCP 선언·훅 스크립트 정적 분석 수행. 소스 파일 본문 미조회, 네트워크 호출 없음, 훅 실행 없음 — 비용·프라이버시·flakiness·부작용 방지. `plugin.json` `agents` 배열에 등록.
+- **`playbooks/final-validation.md` Step 7 Runtime Spot Check 신설** — 시나리오 A 자기완결 게이트. 4개 하위 체크: 7-A Failure Recovery 섹션 존재 확인(헤더 + 본문 2줄 이상), 7-B 개방형 루프 금지 문구(`재설계 요청`·`다시 검증`·`Builder에게 넘김` 등) 탐지, 7-C 메인 세션 Skill 직접 호출 위험 패턴 grep(범위: `commands/`·`playbooks/`·`.claude/agents/`·`CLAUDE.md` 4개 확장), 7-D docs 체인 frontmatter 4개 필드 무결성. 기존 Step 7/8 은 Step 8/9 로 번호 이동. 필수 산출물 섹션에 `## Runtime Spot Check` 추가. 내용 완결성 심층 검증은 여전히 `ops-auditor` Dim B 담당이라는 범위 한계 명시.
+- **`playbooks/fit-audit.md` MAJOR-DRIFT 서브등급 판정 섹션** — 통합 audit 보고서의 Critical/Medium 버킷 매핑을 위해 MAJOR-DRIFT 를 `MAJOR-DRIFT-CRITICAL` (운영 방해·오도: 주요 활동 영역 미커버·허용 경로 절반 이상 stale·도메인 오도·훅 실행 불가·MCP 완전 부재) 과 `MAJOR-DRIFT-MED` (재구축 권장이나 운영 가능) 로 서브분류. heuristic-only-mode 는 CRITICAL 승격 불가 규약 포함.
+- **신규 플레이북 `playbooks/fit-audit.md`** — 7 Dimension 정의:
+  - Dim 1 트랙 드리프트 — baseline `track` 값 vs 현재 기준 재평가(경량 트랙 9조건)
+  - Dim 2 아키타입/품질축 미스핏 — `fresh-setup.md` Step 3-A~E 신호 현재 코드에 재실행 후 하네스 실제 채택과 대조
+  - Dim 3 에이전트 규모 미스핏 — `.claude/agents/*.md` 수·모델 티어 vs 소스 규모·워크플로우 복잡도 (Opus 오버피팅, Haiku 언더피팅 탐지)
+  - Dim 4 권한 경로 드리프트 **+ Security Warning** — `settings.json permissions.allow` + agent `allowed_dirs` 실존 검증, 모노레포 이관 감지. 추가 절차로 위험 allow 와일드카드(`Bash(*)`·`Bash(sudo *)` 등), 필수 deny 누락, 실제 비밀값 패턴(`sk-`·`ghp_`·`AKIA`·`Bearer` 등) 을 감지해 **드리프트 등급과 독립된 Security Warning 섹션**으로 보고. 실제/더미 구분 후 즉시 `harness-audit`/`ops-audit` 실행 권장.
+  - Dim 5 CLAUDE.md·**도메인 정체성 드리프트** — 선언 스택·팀 크기·프로젝트 유형·**도메인 키워드**(리서치·대시보드·커머스·MLOps 등) grep + `docs/*/02b-domain-research.md` 도메인 ID 추출 후 현재 파일 증거(디렉터리 명명·매니페스트) 와 교차. 리서치→웹앱 피봇 같은 도메인 드리프트 감지.
+  - Dim 6 Baseline 부재 처리 — heuristic-only-mode 전용, 모든 판정에 "(추정)" 접미사 의무
+  - **Dim 7 외부 인터페이스 드리프트 (MCP & Hook Drift)** — 하네스의 **활성 런타임 표면**을 정적 검증:
+    - 7-A MCP 서버 드리프트: `settings.json`/`settings.local.json` `mcpServers` 각 항목에 대해 command 기반(`which`), url 기반(형식 유효성), env 참조(`.env.*` 선언 확인) 정적 검증
+    - 7-B 훅 실행 가능성 드리프트: `.claude/hooks/*.sh` 의 경로 참조 유효성·외부 도구 의존성(`jq`·`python3`·`curl` 등)·실행 권한(`test -x`), `matcher` 관련성 점검
+    - 7-C 훅 누락 (역방향): 프로젝트 신호(`.env.*` 존재·force-push 권한·멀티 에이전트) 에 비해 필수 보안 훅이 `hooks.json` 에 누락됐는지 감지
+
+### Changed
+- **`.claude-plugin/plugin.json` `version` 범프** — `0.8.3` → `0.9.0` (신규 커맨드 도입 = minor bump, SemVer 준수).
+- **`plugin.json` `agents` 배열** — `fit-auditor`, `harness-auditor` 2개 항목 말미에 추가 (12개 → 14개).
+- **`commands/help.md` UX 계층화** — 기존 "📋 제공 슬래시 커맨드" 표를 **"📋 주요 커맨드 (대부분 여기서 끝남)"** (harness-setup + audit + help) 와 **"🔧 개별 감사 커맨드 (고급 사용자)"** (harness-audit + ops-audit + fit-audit) 두 섹션으로 분할. 시나리오 A/B 설명 블록 추가. "기존 하네스 점검" 안내를 `ops-audit` → `audit` (통합) 로 갱신.
+- **`commands/ops-audit.md` / `commands/fit-audit.md` 상단에 "`/harness-architect:audit` 권장" 안내 배너** — 개별 커맨드 자체 독립 실행 경로는 유지하되 대부분의 사용자가 통합 엔트리로 유도되도록 안내.
+- **`playbooks/final-validation.md` Step 8 최종 보고서 다음 단계 안내** — 기존 "/harness-audit 로 정기 점검" 을 "`/harness-architect:audit` 로 통합 감사. 특정 축만 보려면 개별 커맨드 직접 호출" 로 갱신.
+
+### Rationale
+- **UX 재편 근본 동기**: v0.8.x 까지 사용자에게 4개 기능이 노출되어 혼란(`harness-setup`·`ops-audit`·`help` + phantom `harness-audit`). 실제 사용자 관점은 **두 시나리오(신규 설치 / 기존 감사) 뿐**. 주요 노출을 `harness-setup` + `audit` 2개로 좁혀 시나리오-커맨드 1:1 매핑 달성. 개별 감사 커맨드는 고급 사용자용으로 보존해 Breaking 없이 단순화.
+- **왜 안 3(타협) 인가**: 안 1(기존 4개 + 신규 1 = 5개 노출) 은 오히려 복잡도 증가. 안 2(2개로 축소 + Breaking) 는 기존 문서·튜토리얼·북마크 무효화. 안 3 은 노출 계층화로 두 장점 결합.
+- **phantom 해소 불가피**: `/harness-architect:harness-audit` 은 5개 문서에서 "즉시 실행 강권" / "권장 순서" / "정기 점검" 목적으로 참조됐으나 파일이 없어 실행 시 실패했다. 통합 `audit` 만 추가해서는 이 참조들이 여전히 유효하지 않다. `harness-auditor` 에이전트 + `commands/harness-audit.md` 를 신설하여 참조 전체를 실체화.
+- **시나리오 A 완결성 — Phase 9 Runtime Spot Check**: `ops-audit` Dim D(덮어쓰기)·Dim E(Jaccard) 는 Phase 9 가 이미 SSoT 로 공유 커버. 미커버 영역은 Dim B(실패 복구)·Dim F(라우팅). `fit-audit` 은 빌드 직후 드리프트가 구조적으로 0 → 편입 무의미. 이식 범위는 스팟 체크 수준으로 제한(완결성 심층 검증은 여전히 `ops-auditor` 담당) — Phase 9 비대화 방지.
+- **9-A Pass 조건 "헤더 + 본문 2줄 이상"**: "헤더만 있으면 통과"(가장 약함) 는 placeholder 섹션 false negative 위험. "헤더 + `max_retries` 키워드 필수"(가장 강함) 는 자연어 표현("세 번 시도 후 포기") false positive 위험. "2줄 이상" 은 빈 껍데기만 거르는 균형점. 완결성은 `ops-auditor` 에 위임.
+- **9-C 범위 4개 파일군 확장**: Skill 직접 호출 위험은 `commands/*.md` 뿐 아니라 오케스트레이터 에이전트 정의·하네스 CLAUDE.md 본문에도 삽입 가능. `playbooks/`·`.claude/agents/`·`CLAUDE.md` 추가로 false negative 최소화.
+- **MAJOR-DRIFT 서브등급**: 통합 audit 보고서의 Critical 버킷은 "즉시 조치" 이고 Medium 버킷은 "개선 권장" 이나, `fit-audit` 의 MAJOR-DRIFT 는 두 의미가 섞여 있어 단일 매핑 시 오분류 위험. fit-auditor 가 `MAJOR-DRIFT-CRITICAL`(운영 방해·오도) / `MAJOR-DRIFT-MED`(재구축 권장이나 운영 가능) 로 **발행 시점에 서브분류**하여 해결. heuristic-only-mode 는 근거 약하므로 CRITICAL 승격 불가.
+- **SSoT 충돌 `ops-audit` 우선 규약 명시**: W4(산출물 절대경로)·W16(Jaccard 중복) 은 harness-audit 과 ops-audit 에서 이중 검사. `commands/ops-audit.md` 에 이미 "판정 충돌 시 ops-audit 우선(더 최신 상태 반영)" 규약이 존재. `commands/audit.md` 통합 보고서 조립에 이를 상속해 명시 — 중복 판정으로 사용자 혼란 방지.
+- **병렬 Agent 3개 소환의 컨텍스트 비용**: 대규모 하네스에서 각 auditor 보고서가 수십 KB 에 이르면 메인 세션 합산 비용이 상당하다. 실패 요인은 아니지만 `commands/audit.md` 에 "대규모 하네스에서는 개별 커맨드 순차 실행 권장" 명시.
+- **ops-audit 와 의미 영역 무중첩**: ops-audit Dim A~F 는 하네스 파일 텍스트만 감사(세션 복구·retry·이중관리·덮어쓰기·Jaccard·라우팅). fit-audit Dim 1~7 은 하네스 vs 실제 프로젝트 상태·외부 인터페이스 비교 — 데이터 소스·오탐 패턴·근본 질문이 달라 단일 RISK 체계로 혼합 시 판정 혼동 유발. 독립 커맨드로 분리.
+- **Security Warning 을 드리프트 등급과 분리한 이유**: 드리프트는 "하네스와 프로젝트 현재의 괴리 크기" 이고 Security 는 "즉시 조치 필요한 위험" — 의사결정 흐름이 다름. Security Warning 을 MAJOR-DRIFT 로 승격 시 "재구축하면 해결" 이라는 오해 유발. 별도 버킷으로 분리해 `harness-audit`/`ops-audit` 즉시 실행을 권장.
+- **도메인 드리프트를 Dim 5 에 통합한 이유**: Dim 5 의 "CLAUDE.md 선언 vs 현재 파일 증거" 로직과 95% 겹침. 키워드·파일 참조 확장만으로 커버 — 별도 Dim 신설 비용 없음.
+- **Dim 7 정적 검증만 원칙**: 네트워크 호출(MCP URL ping) 기각 — 권한·비용·flakiness 유발. 훅 스크립트 실행 기각 — 부작용·환경 차이·권한 이슈. 정적 grep 으로 PATH 부재·env 누락·실행 권한 같은 확정 실패는 감지 가능 + Coverage Gaps 에 "실제 응답성·런타임 동작은 실 세션에서만 검증" 명시.
+- **소스 본문 미조회 원칙**: 구조 신호(파일 수·경로·매니페스트·CI·compose·디렉터리 깊이)만으로 적합성 감사가 충분. 본문 스캔은 대형 레포에서 토큰 수십만 단위 증가 + 프라이버시 리스크 + 커밋 변동에 따라 감사 결과 flaky — 의도적 범위 밖.
+
+### Breaking
+- 없음. 기존 노출 커맨드(`harness-setup`·`ops-audit`·`help`) 동작 불변, 기존 하네스·생성 산출물 무관. 주요 노출이 `harness-setup` + `audit` 2개로 좁혀졌으나 `ops-audit`·`fit-audit`·`harness-audit`(신규 실체) 는 개별 커맨드로 모두 사용 가능.
+
 ## [0.8.3] - 2026-04-22
 
 업데이트 알림 배너를 **사용자 터미널에 실제로 표시**하도록 수정. v0.7.1 도입 이후 v0.8.2 까지의 모든 알림 훅이 구조적으로 잘못 동작하던 치명적 결함 해결 — Claude Code 의 SessionStart 훅은 stdout 을 **어시스턴트 컨텍스트(`additionalContext`)로만** 주입하며 사용자 터미널에는 표시하지 않는다는 [공식 문서](https://code.claude.com/docs/en/hooks.md) 규약을 이번에야 반영. 실제로는 Claude 만 업데이트 정보를 알고 사용자는 한 번도 배너를 본 적 없던 상태. 사용자 피드백("GSD 같이 버전 알림이 있으면 좋겠다")을 계기로 `update-notifier` npm 패키지 패턴에 맞춰 재설계.
