@@ -6,8 +6,9 @@ CLAUDE.local.md
 # Internal development notes (not shared)
 dev-notes/
 
-# Runtime artifacts from local smoke tests of the plugin on real projects
-docs/*-setup/
+# docs/ — only index.html is tracked; everything else is local-only
+docs/*
+!docs/index.html
 *.log
 
 # Language / tooling caches that may appear in contrib workflows
