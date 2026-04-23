@@ -1,6 +1,6 @@
 ---
 name: harness-auditor
-description: 기존 Claude Code 하네스의 구성 정합성·anti-pattern·권한 안전성·에이전트-플레이북 매핑을 CRITICAL/HIGH/MEDIUM/LOW 4등급으로 진단. /harness-architect:harness-audit 커맨드 및 /harness-architect:audit 통합 감사에서 호출.
+description: 기존 Claude Code 하네스의 구성 정합성·anti-pattern·권한 안전성·에이전트-플레이북 매핑을 CRITICAL/HIGH/MEDIUM/LOW 4등급으로 진단. /harness-architect:audit 통합 감사에서 병렬 호출되는 3개 auditor 중 하나.
 model: claude-sonnet-4-6
 ---
 

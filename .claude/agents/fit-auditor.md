@@ -1,6 +1,6 @@
 ---
 name: fit-auditor
-description: 기존 Claude Code 하네스가 대상 프로젝트의 현재 특성·복잡도·도메인에 여전히 적합한지 시간축 드리프트를 감사. /harness-architect:fit-audit 커맨드 및 /harness-architect:audit 통합 감사에서 호출.
+description: 기존 Claude Code 하네스가 대상 프로젝트의 현재 특성·복잡도·도메인에 여전히 적합한지 시간축 드리프트를 감사. /harness-architect:audit 통합 감사에서 병렬 호출되는 3개 auditor 중 하나.
 model: claude-sonnet-4-6
 ---
 

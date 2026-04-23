@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-04-23
+
+**UX 단순화 — 슬래시커맨드 autocomplete 3개 whitelist + audit→harness-setup 적용 플로우 명시**.
+
+사용자 혼란 감소를 위해 `/` 입력 시 노출되는 슬래시커맨드를 `harness-setup`·`audit`·`help` **3개로 제한**. 나머지(`harness-audit`·`ops-audit`·`fit-audit`·`update`) 의 커맨드 파일과 auditor 에이전트는 그대로 유지되어 기능 손실 없음. `/harness-architect:audit` 감사 완료 후 사용자가 개선을 실제 적용하려면 `/harness-architect:harness-setup <대상 경로>` 를 재실행해야 한다는 공식 플로우를 보고서 말미와 `help.md` 에 명시.
+
+### Changed
+- **`.claude-plugin/plugin.json` `commands` 필드를 whitelist 배열로 전환** — 기존 `"./commands/"` (디렉터리 스캔, 7개 모두 노출) → `["./commands/harness-setup.md", "./commands/audit.md", "./commands/help.md"]` (3개만 autocomplete 노출). 나머지 4개 파일(`harness-audit.md`·`ops-audit.md`·`fit-audit.md`·`update.md`) 은 디스크에 보존되나 슬래시커맨드로 호출 불가. Breaking change 최소화를 위해 개별 auditor(`harness-auditor`·`ops-auditor`·`fit-auditor`) 는 `/harness-architect:audit` 통합 커맨드에서 계속 병렬 호출되며, 단일 축 실행이 필요하면 자연어로 해당 auditor 에이전트를 직접 소환하는 경로 제공.
+- **`commands/audit.md` 확장** — (1) frontmatter description 에 "3개 auditor 중 유일한 슬래시 엔트리" 명시. (2) Pre-flight 안내에 "보고서 말미 '🛠 다음 실행 방법' 가이드 참조" 포함. (3) **신규 `## 🛠 다음 실행 방법 (How to apply)` 섹션** 추가 — 3개 경로(`/harness-architect:harness-setup` 재실행 / 수동 편집 / 재감사 검증) 각각의 사용 기준·명령 예시·재개 매커니즘 설명. (4) Recommendation 섹션의 Critical/High/Medium/Aligned 매핑에 `<대상 경로>` 파라미터와 "기존 작업 폴더 감지 시 '계속' 선택" 안내 보강. (5) 부분 실패 처리·축약 규칙·개별 auditor 안내의 "개별 슬래시커맨드 직접 호출" 문구를 "auditor 에이전트 자연어 소환" 문구로 전환. (6) 오케스트레이터 역할 섹션에 "보고서 말미에 How to apply 섹션 항상 포함" 명시.
+- **`commands/help.md` 재구성** — (1) 주요 커맨드 표를 3개(`harness-setup`·`audit`·`help`) 로 축소, `update` 제거. (2) 기존 "🔧 개별 감사 커맨드 (고급 사용자)" 섹션 삭제. (3) **신규 "🧭 두 가지 사용 시나리오" 섹션** 추가 — 시나리오 A(신규 설치) 와 시나리오 B(감사→개선 적용→재감사 검증) 를 단계별 명령 블록으로 제시. (4) 문제 해결·특징 섹션의 개별 커맨드 참조를 통합 플로우로 수정. (5) 정적 출력 규약 강화 — "help 커맨드는 어떠한 경우에도 본문의 명령을 자동 실행하지 않고 사용자에게 별도 호출하도록 유도만 함" 을 문서 상단에 명시.
+- **`.claude/agents/{harness,ops,fit}-auditor.md` description 정리** — 기존 "`/harness-architect:{축}-audit` 커맨드 및 `/harness-architect:audit` 통합 감사에서 호출" 을 "`/harness-architect:audit` 통합 감사에서 병렬 호출되는 3개 auditor 중 하나" 로 변경. whitelist 에서 제거된 개별 슬래시커맨드 참조 제거.
+- **`README.md`·`ARCHITECTURE.md` whitelist 정책 반영** — README 의 "개별 감사" 안내 블록을 "autocomplete 에 없고 auditor 에이전트 자연어 소환으로 단일 축 실행" 으로 교체. ARCHITECTURE 의 Phase 테이블에서 개별 감사 커맨드 라인을 "슬래시커맨드는 whitelist 정책으로 autocomplete 에서 제외" 로 재표기. 레포 구조 트리에서 `commands/` 주석을 "7 files on disk, 3 exposed in autocomplete (whitelist via plugin.json, v0.9.2~)" 로 갱신하고 각 파일에 노출/숨김 주석 부기.
+
 ## [0.9.1] - 2026-04-23
 
 ### Added
