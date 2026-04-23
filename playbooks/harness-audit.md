@@ -61,6 +61,7 @@ Check for these issues:
 | settings.local.json at user level | MEDIUM | `~/.claude/settings.local.json` exists (non-standard) |
 | No deny list | HIGH | settings.json has no permissions.deny |
 | **Missing Ask-first directive** | LOW | 프로젝트 CLAUDE.md 에 "모호하면 먼저 질문" 취지의 규약(키워드: `AskUserQuestion`, "먼저 확인", "가정하지", "ask first", "when uncertain" 등)이 감지되지 않음. 자동 수정하지 않고 제안만 기록. |
+| **Missing Intent Gate baseline** | **HIGH** | 아래 3개 요소 중 **하나라도 누락** 시 단일 복합 HIGH 항목으로 발행: (1) `.claude/rules/intent-gate.md` 파일 존재 + `alwaysApply: true` 프론트매터, (2) `.claude/skills/intent-clarifier/SKILL.md` 파일 존재 + `name: intent-clarifier` 프론트매터, (3) `CLAUDE.md` 에 `## 작업 시작 전` 섹션 + 본문에 `intent-gate.md` / `intent-clarifier` 문자열 모두 포함. 이 3종은 상호 의존적 단일 시스템 — 하나만 빠져도 첫 턴 의도 확인 강제가 무력화되므로 부분 등급 차등을 두지 않는다. 보고 시 **누락 하위 요소 목록**(예: "rule OK / skill MISSING / CLAUDE.md section MISSING") 을 함께 제시. |
 
 ### Phase 3: Diagnostic Report
 
@@ -104,6 +105,20 @@ Present results as a structured report:
 **"Missing Ask-first directive" 특례**: 이 LOW 항목은 `orchestrator-protocol.md` "CLAUDE.md 단일 소유자 원칙"의 audit 재진입 조항에 따라 **자동 재작성 금지**. 대신 Escalations에 다음 형식으로 기록:
 `[ASK] Ask-first 지침 미감지 — 기존 CLAUDE.md 끝부분에 "모호하면 AskUserQuestion으로 먼저 확인" 규약 1~2줄을 append할까요? (권장: Yes)`
 사용자가 Yes 응답 시 Phase 5에서 CLAUDE.md 본문 재작성 없이 **append-only** 수정으로 반영.
+
+**"Missing Intent Gate baseline" 특례**: 이 복합 HIGH 항목은 **자동 패치 가능**. 단일 Escalation 으로 사용자에게 확인:
+`[ASK] Intent Gate 베이스라인 누락 — (1) .claude/rules/intent-gate.md (2) .claude/skills/intent-clarifier/ (3) CLAUDE.md "작업 시작 전" 섹션 중 {누락 목록}. 이 도구가 소스 템플릿을 그대로 복사하여 자동 패치할까요? (권장: Yes)`
+
+**CLAUDE.md 단일 소유자 원칙의 명시적 예외**: `orchestrator-protocol.md` 의 "CLAUDE.md 단일 소유자 원칙" 은 audit 재진입 시 본문 재작성·덮어쓰기 금지를 원칙으로 하되, **Intent Gate 베이스라인은 이 원칙의 명시적 예외**로 허용한다. 이유: Intent Gate 는 모든 하네스의 최상위 지침이며, 기존 본문과 의미적으로 독립된 선행 섹션이기에 구조적 충돌이 없다. 단, 아래 안전장치를 따른다:
+- 이미 `## 작업 시작 전` 섹션이 존재하면 prepend 하지 않고 **본문만 갱신** (중복 방지)
+- prepend 대상은 최상위 `# {title}` 바로 아래만 — 다른 섹션 사이 삽입 금지
+- 적용 전 기존 CLAUDE.md 사본을 `.claude/backup/CLAUDE.md.{timestamp}.bak` 으로 저장 (롤백 대비)
+
+사용자가 Yes 응답 시 Phase 5에서 다음을 수행:
+- (1) 누락 시: `${CLAUDE_PLUGIN_ROOT}/.claude/templates/common/rules/intent-gate.md` → `{대상}/.claude/rules/intent-gate.md` Read→Write 복사
+- (2) 누락 시: `${CLAUDE_PLUGIN_ROOT}/.claude/templates/common/skills/intent-clarifier/` 디렉터리 전체 → `{대상}/.claude/skills/intent-clarifier/` 복사
+- (3) 누락 시: 위 안전장치에 따라 CLAUDE.md 최상단에 `## 작업 시작 전` 섹션 prepend (템플릿은 fresh-setup Step 6 의 동일 본문)
+- 적용 후 재스캔하여 복합 HIGH 항목이 해소되었는지 확인, 산출물에 기록.
 
 ### Phase 5: Execute Remediation
 

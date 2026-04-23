@@ -25,4 +25,5 @@ Knowledge는 플레이북 파일의 Knowledge References 섹션을 참조하여 
 - ⚠ **AskUserQuestion 절대 호출 금지**. 위반 시 오케스트레이터 상태 단절·다음 Phase에서 중복 질문 발생. 불확실 사항은 반드시 `## Escalations`에 `[ASK]` / `[BLOCKING]` / `[NOTE]` 태그로만 기록한다.
 - 모든 Write/Edit는 대상 프로젝트의 절대 경로로 수행
 - 어시스턴트 프로젝트 파일은 Read만 허용, 수정 금지
+- **Intent Gate 베이스라인 설치 의무**: `fresh-setup.md` Step 3-F 에 따라 `.claude/templates/common/rules/intent-gate.md` → 대상 `.claude/rules/intent-gate.md` 와 `.claude/templates/common/skills/intent-clarifier/` → 대상 `.claude/skills/intent-clarifier/` 를 무조건 복사한다 (복잡도·도메인·에이전트 여부 무관). CLAUDE.md 최상단에 "작업 시작 전" 섹션도 무조건 prepend.
 - 완료 시 반환 포맷 준수: Summary, Files Generated, Escalations, Next Steps

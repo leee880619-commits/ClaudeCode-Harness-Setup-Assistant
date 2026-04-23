@@ -39,4 +39,5 @@ Knowledge는 필요 시에만 Read (기본 불필요):
 - 모든 Write/Edit는 대상 프로젝트의 절대 경로로 수행
 - 어시스턴트 프로젝트 파일은 Read만 허용, 수정 금지
 - Step 3 (pipeline-review-gate 판단)은 반드시 수행 — 경량 실행 불가
+- **Intent Gate 베이스라인 검증 의무**: `setup-lite.md` Step 1-ter 에 따라 `.claude/rules/intent-gate.md` + `.claude/skills/intent-clarifier/SKILL.md` + CLAUDE.md "작업 시작 전" 섹션 3종 존재를 확인한다. 누락 시 `[BLOCKING]` Escalation.
 - 완료 시 반환 포맷 준수: Summary, Files Generated, Context for Next Phase, Escalations, Next Steps

@@ -6,6 +6,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-04-23
+
+**Intent Gate 베이스라인 — 하네스 대상 프로젝트의 메인 세션이 작업 요청을 받으면 첫 턴에 의도·맥락을 확인하도록 강제하는 규칙·스킬 2층 구조 도입.**
+
+기존 하네스 결과물은 사용자 요청을 암묵적으로 해석해 리서치·계획 단계로 진입하는 경우가 많아 잘못된 방향이 고정되는 문제가 있었다. 예: "v3 Windows GUI 를 v4 웹앱으로 포팅" 요청에서 사용자의 실제 의도(v4 standalone + v3 폐기 + GitHub 공개) 를 확인하지 않고 "원본 v3 임포트" 방향으로 설계를 시작. 이 변경은 모든 대상 프로젝트에 **무조건 설치되는 Intent Gate 베이스라인** (규칙 1 + 스킬 1 + CLAUDE.md 섹션) 을 도입하여 이런 되돌림 비용을 "첫 턴 질문 1회" 수준으로 묶는다.
+
+### Added
+- **`.claude/templates/common/rules/intent-gate.md`** (신규, alwaysApply 규칙 템플릿) — 대상 프로젝트 `.claude/rules/intent-gate.md` 로 무조건 복사. 트리거 / 면제 / 의무 절차 / 금지 사항 / 다른 always-apply 규칙과의 충돌 시 우선 규약 정의.
+- **`.claude/templates/common/skills/intent-clarifier/SKILL.md`** (신규, 질문 진행 스킬 템플릿) — 대상 프로젝트 `.claude/skills/intent-clarifier/` 로 무조건 복사. 5단계 절차 (요청 정제 → 의사결정 분기 열거 → 맥락 공백 식별 → AskUserQuestion 질문 실행 → 충분성 재점검 루프, 최대 3 회차). 규칙이 호출하는 실행 계층.
+- **`playbooks/fresh-setup.md` Step 3-F** (신규, 무조건 판별 없음) — 위 2개 템플릿을 판별 없이 대상 프로젝트에 복사. CLAUDE.md 최상단에 "작업 시작 전" 섹션 prepend 지시. Step 5 생성 계획 초안 트리 업데이트. Step 6 의 `.claude/rules/*.md` / `.claude/skills/` 복사 지시(3-ter) 추가.
+- **`playbooks/setup-lite.md` Step 1-ter** (신규, 코드/비코드 공통) — 경량 트랙에서도 Intent Gate 베이스라인 3종 존재 검증. 누락 시 `[BLOCKING]` Escalation. Output Contract 에 `Intent Gate 베이스라인` 필드 추가.
+- **`playbooks/harness-audit.md` Phase 2** — `Missing Intent Gate baseline` 단일 복합 HIGH 항목 신설. 3개 하위 요소 (rule / skill / CLAUDE.md section) 중 하나라도 누락 시 HIGH 발행 + 누락 하위 목록 함께 보고. Phase 4 에 자동 패치 특례 추가 (사용자 승인 시 소스 템플릿 그대로 복사, CLAUDE.md 는 백업 후 최상단 prepend).
+- **`playbooks/final-validation.md` Step 3 항목 17** — Intent Gate 베이스라인 3종 존재 검증 (규칙 파일 + 스킬 + CLAUDE.md 섹션). 누락 시 `[BLOCKING]`. Output Contract 필수 섹션에 `## Intent Gate` 추가.
+- **`.claude/rules/orchestrator-protocol.md` Phase Gate 표** — Phase L 진입 조건에 `01-discovery-answers.md` 의 `Intent Gate 베이스라인 설치: yes` 필드 존재 확인 추가. fresh-setup Step 3-F 설치 실패 시 Phase L 진입 전 phase-setup 재소환 유도.
+
+### Changed
+- **`.claude/agents/phase-setup.md`** — Rules 섹션에 "Intent Gate 베이스라인 설치 의무" 조항 추가 (fresh-setup Step 3-F 무조건 수행).
+- **`.claude/agents/phase-setup-lite.md`** — Rules 섹션에 "Intent Gate 베이스라인 검증 의무" 조항 추가 (setup-lite Step 1-ter 수행).
+- **`.claude/agents/harness-auditor.md`** — Rules 섹션에 "Intent Gate 베이스라인 검사 의무" 조항 추가. harness-audit Phase 2 신규 HIGH 항목 + Phase 4 자동 패치 경로로 연결.
+- **`.claude/agents/phase-validate.md`** — Rules 섹션에 "Intent Gate 베이스라인 검증 의무" 조항 추가 (final-validation Step 3 항목 17 수행).
+- **`.claude/templates/common/README.md`** — Intent Gate 베이스라인 (규칙 + 스킬) 을 표에 등재, "무조건 설치" 로 명시. 적용 시점 설명에 Step 3-F 추가.
+
+### Design Notes
+- **규칙·스킬 2층 구조의 근거**: 규칙 파일은 "언제 호출할지" 를 정의하고 스킬은 "어떻게 질문할지" 를 정의한다. 규칙만 있고 스킬이 없으면 호출 대상 부재로 무력화, 스킬만 있고 규칙이 없으면 트리거 장치 없음. **CLAUDE.md 의 "작업 시작 전" 섹션** 은 규칙이 항상적용됨에도 CLAUDE.md 최상단에서 이를 가시화하는 3차 강화 레이어.
+- **메인 세션·대상 프로젝트 스킬 배치의 비대칭**: 이 플러그인 자체는 메인 세션이 `Skill` 도구로 방법론을 직접 호출해 서브에이전트를 우회하는 것을 막기 위해 `playbooks/` 를 쓴다. 반면 대상 프로젝트의 `intent-clarifier` 는 **의도적으로** `.claude/skills/` 에 배치된다 — 대상 프로젝트의 메인 세션이 `Skill` 도구로 직접 호출하는 것이 바로 이 기능의 설계 목적이기 때문. 두 레이어의 설계 목적이 다름을 반영한 정상 패턴.
+- **CLAUDE.md 단일 소유자 원칙의 명시적 예외**: Intent Gate 베이스라인의 audit 자동 패치는 단일 소유자 원칙의 유일한 예외다. 이유: Intent Gate 는 모든 하네스의 최상위 지침이며 기존 본문과 의미적으로 독립된 선행 섹션. 안전장치 3종 (중복 방지 / 위치 고정 / 백업) 으로 본문 파손 위험 제거.
+- **복잡도 게이트 무관 무조건 적용**: 단순 프로젝트·경량 트랙·비코드 프로젝트에서도 Intent Gate 는 설치된다. 의도 확인 필요성은 프로젝트 복잡도와 독립적이며, 예시 사례(v3→v4 포팅)도 단순 프로젝트에서 발생한 문제였다.
+- **Red-team 리뷰 2회 반영**: 플랜 단계 + 실물 구현 단계 각각 `red-team-advisor` 리뷰를 거쳐 등급 일관성·Phase Gate 누락·회차 숫자·단일 소유자 원칙·규칙 충돌 우선순위 BLOCK/ASK 모두 해소.
+
 ## [0.9.4] - 2026-04-23
 
 **세팅·감사 플로우에 Claude Code auto-memory (`MEMORY.md`) 인지 레이어 추가**.
