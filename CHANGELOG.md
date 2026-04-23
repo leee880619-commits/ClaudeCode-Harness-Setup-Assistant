@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-04-23
+
+### Added
+- **신규 커맨드 `/harness-architect:update`** (`commands/update.md`) — 설치된 버전과 GitHub 최신 릴리즈를 비교해 변경사항(릴리즈 노트)과 함께 업데이트 안내. 업데이트가 있을 경우 check-update 캐시를 자동 삭제하여 다음 세션 배너에 즉시 반영.
+- **`commands/help.md` 커맨드 테이블에 `/harness-architect:update` 항목 추가**
+
+### Fixed
+- **tmux 환경에서 세션 시작 시 업데이트 배너가 보이지 않던 문제 수정** (`scripts/check-update.sh`) — Claude Code 훅은 controlling terminal 없이 실행되어 `stderr.isatty()=False`, 결과적으로 stderr가 Claude 컨텍스트(system-reminder)로만 전달되어 사용자 터미널에 미출력. `$TMUX` 감지 시 `tmux display-message -d 5000`으로 tmux 소켓을 통해 직접 전달(Claude Code 우회). 비-tmux 환경은 `/dev/tty` 직접 출력으로 fallback(실패 시 무음 처리).
+
 ## [0.9.0] - 2026-04-23
 
 **UX 재편 + 신규 감사 커맨드 2개** (fit-audit · 통합 audit) + **phantom 해소** (harness-audit 실체화) + **Phase 9 Runtime Spot Check 이식**.

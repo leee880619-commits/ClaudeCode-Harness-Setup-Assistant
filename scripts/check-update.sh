@@ -103,48 +103,40 @@ fi
 [[ -z "$LATEST" ]] && exit 0
 
 # 매 세션마다 CURRENT vs LATEST 비교 — 배너 생성
-# stderr: 사용자 터미널에 표시되는 컬러 박스 배너 (update-notifier 스타일)
+# tmux: display-message (소켓 통신, Claude Code 우회) → status bar에 5초 표시
+# 일반 터미널: /dev/tty 직접 출력 (isatty=False 문제 우회)
 # stdout: Claude 어시스턴트 컨텍스트에 주입되는 평문 알림
-python3 -c '
-import sys, re, os
+UPDATE_AVAILABLE=$(python3 -c '
+import sys, re
 try:
     current = sys.argv[1]
     latest = sys.argv[2]
-
     pattern = re.compile(r"^(\d+)\.(\d+)\.(\d+)")
     m_cur = pattern.match(current)
     m_lat = pattern.match(latest)
     if not (m_cur and m_lat):
         sys.exit(0)
-
     cur_tuple = tuple(int(x) for x in m_cur.groups())
     lat_tuple = tuple(int(x) for x in m_lat.groups())
-
     if lat_tuple <= cur_tuple:
         sys.exit(0)
-
-    # stdout — Claude 컨텍스트용 (SessionStart hook additional context)
-    print(f"harness-architect v{latest} 출시됨 (현재 설치: v{current}). 사용자에게 `/plugin update harness-architect` 실행을 안내할 수 있음.")
-
-    # stderr — 사용자 터미널에 단일 라인 컬러 배너 (NO_COLOR 존중, TTY 체크)
-    use_color = os.environ.get("NO_COLOR", "") == "" and sys.stderr.isatty()
-    if use_color:
-        C_BOLD = "\033[1m"; C_CYAN = "\033[36m"; C_DIM = "\033[90m"
-        C_GREEN = "\033[32m"; C_YELLOW = "\033[33m"; C_RESET = "\033[0m"
-    else:
-        C_BOLD = C_CYAN = C_DIM = C_GREEN = C_YELLOW = C_RESET = ""
-
-    banner = (
-        f"{C_BOLD}{C_CYAN}⬆  harness-architect{C_RESET} "
-        f"{C_DIM}v{current}{C_RESET} → {C_BOLD}{C_GREEN}v{latest}{C_RESET}  "
-        f"|  업데이트: {C_YELLOW}/plugin update harness-architect{C_RESET}"
-    )
-    print("", file=sys.stderr)
-    print(banner, file=sys.stderr)
-    print("", file=sys.stderr)
+    print("yes")
 except Exception:
-    # 어떤 오류도 사용자 흐름을 방해하지 않도록 조용히 무시
     sys.exit(0)
-' "$CURRENT" "$LATEST" || true
+' "$CURRENT" "$LATEST" 2>/dev/null) || true
+
+[[ "$UPDATE_AVAILABLE" != "yes" ]] && exit 0
+
+# stdout — Claude 컨텍스트용 (SessionStart hook additional context)
+echo "harness-architect v${LATEST} 출시됨 (현재 설치: v${CURRENT}). 사용자에게 \`/plugin update harness-architect\` 실행을 안내할 수 있음."
+
+# tmux: display-message 는 tmux 서버 소켓으로 직접 통신 — Claude Code 가 가로챌 수 없음
+if [[ -n "${TMUX:-}" ]] && command -v tmux &>/dev/null; then
+    tmux display-message -d 5000 "⬆ harness-architect v${LATEST} 출시 | /plugin update harness-architect"
+fi
+
+# 일반 터미널: /dev/tty 직접 출력으로 stdout/stderr 우회 시도
+# (훅 환경에서 stderr.isatty()=False 이므로 Claude Code 가 가로채는 문제 우회)
+{ printf '\n\033[1m\033[36m⬆  harness-architect\033[0m \033[90mv%s\033[0m → \033[1m\033[32mv%s\033[0m  |  업데이트: \033[33m/plugin update harness-architect\033[0m\n\n' "$CURRENT" "$LATEST" > /dev/tty; } 2>/dev/null || true
 
 exit 0

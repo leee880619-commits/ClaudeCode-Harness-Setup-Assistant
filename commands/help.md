@@ -29,6 +29,7 @@ description: harness-architect 플러그인 사용법, 제공 커맨드, 9-Phase
 |--------|------|------------|----------|
 | `/harness-architect:harness-setup [경로]` | **9-Phase 하네스 구축** (메인 진입점) | 신규 프로젝트 | BLOCK / ASK / NOTE |
 | `/harness-architect:audit [경로]` | **기존 하네스 통합 감사** — 구성 정합성 + 런타임 부채 + 프로젝트 적합성을 3개 auditor 로 **병렬** 실행 후 단일 통합 보고서 | 기존 하네스 | 통합 Critical/High/Medium/Low/Aligned |
+| `/harness-architect:update` | **버전 확인 및 업데이트 안내** — 현재 설치 버전과 최신 릴리즈를 비교, 변경사항 표시 | 업데이트 확인 | — |
 | `/harness-architect:help` | 이 사용법 안내 | — | — |
 
 > **두 시나리오**:
