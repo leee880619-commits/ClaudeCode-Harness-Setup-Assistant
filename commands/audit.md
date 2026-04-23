@@ -38,9 +38,78 @@ description: Unified audit entry — runs harness-audit (configuration integrity
 3. **모두 미존재** 시 AskUserQuestion 분기:
    - `먼저 harness-setup 실행` — `/harness-architect:harness-setup` 안내 후 종료
    - `취소` — 종료
-4. **fit-audit baseline 모드 자동 결정** (fit-audit 에만 필요):
+4. **User Work Signal Gate** — 감사 대상(사용자 작업 파일)이 **1개 이상 존재**하는지 단일 이진 신호로 확인. 이 gate 는 임계치·경과일·아키타입 분기 없이 동작하며, 통과 시 기존 감사 플로우와 완전히 동일하게 진행됩니다.
+
+   ```bash
+   TARGET="{대상 절대 경로}"    # 공백·한글 경로 대응: 반드시 변수화 + 따옴표 인용
+   USER_WORK=$(find "$TARGET" -type f -size +0c \
+     -not -path "$TARGET/.claude/*" \
+     -not -path "$TARGET/.cursor/*" \
+     -not -path "$TARGET/.vscode/*" \
+     -not -path "$TARGET/.idea/*" \
+     -not -path "$TARGET/docs/*" \
+     -not -path "$TARGET/.git/*" \
+     -not -path "$TARGET/node_modules/*" \
+     -not -path "$TARGET/.venv/*" \
+     -not -path "$TARGET/venv/*" \
+     -not -path "$TARGET/dist/*" \
+     -not -path "$TARGET/build/*" \
+     -not -path "$TARGET/.next/*" \
+     -not -path "$TARGET/target/*" \
+     -not -path "$TARGET/__pycache__/*" \
+     -not -path "$TARGET/.pytest_cache/*" \
+     -not -path "$TARGET/.mypy_cache/*" \
+     -not -name 'README*' -not -name 'LICENSE*' \
+     -not -name '.gitignore' -not -name '.editorconfig' \
+     -not -name '.gitattributes' -not -name '.gitmodules' \
+     -not -name '.DS_Store' -not -name 'Thumbs.db' \
+     -not -name 'package-lock.json' -not -name 'yarn.lock' \
+     -not -name 'pnpm-lock.yaml' -not -name 'uv.lock' \
+     -not -name 'Cargo.lock' -not -name 'go.sum' \
+     -not -name 'poetry.lock' -not -name 'Pipfile.lock' \
+     2>/dev/null | head -1)
+   ```
+
+   - **`$USER_WORK` 가 비어있음 → 감사 불가 (AUDIT-NOT-VIABLE)**: 3 auditor 를 소환하지 않고 아래 "AUDIT-NOT-VIABLE 보고서 템플릿" 을 즉시 출력한 뒤 종료. 이유: 하네스 설계와 비교할 "사용자 작업"이 전무하므로 fit-audit 의 드리프트 판정·ops-audit 의 실행 부채·harness-audit 의 상당수 anti-pattern 이 **구조적 필연** 으로 귀결되어 실질 조치 대상이 되지 못함. 실제 중요한 Critical/High 발행 시의 신뢰도를 보호하기 위한 진입문.
+   - **`$USER_WORK` 비어있지 않음 → 계속 진행**: Step 5 (fit-audit baseline mode 결정) 로 이동. 이후 흐름은 기존과 동일.
+5. **fit-audit baseline 모드 자동 결정** (fit-audit 에만 필요):
    - `{대상}/docs/*/01-discovery-answers.md` 존재 → `baseline-mode`
    - 부재 → `heuristic-only-mode`
+
+### AUDIT-NOT-VIABLE 보고서 템플릿
+
+User Work Signal Gate 가 빈 결과를 반환할 때 오케스트레이터가 직접 출력합니다 (3 auditor 미소환, 파일 쓰기 없음, 기존 하네스 무변경):
+
+```markdown
+# Harness Audit — NOT-VIABLE (User Work Signal Gate)
+
+**대상**: {대상 절대 경로}
+**감사 시각**: {ISO8601}
+**판정 사유**: 하네스 영역·`docs/`·VCS·빌드 아티팩트·보일러플레이트·락파일을 제외한 사용자 소유 비어있지 않은 파일이 **0개** — 감사할 "실제 작업" 이 아직 존재하지 않음.
+
+## 왜 감사를 수행하지 않는가
+
+3개 auditor (harness / ops / fit) 는 **하네스 설계와 실제 사용·작업 산출물 간의 정합성**을 판정합니다. 사용자 파일이 전무한 상태에서 감사를 강행하면 findings 대부분이 구조적 필연(에이전트 오버피팅 경계·사용자 디렉터리 미존재·워크플로우 미실동작 등)에 해당하여 실질 조치 대상이 되지 못하고, 실제 중요한 Critical/High 발행 시의 신뢰도를 떨어뜨립니다.
+
+## 다음 단계
+
+1. 대상 프로젝트의 첫 사용자 파일(코드·문서·설정 중 1개 이상)을 작성하세요.
+2. 파일 작성 후 `/harness-architect:audit {대상 경로}` 를 재실행하세요. gate 는 자동으로 통과됩니다.
+3. 하네스 설계 자체에 의심이 있어 지금 감사가 필요하다면, 개별 auditor 에이전트를 직접 소환할 수 있습니다 (예: "harness-auditor 에이전트를 대상 경로 {경로} 로 실행해"). 이 경로는 gate 를 우회하며 감사 결과의 구조적 필연 성격을 사용자가 인지하고 해석한다는 전제입니다. 상세: 보고서 말미 "개별 auditor 단독 실행" 섹션 참조.
+
+## 참고: gate 판정 조건
+
+- 제외 경로: `.claude/`, `.cursor/`, `.vscode/`, `.idea/`, `docs/`, `.git/`, `node_modules/`, `.venv/`, `venv/`, `dist/`, `build/`, `.next/`, `target/`, `__pycache__/`, `.pytest_cache/`, `.mypy_cache/`
+- 제외 파일명: `README*`, `LICENSE*`, `.gitignore`, `.editorconfig`, `.gitattributes`, `.gitmodules`, `.DS_Store`, `Thumbs.db`, 주요 락파일 (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `uv.lock`, `Cargo.lock`, `go.sum`, `poetry.lock`, `Pipfile.lock`)
+- 위 제외 집합에 해당하지 않으면서 **크기 > 0 bytes** 인 파일이 1개 이상 존재해야 감사 진행.
+- 이 신호는 이진(binary) 입니다. 파일 수 임계치·경과일·프로젝트 아키타입 분기를 두지 않습니다 — gate 의 의미와 탈출 조건이 동일 (사용자 파일을 만들면 통과).
+
+## 참고: 유사 경고와의 차이
+
+이 판정(**AUDIT-NOT-VIABLE**)은 "사용자 파일 자체가 없어 감사를 **시작하지 않음**" 입니다. 통합 감사 실행 후 나타나는 `heuristic-only-mode` 경고(`docs/*/01-discovery-answers.md` baseline 부재로 fit-audit 이 추정 모드 실행)와는 별개입니다 — 후자는 감사는 진행되나 fit-audit 의 MAJOR-DRIFT-CRITICAL 승격이 유보되는 상태입니다.
+```
+
+> **설계 원칙**: 이 gate 는 `commands/audit.md` 의 Pre-flight 에서만 동작하며, 3개 auditor 플레이북(`playbooks/harness-audit.md`, `playbooks/ops-audit.md`, `playbooks/fit-audit.md`) 과 auditor 에이전트 정의(`.claude/agents/*-auditor.md`) 는 이 릴리즈에서 일절 수정되지 않습니다. gate 통과 후의 감사 동작·보고서 포맷·severity 매핑은 기존과 완전히 동일합니다. (side-effect zero)
 
 ## 3개 Auditor 병렬 소환
 
@@ -250,6 +319,7 @@ fit-audit 이 `heuristic-only-mode` 로 실행된 경우(대상 프로젝트에 
 ## 오케스트레이터 역할
 
 - Pre-flight 게이트 수행 (유일한 AskUserQuestion 지점)
+- **User Work Signal Gate 판정** — 결과 빈 문자열이면 AUDIT-NOT-VIABLE 보고서만 출력 후 종료 (3 auditor 미소환). 결과 존재 시 기존 플로우 진입
 - 3개 auditor 병렬 소환
 - 반환 수신 → severity 매핑 → SSoT 충돌 병합 → 통합 보고서 조립 → 텍스트로 사용자에게 제시
 - 통합 보고서를 대상 프로젝트에 **쓰지 않음** (기존 하네스 무변경 원칙)

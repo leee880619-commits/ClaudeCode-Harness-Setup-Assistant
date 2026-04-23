@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-04-23
+
+**`/harness-architect:audit` 에 User Work Signal Gate 도입 — 감사 불가 판정으로 setup 직후 false-positive 차단**.
+
+`frontend-forge` 같은 "하네스는 구축됐으나 실제 프로젝트 작업이 시작되지 않은" 상태에서 `/harness-architect:audit` 를 실행하면 fit-audit Dim 3(에이전트 오버피팅)·Dim 4(사용자 디렉터리 미존재) 등이 **구조적 필연**으로 MAJOR-DRIFT / MINOR-DRIFT 를 발행해 사용자에게 "과잉 탐지 도구"로 학습되는 현상이 관찰됐다. 이 릴리즈는 감사 진입문에 **이진(binary) gate 단 하나**를 추가해, 감사할 "사용자 작업"이 전무하면 3 auditor 를 소환하지 않고 `AUDIT-NOT-VIABLE` 보고서만 출력하고 종료한다. 임계치·경과일·아키타입 분기 없이 단일 `find` 명령으로 판정하며, auditor 플레이북·에이전트 정의는 **일절 수정되지 않는다** (사이드 이펙트 zero).
+
+### Added
+- **`commands/audit.md` Pre-flight 에 Step 4 "User Work Signal Gate" 신설** — 하네스 영역(`.claude/`·`docs/`), IDE 설정(`.cursor/`·`.vscode/`·`.idea/`), VCS(`.git/`), 빌드 아티팩트(`node_modules/`·`.venv/`·`venv/`·`dist/`·`build/`·`.next/`·`target/`·`__pycache__/`·`.pytest_cache/`·`.mypy_cache/`), 보일러플레이트(`README*`·`LICENSE*`·`.gitignore`·`.editorconfig`·`.gitattributes`·`.gitmodules`·`.DS_Store`·`Thumbs.db`), 주요 락파일(`package-lock.json`·`yarn.lock`·`pnpm-lock.yaml`·`uv.lock`·`Cargo.lock`·`go.sum`·`poetry.lock`·`Pipfile.lock`) 을 제외한 **비어있지 않은 파일이 0개** 이면 gate fail. Bash one-liner 는 경로 변수화(`TARGET="..."` + `"$TARGET"` 인용) 로 공백·한글 경로 안전.
+- **AUDIT-NOT-VIABLE 보고서 템플릿** — gate fail 시 오케스트레이터가 직접 출력하는 Markdown 보고서. 판정 사유·감사 미수행 이유·다음 단계(첫 사용자 파일 작성 후 재실행, 또는 개별 auditor 자연어 소환으로 강제 우회)·gate 판정 조건·유사 경고(`heuristic-only-mode`) 와의 차이를 포함. 파일 쓰기 없음, 기존 하네스 무변경.
+- **`오케스트레이터 역할` 섹션에 gate 수행 단계 1줄 추가** — Pre-flight 이후 User Work Signal Gate 판정 → 빈 결과 시 NOT-VIABLE 종료 → 존재 시 기존 3 auditor 병렬 소환 플로우 진입의 분기 명시.
+
+### Changed
+- **탈출구 단순화** — `--force` 같은 별도 플래그를 도입하지 않음. gate 통과 조건(사용자 파일 1개 이상 존재) 과 탈출 방법이 자기-설명적으로 일치. 하네스 설계 자체 의심 시 개별 auditor 에이전트 자연어 소환으로 gate 우회 가능.
+
+### Design Notes
+- **사이드 이펙트 zero** — 이 릴리즈는 `commands/audit.md` 와 `.claude-plugin/plugin.json`, `CHANGELOG.md` 3파일만 수정. `playbooks/harness-audit.md`·`playbooks/ops-audit.md`·`playbooks/fit-audit.md` 및 `.claude/agents/*-auditor.md` 는 무변경. gate 통과 이후의 감사 동작·보고서 포맷·severity 매핑은 기존과 완전히 동일.
+- **Phase 9 `[ASK]` 승계는 별도 과제로 분리** — 사용자 의도가 gate 단일 기능에 집중되었고, `[ASK]` 승계는 auditor 프롬프트 수정을 수반하여 side-effect zero 원칙과 충돌. 후속 릴리즈 대상.
+
 ## [0.9.2] - 2026-04-23
 
 **UX 단순화 — 슬래시커맨드 autocomplete 3개 whitelist + audit→harness-setup 적용 플로우 명시**.
