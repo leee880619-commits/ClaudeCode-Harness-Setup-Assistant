@@ -5,7 +5,7 @@
 이 플레이북은 서브에이전트에서 실행된다. **AskUserQuestion 사용 금지**. 모든 발견 사항은 보고서의 해당 등급 섹션에 기록한다.
 
 ## Goal
-대상 프로젝트 하네스의 **런타임 가정·운영 부채·실패 복구 미비**를 6개 Dimension으로 감사하여 RISK 등급별 보고서를 작성한다.
+대상 프로젝트 하네스의 **런타임 가정·운영 부채·실패 복구 미비**를 7개 Dimension으로 감사하여 RISK 등급별 보고서를 작성한다.
 
 Phase 9 final-validation이 "구조가 올바른가"를 묻는다면, 이 감사는 "실제 실행 시 어디서 문제가 생기는가"를 묻는다.
 
@@ -172,15 +172,60 @@ Phase 9 final-validation이 "구조가 올바른가"를 묻는다면, 이 감사
 
 **Coverage Gap 명시**: 이 Dim 은 **구조적 존재** 만 검사한다. 실제 오케스트레이터가 요청 시 라우팅 프로토콜을 따르는지, code-researcher 를 실제 선호출하는지 **런타임 동작** 은 감사하지 않는다. 보고서 Coverage Gaps 에 "라우팅 프로토콜 런타임 준수 여부는 실 세션 관찰로만 검증 가능" 명시.
 
+### Dim G: 세션 메모리 인지 (Claude Code auto-memory)
+
+**원칙**: Claude Code 는 세션 중 축적한 사용자 프로필·피드백·프로젝트 맥락을 `~/.claude/projects/{cwd-encoded}/memory/MEMORY.md` 에 자동 기록한다. 이 파일은 **사용자 홈 영역**(대상 프로젝트 레포 밖, 프로젝트별로 분리)에 위치하며, 공식 진입점은 `/memory` 슬래시 커맨드다. 본 Dim 은 사용자가 이 기능의 존재·현재 상태를 인지하도록 **정보성 보조**를 제공한다.
+
+**범위 제약**:
+- **Read-only**. 홈 경로에 절대 쓰지 않는다 (`ownership-guard` 가 대상 프로젝트 경계 밖 Write 를 차단하는 구조와도 정합).
+- **항상 RISK-LOW 만 발행**한다 — MED/HIGH 승격 금지. 감사 주체가 사용자 개인 선택(시딩 여부·비활성화 여부)에 개입하지 않는다.
+- **메타-누출 가드** — 권고 문구에 Claude Code 내부 설정키·메모리 파일 포맷·auto-memory 내부 동작을 상세 설명하지 않는다. 진입점(`/memory` 커맨드) + 경로 위치 + "비워 두어도 정상" 안내까지만.
+
+**검사 절차** (read-only, POSIX best-effort + 비POSIX 폴백):
+
+0. **환경 감지**: `uname -s 2>/dev/null` 로 실행 환경 식별.
+   - `Linux` / `Darwin` → POSIX 분기 (Step 1-3 실행)
+   - 그 외(Windows Native cmd/PowerShell, `uname` 미설치 등) 또는 명령 실패 → **Step 4 비POSIX 폴백 직행**
+
+1. **POSIX 경로 인코딩** (공식 규칙 — Linux/macOS/WSL): 대상 프로젝트 절대 경로의 모든 `/` 를 `-` 로 치환하여 encoded key 생성.
+   ```bash
+   TARGET_ENCODED="$(echo "$TARGET" | tr '/' '-')"
+   MEMORY_DIR="$HOME/.claude/projects/$TARGET_ENCODED/memory"
+   MEMORY_FILE="$MEMORY_DIR/MEMORY.md"
+   test -d "$MEMORY_DIR" || MEMORY_DIR_STATUS=missing
+   ```
+   encoded 디렉터리 미존재 시 (환경별 인코딩 차이·세션 이력 없음 등) Step 4 폴백으로 전환.
+
+2. **MEMORY.md 존재·크기 확인**: `test -f "$MEMORY_FILE"` 로 존재 확인 후 `wc -c < "$MEMORY_FILE"` 로 크기(byte) 기록.
+
+3. **내용 비어있음 판정**: `grep -cE '^\s*[^#[:space:]]' "$MEMORY_FILE"` 로 비공백·비주석 실질 라인 수 카운트. 0 이면 "비어있음" 간주.
+
+4. **비POSIX 폴백 / 경로 유추 실패**: 환경 감지 실패 또는 encoded 디렉터리 부재 시 경로 유추를 **중단**한다. Claude Code 의 Windows Native (cmd/PowerShell) encoded cwd 규칙은 공식 문서에 명시되지 않아 플러그인이 추측하지 않는다. 사용자에게 공식 진입점(`/memory` 슬래시 커맨드)만 안내한다.
+
+**등급 판정** (모두 RISK-LOW — 정보성 전용):
+
+- `[RISK-LOW] — MEMORY.md 미존재` (POSIX 분기에서 encoded 디렉터리는 있으나 파일 없음) — 세션이 아직 축적되지 않았거나 auto-memory 가 비활성화되었을 가능성. `/memory` 슬래시 커맨드로 상태 확인 권장.
+- `[RISK-LOW] — MEMORY.md 존재 & 비어있음` — 초기 세션이 적거나 `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` 로 비활성화되었을 수 있음. **비워 두는 것도 정상 선택지**이며 세션 사용 중 자연 축적된다. 초기 맥락 수동 시딩은 `/memory` 커맨드로 편집 가능.
+- `[RISK-LOW] — MEMORY.md 에 N 항목 존재` — auto-memory 정상 동작 중. 별도 조치 불필요.
+- `[RISK-LOW] — 자동 탐지 불가 (비POSIX 환경 또는 경로 유추 실패)` — Windows Native 환경, `uname` 미설치, 또는 encoded 경로 규칙 불일치. 공식 진입점인 `/memory` 슬래시 커맨드로 사용자가 직접 확인 권장. 경로 참고(추측 금지 원칙 하 정보성): Linux/macOS/WSL = `~/.claude/projects/{encoded}/memory/MEMORY.md`, Windows = `%USERPROFILE%\.claude\projects\` (인코딩 규칙 공식 미공개).
+
+**False Positive 주의**:
+- POSIX 분기에서도 WSL 환경 등 경로 표현이 다른 케이스(예: 동일 프로젝트가 WSL `/mnt/c/...` 와 Windows 경로로 각각 열린 이력)에서 encoding 불일치 가능. 이 경우 Step 4 폴백으로 귀결되어 "자동 탐지 불가" 로 보고된다 — 오판정이 아닌 정직한 불명 처리.
+- 대상 프로젝트 레포 안에 `MEMORY.md` 파일이 있더라도 본 Dim 의 감사 대상이 아니다 (auto-memory 는 홈 영역 `~/.claude/projects/` 에만 존재). 혼동 방지를 위해 보고서에 경로 출처를 명시.
+
+**Coverage Gap 명시**: 이 Dim 은 auto-memory 의 **현재 상태 존재·비어있음 여부** 만 확인한다. 사용자가 실제로 `/memory` 를 활용하는지, 시딩된 내용이 프로젝트 맥락과 정합한지는 감사하지 않는다. 보고서 Coverage Gaps 에 "MEMORY.md 내용의 정합성은 사용자 개인 판단 영역" 명시.
+
 ## Workflow
 
 ### Step 1: 대상 하네스 스캔
 - `{대상}/CLAUDE.md`, `.claude/`, `playbooks/`, `docs/` 디렉터리 구조 파악
 - 파일 수·디렉터리 깊이 기록
 
-### Step 2: 6개 Dimension 순차 실행
-- Dim A → B → C → D → E → F 순으로 수행
+### Step 2: 7개 Dimension 순차 실행
+- Dim A → B → C → D → E → F → G 순으로 수행
 - 각 Dimension 결과를 등급별 버킷으로 수집
+- Dim G 는 사용자 홈 영역 조회만 수행하며 RISK-LOW 만 발행 (MED/HIGH 승격 금지)
+- Dim G 는 POSIX (Linux/macOS/WSL) 에서만 경로 유추를 시도하고, 비POSIX 환경(Windows Native cmd/PowerShell) 에서는 유추를 중단한 뒤 `/memory` 슬래시 커맨드 안내로 귀결 — 모든 분기에서 등급은 RISK-LOW 고정
 
 ### Step 3: 보고서 조립
 - RISK-HIGH 항목 먼저, RISK-MED, RISK-LOW 순으로 정렬

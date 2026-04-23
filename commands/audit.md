@@ -133,7 +133,7 @@ Agent(
   prompt: "[Target Project Root] {대상 절대 경로}
     [Assistant Project Root] ${CLAUDE_PLUGIN_ROOT}
     [Invocation Context] /harness-architect:audit 통합 감사의 일부.
-    [Scope] playbooks/ops-audit.md 6개 Dimension 수행. RISK-HIGH/RISK-MED/RISK-LOW 등급 보고서 반환.
+    [Scope] playbooks/ops-audit.md 7개 Dimension 수행. RISK-HIGH/RISK-MED/RISK-LOW 등급 보고서 반환.
     AskUserQuestion 금지, 파일 생성·수정 금지.",
   mode: "auto"
 )

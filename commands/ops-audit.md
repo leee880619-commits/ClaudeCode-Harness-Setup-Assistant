@@ -69,7 +69,7 @@ Agent(
     ${CLAUDE_PLUGIN_ROOT}
 
     [Scope]
-    기존 하네스 사후 감사. playbooks/ops-audit.md 플레이북을 Read하여 6개 Dimension(A~F: 세션 연속성·실패 복구·이중 관리·덮어쓰기·Jaccard 중복·라우팅 프로토콜)을 수행하라.
+    기존 하네스 사후 감사. playbooks/ops-audit.md 플레이북을 Read하여 7개 Dimension(A~G: 세션 연속성·실패 복구·이중 관리·덮어쓰기·Jaccard 중복·라우팅 프로토콜·세션 메모리 인지)을 수행하라.
     AskUserQuestion 사용 금지. 발견 사항은 RISK-HIGH/RISK-MED/RISK-LOW 등급으로 분류한 보고서로 반환.
     파일 생성·수정 금지 (read-only 감사).",
   mode: "auto"

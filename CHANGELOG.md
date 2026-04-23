@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-04-23
+
+**세팅·감사 플로우에 Claude Code auto-memory (`MEMORY.md`) 인지 레이어 추가**.
+
+Claude Code 의 세션 메모리(`~/.claude/projects/{cwd-encoded}/memory/MEMORY.md`, 사용자 홈 영역·프로젝트별 분리)는 기본 활성화되어 있으나, 하네스 구축 사용자가 존재·위치·수동 시딩 선택지를 인지하지 못하는 맹점이 있었다. 이 변경은 (1) `/harness-architect:harness-setup` 완료 안내에 MEMORY 한 블록을 항상 노출하고, (2) Phase 9 final-validation 보고서의 "다음 단계 안내"에 `/memory` 활용 항목을 추가하며, (3) `/harness-architect:audit` 의 ops-audit 에 Dim G "세션 메모리 인지"를 신설해 read-only 정보성(RISK-LOW 전용)으로 현재 MEMORY.md 상태를 보고한다. **플러그인은 홈 영역에 절대 쓰지 않는다** — 공식 권장 + `ownership-guard` 경계와 일관.
+
+### Added
+- **`commands/harness-setup.md` Phase 9 완료 후 오케스트레이터 출력에 항목 5 (세션 메모리)** 신설 — 경로·`/memory` 커맨드·"비워 두어도 정상"·수동 시딩 선택지·`CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` 비활성화 옵션을 1개 블록으로 전달. 조건부 출력 규칙에 "항목 5 는 항상 포함" 명시 (메타-누출 가드 상 대상 프로젝트 CLAUDE.md 본문에는 넣지 않고 오케스트레이터 안내 텍스트로만).
+- **`playbooks/final-validation.md` Step 8 다음 단계 안내에 항목 4** 추가 — `/memory` 슬래시 커맨드 안내 + 경로 + "비워 두어도 자연 축적" 문구. Phase 9 산출물 `07-validation-report.md` 의 `## Next Steps` 에도 동일 흐름으로 반영.
+- **`playbooks/ops-audit.md` Dim G "세션 메모리 인지 (auto-memory)"** 신설 — 대상 프로젝트 `basename` 기반 `~/.claude/projects/*` 후보 디렉터리 유추 후 `memory/MEMORY.md` 존재·크기·비어있음 여부를 read-only 로 확인. 3개 RISK-LOW 정보성 판정 (미존재 / 존재-비어있음 / 존재-N항목). MED/HIGH 승격 구조적 금지. 메타-누출 가드: 권고 문구는 진입점(`/memory`) + 경로 + "비워 두어도 정상" 까지만 허용.
+- **`playbooks/ops-audit.md` Step 2** 를 "6개 Dimension" → "7개 Dimension" 으로 갱신, Dim G 가 홈 영역 read-only 조회만 수행하며 RISK-LOW 만 발행한다는 경계 명시.
+
+### Changed
+- **`.claude/agents/ops-auditor.md` description·Playbooks 섹션** 을 7개 Dimension 으로 갱신하고 Dim G 축 명명 추가.
+- **`commands/audit.md` ops-auditor 병렬 소환 프롬프트** 의 `[Scope]` 를 "6개 Dimension 수행" → "7개 Dimension 수행" 으로 갱신. severity 매핑표·통합 버킷 계산은 기존 그대로 (Dim G 결과는 RISK-LOW → Low 버킷에 자동 편입).
+- **`commands/ops-audit.md` 개별 단독 실행 경로** 의 Scope 문구를 7개 Dimension (A~G) 로 갱신. whitelist 에서 제외된 커맨드지만 자연어 단독 소환 경로에서 참조되므로 동기화.
+
+### Design Notes
+- **플러그인은 MEMORY.md 를 쓰지 않는다** — 공식 문서가 권장하는 경계이며 `ownership-guard.sh` 가 대상 프로젝트 루트 밖 쓰기를 이미 차단. Dim G 는 read-only `uname`/`test -d`/`test -f`/`wc -c`/`grep -c` 만 사용.
+- **OS 중립 설계 (POSIX best-effort + 비POSIX 폴백)** — Claude Code 의 encoded cwd 규칙은 공식 문서상 Linux/macOS/WSL(`절대 경로의 '/' → '-'` 치환)만 명시되어 있고 Windows Native(cmd/PowerShell)는 명시 부재. Dim G 는 `uname -s` 로 환경을 감지해 `Linux`/`Darwin` 에서만 경로 유추를 시도하고, 그 외 환경이나 encoded 디렉터리 부재 시 **추측하지 않고** `/memory` 슬래시 커맨드 안내로 귀결한다. 오케스트레이터 안내 텍스트(`harness-setup.md` 항목 5)와 final-validation 보고서 항목 4는 순수 텍스트로 OS 무관.
+- **모든 채널이 `/memory` 슬래시 커맨드로 수렴** — 공식 OS 중립 진입점은 `/memory` 하나이므로, 세 채널(오케스트레이터 안내 / final-validation 다음 단계 / ops-audit Dim G) 모두 최종적으로 이 커맨드로 사용자를 유도한다.
+- **메타-누출 가드** — Claude Code auto-memory 의 내부 설정키·파일 포맷·컴팩션 동작은 생성 파일·감사 문구에서 설명하지 않는다. 진입점(`/memory`) + 경로 위치 + 수동 시딩 가능/비워 두어도 정상 안내까지만.
+- **대상 프로젝트 CLAUDE.md 에 MEMORY 섹션을 추가하지 않는다** — `meta-leakage-guard.md` 규정상 Claude Code 아키텍처 설명은 대상 프로젝트 산출물에 포함 불가. MEMORY 안내는 오케스트레이터 최종 텍스트 + ops-audit 보고서 텍스트 두 채널로만 노출.
+- **감사 불가 프로젝트(AUDIT-NOT-VIABLE)** 에서는 Dim G 도 실행되지 않는다 — `commands/audit.md` Pre-flight User Work Signal Gate 에서 이미 차단.
+
 ## [0.9.3] - 2026-04-23
 
 **`/harness-architect:audit` 에 User Work Signal Gate 도입 — 감사 불가 판정으로 setup 직후 false-positive 차단**.
