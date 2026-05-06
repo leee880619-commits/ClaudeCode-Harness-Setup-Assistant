@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-05-06
+
+**Lean CLAUDE.md / SKILL.md SSoT 가드 도입 — anti-duplication 원칙을 모든 슬래시 커맨드 경로(/harness-setup, /audit, /harness-audit, /ops-audit) 에 빌트인.**
+
+외부 사용 사례(Project-Integration-Agent, 4 워크플로우 × 7단계 × 5-역할 다중 에이전트 하네스) 에서 CLAUDE.md ↔ SKILL.md 워크플로우 상세 중복으로 매 세션 시작 시 11.2k 토큰의 콜드 컨텐츠가 강제 로드되는 문제가 측정됨(`Memory files` 카테고리 5.8% of 200k window). 리팩터링으로 6.9k 토큰까지 37.5% 절감 가능함이 검증됐고, 동일 효과를 플러그인 산출물 전체에 자동화하기 위한 가드를 도입.
+
+기존 200줄 캡(`output-quality.md`) 만으로는 "무엇을 두지 말라" 가 명시되지 않아 워크플로우 정체성·전략표·N-step·품질 기준·anti-pattern 정의가 CLAUDE.md ↔ SKILL.md 양쪽에 동시 존재하는 SSoT 위반이 빌드·감사 두 시점에서 모두 미감지. 이 변경은 SKILL.md 를 워크플로우 상세의 SSoT 로 선언하고, CLAUDE.md 는 라우터(router) 역할로 한정한다.
+
+### Added
+- **`.claude/rules/output-quality.md` Item 2** (신규, always-apply) — `SKILL.md = SSoT for workflow detail`. 다중 에이전트 하네스(에이전트 ≥ 2 또는 SKILL.md ≥ 4) 에서 CLAUDE.md 본문 중복 금지 + 한 줄 요약 + 포인터 사용 규약. 진입점별 판별 공급원 4종(fresh-setup 휴리스틱 / final-validation 파일 카운트 / audit 파일 카운트) 명시. 단일 에이전트 프로젝트는 fragmentation 위험으로 soft warning.
+- **`playbooks/fresh-setup.md` Step 6.1** — Anti-duplication gate. CLAUDE.md 작성 시점(Phase 1-2) 의 시점 보정을 위해 휴리스틱 사전 신호 4종(A6 멀티 선택 / Step 3-A 에이전트 신호 / Step 3-B Strict 신호 / 사용자 발화 어휘) 으로 게이트 발동. 게이트 발동 시 워크플로우 매트릭스 표 1개 + 핵심 원칙 한 줄 요약 + SSoT 포인터로 대체. 예측 빗나감 시 phase-setup 재소환으로 안전 보정.
+- **`playbooks/cursor-migration.md` Phase 6** — 변환 시점 anti-dup gate. 변환된 SKILL.md ≥ 4 또는 에이전트 정의 ≥ 2 시 동일 원칙 적용.
+- **`playbooks/skill-forge.md` 본체 권장 구조 직후** — Self-Containment 원칙 신규 섹션. SKILL.md 는 CLAUDE.md 없이도 실행 가능해야 한다는 자기완결성 의무. 케이스 A(`.claude/skills/`) / 케이스 B(`playbooks/`) 무관 적용.
+- **`playbooks/final-validation.md` Step 3 항목 14** — CLAUDE.md ↔ SKILL.md 본문 헤더 교집합 검사 추가. 교집합 ≥ 3 (SKILL 표준 섹션명 6개 — `Goal`/`Workflow`/`Output Contract`/`Guardrails`/`Focus`/`Frontmatter` — 제외) 시 NOTE, 다중 에이전트 하네스에서는 BLOCK 후보로 승격. 빌드 시점 BLOCK vs audit 재진입 MEDIUM 의 심각도 비대칭 의도 명시.
+- **`playbooks/harness-audit.md` Phase 2** — `CLAUDE.md ↔ SKILL.md duplication (SSoT 위반)` MEDIUM 행 신설. audit 재진입은 단일 소유자 원칙 보호로 자동 재작성 금지·권고만. 표준 섹션 제외 목록 6개 동기화.
+- **`playbooks/ops-audit.md` Dim E** — 기존 Jaccard 70%(playbooks ↔ SKILL.md) 검사 + 신규 CLAUDE.md ↔ SKILL.md 교집합 ≥ 3 검사 통합. SSoT 참조처 4종(final-validation #14·#16, output-quality Item 2, harness-audit Phase 2) 동시 수정 의무 명시.
+
+### Design Notes
+- **단일 소유자 원칙 권한 차이로 인한 심각도 비대칭**: Phase 9(빌드 시점) 는 fresh-setup 으로 신규 생성한 하네스 검증이라 단일 소유자 원칙이 살아 있어 BLOCK 차단·재작성 안전. Audit 재진입은 단일 소유자 원칙의 명시적 예외(자동 재작성 금지) 에 묶여 MEDIUM·권고 수준에 머문다. 두 진입 시점의 권한 차이로 인한 의도된 설계.
+- **표준 섹션명 SSoT 동기화**: `Goal`/`Workflow`/`Output Contract`/`Guardrails`/`Focus`/`Frontmatter` 6개 항목은 final-validation #14, ops-audit Dim E, harness-audit Phase 2 표 3곳에서 정확히 일치해야 한다. 변경 시 모든 참조처 동시 수정 의무를 각 시행 지점에 명시.
+- **단일 에이전트 fragmentation 회피**: 단일 에이전트 하네스(에이전트 ≤ 1) 는 SKILL.md 가 1~2개에 불과하므로 분리가 오히려 fragmentation 을 유발. 모든 시행 지점에서 NOTE/RISK-LOW 로 자동 강등하는 Pre-check 일관 적용.
+- **Red-team 리뷰 1회 반영**: BLOCK 1(ops-audit SSoT 주석 명료화) + ASK 3(시점 보정 / 정보 공급원 / 심각도 비대칭) + NOTE 3(제외 목록 동기화 / 케이스 무관 적용 / 드리프트 감지) 모두 반영 후 릴리즈.
+
 ## [0.10.0] - 2026-04-23
 
 **Intent Gate 베이스라인 — 하네스 대상 프로젝트의 메인 세션이 작업 요청을 받으면 첫 턴에 의도·맥락을 확인하도록 강제하는 규칙·스킬 2층 구조 도입.**

@@ -115,6 +115,12 @@ CLAUDE.md 생성 시: Phase 5의 Q10 답변이 `Yes`이면, 대상 프로젝트 
 재작성한 Ask-first 규약 1~2줄을 협업 규약 섹션에 삽입한다 (본 도구 언급 금지,
 meta-leakage 가드 준수). Q10 = No이면 삽입 생략.
 
+**Anti-duplication gate (변환 시 적용)**: 변환된 SKILL.md(Phase 4 산출)가 ≥ 4개이거나
+변환 후 에이전트 정의가 ≥ 2개이면, CLAUDE.md에 워크플로우 상세(정체성·전략·N-step·품질
+기준·anti-pattern 정의)를 본문으로 옮기지 않는다. 변환 매트릭스 표 1개 + 워크플로우별
+SSoT SKILL.md 포인터로 대체. 상세 규약은 `.claude/rules/output-quality.md` Item 2 +
+`playbooks/fresh-setup.md` Step 6.1 의 anti-duplication gate 와 동일.
+
 Additional: Ask whether to keep or remove original Cursor files.
 
 ## Guardrails

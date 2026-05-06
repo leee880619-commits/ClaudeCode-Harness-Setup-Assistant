@@ -3,10 +3,21 @@
 ## File Generation Rules
 
 1. **CLAUDE.md**: MUST be under 200 lines. If content exceeds, split into .claude/rules/
-2. **settings.json**: MUST be valid JSON. No comments, no trailing commas.
-3. **Rules files**: Correct YAML frontmatter for path-scoped, or NO frontmatter for always-apply
-4. **SKILL.md**: MUST have `name` and `description` in YAML frontmatter
-5. **All files**: UTF-8 encoding, LF line endings, no BOM
+2. **SKILL.md = SSoT for workflow detail** (다중 에이전트 하네스 — 에이전트 ≥ 2 또는 SKILL.md ≥ 4):
+   - CLAUDE.md 범위: 리더 라우팅, 팀 구조, 파일 소유권, 공통 원칙, 세션 복구 — **매 세션 시작 시 항상 필요한 내용**
+   - SKILL.md 범위: 워크플로우 정체성, 전략표, N-step 흐름, 품질 기준, anti-pattern 정의 — **스킬 호출 시점에만 필요한 내용**
+   - SKILL.md 본문 상세를 CLAUDE.md에 복제 금지. 대신 한 줄 요약 + SSoT 포인터 사용 (예: "PORT anti-pattern은 `validate-port` SKILL.md에서 정의·검사")
+   - 근거: SKILL.md 프론트매터(~30 토큰)만 시작 시 로드되고 본문은 호출 시 로드. 중복 시 콜드 컨텐츠 강제 항상 로드
+   - 단일 에이전트·소규모 하네스(에이전트 1개)는 fragmentation 위험으로 권고만 (soft warning, BLOCK 아님)
+   - **에이전트 수·SKILL.md 수 판별 공급원**: 이 항목은 always-apply 규칙이지만 판별은 정황별로 다른 공급원에 의존:
+     - 빌드 시점(fresh-setup Phase 1-2): `playbooks/fresh-setup.md` Step 6.1의 "휴리스틱 사전 신호 4종"으로 추정
+     - 빌드 시점(Phase 9 final-validation): 실제 `.claude/agents/*.md` 파일 수 + `.claude/skills/*/SKILL.md` 디렉터리 수를 `ls` 또는 `find`로 직접 카운트
+     - 사후 감사 시점(/audit, harness-audit, ops-audit): 동일하게 실제 파일 수 카운트
+     - 본 규칙 자체는 판별을 수행하지 않는다 — 위 진입점이 카운트 후 본 원칙을 적용한다
+3. **settings.json**: MUST be valid JSON. No comments, no trailing commas.
+4. **Rules files**: Correct YAML frontmatter for path-scoped, or NO frontmatter for always-apply
+5. **SKILL.md**: MUST have `name` and `description` in YAML frontmatter
+6. **All files**: UTF-8 encoding, LF line endings, no BOM
 
 ## Security Constraints (NEVER violate)
 

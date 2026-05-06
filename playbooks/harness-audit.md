@@ -56,6 +56,7 @@ Check for these issues:
 | **Playbook reference mismatch** | HIGH | `.claude/agents/*.md`의 `## Playbooks` 섹션이 참조하는 `playbooks/{name}.md` 파일이 존재하지 않음 |
 | **Orphan playbook** | MEDIUM | `playbooks/*.md` 파일이 어느 에이전트 정의에서도 참조되지 않음 |
 | **Mixed location without hybrid intent** | MEDIUM | `.claude/skills/`와 `playbooks/` 모두 내용이 있으나 CLAUDE.md에 D-2 하이브리드 패턴 선언이 없음 — 의도를 재확인해야 함 |
+| **CLAUDE.md ↔ SKILL.md duplication (SSoT 위반)** | MEDIUM | 다중 에이전트 하네스(에이전트 ≥ 2 또는 SKILL.md ≥ 4)에서 CLAUDE.md 본문 ATX 헤더 목록과 어느 `.claude/skills/*/SKILL.md` 헤더 목록의 교집합이 **3개 이상** (SKILL 표준 섹션명 — `Goal`/`Workflow`/`Output Contract`/`Guardrails`/`Focus`/`Frontmatter` 6개 — 제외). 워크플로우 상세가 CLAUDE.md ↔ SKILL.md 양쪽에 중복돼 매 세션 시작 시 콜드 컨텐츠가 강제 로드되는 정황. 자동 재작성 금지(단일 소유자 원칙) — 사용자에게 축약 권고만. 단일 에이전트(에이전트 ≤ 1)는 LOW로 자동 강등 (fragmentation 위험). SSoT: `.claude/rules/output-quality.md` Item 2, `playbooks/final-validation.md` 항목 14, `playbooks/ops-audit.md` Dim E (제외 목록 6개 항목 동일 동기화 필수). |
 | Invalid JSON | HIGH | settings.json parse failure |
 | Path pattern mismatch | MEDIUM | paths: patterns that match zero files |
 | settings.local.json at user level | MEDIUM | `~/.claude/settings.local.json` exists (non-standard) |

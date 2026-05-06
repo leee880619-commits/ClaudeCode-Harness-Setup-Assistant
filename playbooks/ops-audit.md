@@ -106,25 +106,33 @@ Phase 9 final-validation이 "구조가 올바른가"를 묻는다면, 이 감사
 - `[RISK-MED]` — 1~2개 파이프라인만 해당, 또는 Phase 4 산출물에 Failure Recovery 섹션 누락
 - `[RISK-LOW]` — 모든 출력이 타임스탬프/버전/archive 전략 중 하나를 따름 / 또는 경량 트랙 idempotent 선언
 
-### Dim E: 크로스 워크플로우 구조 중복
+### Dim E: 크로스 워크플로우 구조 중복 + CLAUDE.md ↔ SKILL.md SSoT 위반
 
-**SSoT 참조**: 이 Dimension은 `playbooks/final-validation.md` #16과 **동일 Jaccard 70% 기준**을 사용한다. 기준값 변경 시 양쪽 동시 수정.
+**SSoT 참조** (두 기준을 **분리** 명시 — 독자가 단일 #로 양쪽 기준을 찾을 수 없음에 주의):
+- **Jaccard 70% 기준 (playbooks/SKILL.md 쌍별 구조 중복)**: `playbooks/final-validation.md` #16과 동일.
+- **CLAUDE.md ↔ SKILL.md 교집합 3개 이상 기준 (anti-duplication SSoT 가드)**: `playbooks/final-validation.md` #14와 동일.
+- 기준값 또는 표준 섹션명 제외 목록 변경 시 모든 참조처(`final-validation.md` #14·#16, `output-quality.md` Item 2, `harness-audit.md` Phase 2 표) 동시 수정 필수.
 
 **검사 절차**:
 1. **헤더 추출**:
    - 모든 `playbooks/*.md` 및 `.claude/skills/*/SKILL.md` 에 대해 `grep -n "^##\|^###" {파일}` 로 ATX 헤더 목록 추출
-2. **쌍별 Jaccard 유사도 계산**:
+   - **신규**: 대상 프로젝트 루트의 `CLAUDE.md` 도 동일 방식으로 헤더 추출
+2. **쌍별 Jaccard 유사도 계산** (playbooks/SKILL.md 간):
    - 헤더 문자열을 소문자화·공백 정규화한 집합으로 변환
    - 모든 파일 쌍에 대해 Jaccard = |A ∩ B| / |A ∪ B|
-3. **임계값 판정**:
-   - 70% 이상 → 중복 후보로 기록
+3. **CLAUDE.md ↔ SKILL.md 교집합 계산** (신규 — anti-duplication SSoT 가드):
+   - CLAUDE.md 본문 헤더 집합과 각 `.claude/skills/*/SKILL.md` 헤더 집합의 교집합 크기를 계산
+   - **SKILL 표준 섹션명**(Goal, Workflow, Output Contract, Guardrails, Focus, Frontmatter)은 false-positive 제거를 위해 양쪽에서 모두 제거한 뒤 비교
+4. **임계값 판정**:
+   - playbooks/SKILL.md 간 Jaccard 70% 이상 → 중복 후보로 기록
+   - CLAUDE.md ↔ SKILL.md 교집합 **3개 이상** AND 다중 에이전트 하네스(에이전트 ≥ 2 또는 SKILL.md ≥ 4) → SSoT 위반 후보로 기록
 
 **등급 판정**:
-- `[RISK-LOW]` — Jaccard 70~85% (공통 패턴 추출 검토 권장)
-- `[RISK-MED]` — Jaccard 85% 이상 (거의 동일 구조 — 기반 템플릿 또는 공통 모듈 권장)
-- RISK-HIGH 없음 (정보성 Dimension)
+- `[RISK-LOW]` — playbooks/SKILL.md 간 Jaccard 70~85% (공통 패턴 추출 검토 권장)
+- `[RISK-MED]` — playbooks/SKILL.md 간 Jaccard 85% 이상, **또는** CLAUDE.md ↔ SKILL.md 교집합 3개 이상 (다중 에이전트 하네스에서 anti-duplication SSoT 위반)
+- RISK-HIGH 없음 (정보성 Dimension — 자동 재작성 금지, 사용자 결정 영역)
 
-**False Positive 주의**: 헤더 이름이 유사해도 본문이 프로젝트 특성을 반영한 고유 내용이면 중복 아님. 보고서에 "섹션 구조 기반 추정치이며 내용 중복 여부는 수동 확인 필요" 주석 추가.
+**False Positive 주의**: 헤더 이름이 유사해도 본문이 프로젝트 특성을 반영한 고유 내용이면 중복 아님. 단일 에이전트 하네스(에이전트 ≤ 1)에서 CLAUDE.md ↔ SKILL.md 교집합은 fragmentation 위험으로 RISK-LOW 강등. 보고서에 "섹션 구조 기반 추정치이며 내용 중복 여부는 수동 확인 필요" 주석 추가.
 
 ### Dim F: 오케스트레이터 라우팅 프로토콜 + 코드 리서처 베이스라인
 
