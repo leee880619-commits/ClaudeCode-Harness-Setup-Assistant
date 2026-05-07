@@ -166,8 +166,7 @@ v0.9.2 부터 슬래시 autocomplete 에는 위 2개 + `/harness-architect:help`
 | 0 | 대상 프로젝트 경로 수집 + 요청명 생성 + **기본 성능 수준(경제/균형/고성능) 힌트** 수집 | (Orchestrator) |
 | 1-2 | 스캔 + 인터뷰 + 기본 하네스 | `phase-setup` |
 | 2.5 | 도메인 리서치 (옵션) | `phase-domain-research` |
-| 3 | 워크플로우 설계 | `phase-workflow` |
-| 4 | 파이프라인 설계 | `phase-pipeline` |
+| 3-4 | 워크플로우 + 파이프라인 설계 (통합) | `phase-design` |
 | 5 | 에이전트 팀 편성 + 모델 티어 매트릭스 배정 | `phase-team` |
 | 6 | SKILL/playbook 작성 | `phase-skills` |
 | 6+ | **Model Confirmation Gate** — 에이전트-모델-스킬 통합 표로 최종 1회 승인 | (Orchestrator) |

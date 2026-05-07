@@ -78,8 +78,7 @@ docs/myapp-setup/
 | 0 | 경로 수집 | (Orchestrator) | N/A | 없음 |
 | 1-2 | 스캔 + 인터뷰 + 기본 하네스 | phase-setup | fresh-setup | red-team-advisor |
 | 2.5 | 도메인 리서치 (선택) | phase-domain-research | domain-research | red-team-advisor |
-| 3 | 워크플로우 설계 | phase-workflow | workflow-design | red-team-advisor |
-| 4 | 파이프라인 설계 | phase-pipeline | pipeline-design | red-team-advisor |
+| 3-4 | 워크플로우 + 파이프라인 설계 (통합) | phase-design | workflow-design → pipeline-design | red-team-advisor (1회) |
 | 5 | 에이전트 팀 편성 | phase-team | agent-team | red-team-advisor |
 | 6 | SKILL/Playbook 작성 | phase-skills | skill-forge | red-team-advisor |
 | 6+ | **Model Confirmation Gate** | (Orchestrator) | — | — |

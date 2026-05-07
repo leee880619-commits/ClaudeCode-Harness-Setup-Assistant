@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-05-07
+
+**Phase 3+4 통합 — `phase-design` 단일 에이전트 (workflow-design → pipeline-design 순차 실행).**
+
+블루팀/레드팀 메타 분석에서 Phase 3(workflow) 의 `## Context for Next Phase` 출력이 Phase 4(pipeline) 의 Step 1 입력과 1:1 릴레이라는 사실이 확인됨. 두 Phase 사이 200단어 Summary 압축·재Read·Advisor 별도 호출이 모두 단순 오버헤드. 단일 에이전트(opus) 가 두 플레이북을 순차 Read·실행하여 두 산출물 (`02-workflow-design.md` + `03-pipeline-design.md`) 을 같은 컨텍스트에서 생성. 산출물 분리 유지로 후속 Phase 5/6 입력 계약과 frontmatter 기반 재개 프로토콜 보존.
+
+### Changed
+- **`.claude/agents/phase-design.md`** (신규) — Phase 3+4 통합 에이전트. workflow-design → pipeline-design 순차 실행. **재개 분기(Idempotency Gate)** 명시: 02 만 존재 + 03 미존재 시 workflow-design 스킵하고 02 를 Read 입력으로만 사용 (덮어쓰기 금지). 두 파일 모두 존재 시 명시적 `[resume_from]` 플래그 없이는 BLOCKING Escalation 으로 종료. CLAUDE.md `@import` 두 줄 (`02-workflow-design.md`, `03-pipeline-design.md`) 추가 책임 명시 (idempotent — 이미 존재하면 추가 안 함).
+- **`.claude/agents/phase-workflow.md`, `phase-pipeline.md`** (삭제) — phase-design 으로 통합.
+- **`.claude-plugin/plugin.json`** — 에이전트 등록 갱신 (phase-workflow + phase-pipeline → phase-design).
+- **`.claude/rules/orchestrator-protocol.md`** — Phase-to-Agent 매핑 / Phase Gate / Skip Gate / Phase 별 Context for Next Phase 표 갱신. Phase 5 진입 조건은 `02-workflow-design.md` AND `03-pipeline-design.md` 두 파일 모두 존재. **Skip Gate 강화**: Phase 3-4 통합 산출물의 경우 Escalations 합산 평가 + `validate-phase-artifact.sh` 가 02·03 두 파일 모두 1회차 exit 0 이어야 진입 허용 (단일 파일만 통과 시 차단).
+- **`playbooks/fresh-setup.md`, `playbooks/setup-lite.md`, `playbooks/domain-research.md`** — Next Steps 의 다음 Phase 호칭을 `phase-design` 으로 갱신.
+- **`ARCHITECTURE.md`, `README.md`, `README_EN.md`, `commands/harness-setup.md`** — Phase 매핑 표 통합 (Phase 3-4 단일 행).
+
+### Design Notes
+- **모델 정책**: 통합 에이전트는 opus 단일. 이전 phase-workflow 의 sonnet 비용 회귀가 발생하나, Phase 4 의 opus 요구가 통합 컨텍스트 전체를 지배하므로 일관성 우선. 워크플로우만 단독 재작성하는 케이스(Advisor BLOCK 으로 02 만 재실행) 는 Idempotency Gate 의 케이스 C 분기로 사용자 명시 결정 후 진행.
+- **Advisor 호출 횟수**: 2회 → 1회. 두 산출물 합산 리뷰. Dim 12(파이프라인 리뷰 게이트) 는 03-pipeline-design.md 단독 검사 가능하므로 통합 후에도 보안 게이트 약화 없음.
+- **재개 안전성**: Idempotency Gate 명시로 부분 실패(02 작성 후 03 직전 중단) 재소환 시 Advisor 통과한 워크플로우 설계 덮어쓰기 위험 제거.
+- **Red-team 리뷰 1회 반영**: BLOCK 2(idempotency 미정의 / CHANGELOG 누락) + ASK 2(@import 책임자 / Skip Gate 두 파일 기준) 모두 반영 후 출시.
+- **보류된 통합**: Phase 5+6 통합은 TeamCreate 병렬 SKILL 제작의 race 우려로 별도 설계 라운드로 미룸.
+
 ## [0.10.1] - 2026-05-06
 
 **Lean CLAUDE.md / SKILL.md SSoT 가드 도입 — anti-duplication 원칙을 모든 슬래시 커맨드 경로(/harness-setup, /audit, /harness-audit, /ops-audit) 에 빌트인.**

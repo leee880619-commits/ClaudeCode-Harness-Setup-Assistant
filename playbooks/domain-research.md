@@ -146,7 +146,7 @@ Budget: WebSearch ≤ 6 쿼리, WebFetch ≤ 3 페이지 (stub/미매칭 시 ful
 - (해당 항목. 없으면 "없음")
 
 ## Next Steps
-- Phase 3: phase-workflow 에이전트 소환 권장. 이 산출물의 워크플로우 패턴을 우선 적용.
+- Phase 3-4: phase-design 에이전트 소환 권장 (워크플로우+파이프라인 통합). 이 산출물의 워크플로우 패턴과 표준 역할 분업을 우선 적용.
 ```
 
 스킵 산출물 템플릿:
