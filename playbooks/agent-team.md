@@ -8,6 +8,26 @@ Escalations 섹션에 `[BLOCKING]`/`[ASK]`/`[NOTE]` 태그로 기록한다.
 ## Goal
 Phase 4에서 설계된 파이프라인을 바탕으로, Claude Code의 팀 기능(TeamCreate, Agent, SendMessage)을 활용하여 실제 에이전트 팀을 편성하고 소통 패턴을 설계한다.
 
+## [Agreed Scope] 입력 처리 (v0.11.0+)
+
+오케스트레이터 프롬프트의 `[Agreed Scope]` 필드 값(`슬림` / `중간` / `풀`)을 에이전트 수·구성에 반영한다. 사용자가 Phase 0 A10 에서 명시 동의한 규모의 기준선이다.
+
+**규모별 에이전트 수 상한**:
+
+| Agreed Scope | 에이전트 수 상한 | sub-agent 통합 권장 |
+|--------------|------------------|---------------------|
+| `슬림` | ≤ 4 (reviewer 포함) | 단일 진입점 + 1-3 sub-agent. 가능하면 SKILL.md 중심 (에이전트 0 ~ 1) |
+| `중간` | ≤ 7 (reviewer 포함) | 메인 + 4-6 sub-agent + 1-2 reviewer |
+| `풀` | 무제한 (의도된 인프라급) | 다층 sub-agent + reviewer 3+ + HITL gate 다수 |
+
+**상한 초과 시**: Phase 5 Advisor 의 Dim 14 가 BLOCK 발화 (룰 R1: A10=슬림 + 에이전트≥5, R2: A10=중간 + 에이전트≥8, R3: 솔로 + 에이전트≥7). 본 섹션의 상한을 준수하면 Dim 14 자동 통과.
+
+**Agent Model Table 에 Agreed Scope 기록**: 산출물 `04-agent-team.md` 의 Agent Model Table 위에 `Agreed Scope: {값} (사용자 합의: docs/{요청명}/01-discovery-answers.md A10)` 한 줄 기록. Phase 6 (`phase-skills`) 가 이 값을 SKILL.md 수 결정에 사용.
+
+**A10 = 슬림 + 동일 도메인 운영 코드 인용 시**: 사용자가 발화에서 인용한 운영 코드의 인벤토리(예: MRSO 9 SKILL.md / 0 에이전트)와 격차 3배 이상이면 Dim 14 추가 BLOCK. 본 Phase 에서 사전 자기 검사: 인용된 운영 코드 인벤토리를 산출물 `### 기각된 대안 (Rejected Alternatives)` 에 명시하고, 격차 사유를 본문에 인용.
+
+**A10 답변 누락 시**: `[BLOCKING] [Agreed Scope] 입력 누락 — Phase 0 A10 답변 부재. 오케스트레이터 재진입 필요` Escalation. 합리적 기본값으로 진행 금지.
+
 ## Prerequisites
 - Phase 4 완료: 파이프라인 설계 (에이전트 목록, 실행 순서, 스킬 매핑)
 - 에이전트 간 소통 포인트가 식별된 상태

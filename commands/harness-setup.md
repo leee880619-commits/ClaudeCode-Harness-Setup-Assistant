@@ -80,12 +80,15 @@ docs/myapp-setup/
 | 2.5 | 도메인 리서치 (선택) | phase-domain-research | domain-research | red-team-advisor |
 | 3-4 | 워크플로우 + 파이프라인 설계 (통합) | phase-design | workflow-design → pipeline-design | red-team-advisor (1회) |
 | 5 | 에이전트 팀 편성 | phase-team | agent-team | red-team-advisor |
+| 5+ | **Scope Confirmation Gate** | (Orchestrator) | — | — |
 | 6 | SKILL/Playbook 작성 | phase-skills | skill-forge | red-team-advisor |
 | 6+ | **Model Confirmation Gate** | (Orchestrator) | — | — |
 | 7-8 | 훅/MCP 설치 | phase-hooks | hooks-mcp-setup | red-team-advisor |
 | 9 | 최종 검증 | phase-validate | final-validation | red-team-advisor |
 
 > Phase 2.5는 옵션이다. Phase 1-2의 Escalation(`[ASK] 핵심 도메인 식별`)에 대한 사용자 답변이 "해당 없음"/공백이거나 초기 발화에 "--fast"/"빠르게"가 있으면 소환하지 않고 Phase 3로 직행한다.
+
+> **Scope Confirmation Gate**는 Phase 5 Advisor 통과 직후 오케스트레이터가 직접 수행하는 1회성 체크다. 에이전트 수 ≥ 5 OR reviewer 수 ≥ 2 OR HITL gate ≥ 1 중 하나 충족 시 발화한다. 사용자에게 현재 에이전트 인벤토리·reviewer 수·HITL gate 수를 표로 노출하고, A10 합의가 있으면 격차를 정량 명시한다. 사용자는 이 규모로 진행 / 축소 재소환 / 의도 재확인 3선택. v0.10.x 까지의 incident (사용자가 Phase 9 완료 후에야 50+ 파일 규모 인지) 의 구조적 차단 게이트. 상세: `.claude/rules/orchestrator-protocol.md` "Scope Confirmation Gate".
 
 > **Model Confirmation Gate**는 Phase 6 Advisor 통과 직후 오케스트레이터가 직접 수행하는 1회성 체크다. 생성된 에이전트 수가 2명 이상일 때만 실행하며, 사용자에게 Agent Model Table을 제시하여 전체 승인 / 개별 조정 / 티어 일괄 변경을 선택받는다. Fast-Forward(Phase 3-5 통합)가 활성화된 프로젝트에서도 Phase 6은 별도 실행이므로 이 게이트는 정상 동작한다. 상세 프로토콜: `.claude/rules/orchestrator-protocol.md` "Model Confirmation Gate".
 
@@ -200,21 +203,75 @@ Phase 0 시작 전, 아래 안내문을 텍스트로 출력하세요 (AskUserQue
 중단 시 docs/{요청명}/에 저장되어 나중에 언제든 재개 가능합니다.
 ```
 
-AskUserQuestion으로 대상 프로젝트 경로와 핵심 인터뷰 질문(이름/유형/팀 규모)을 묶어 받으세요.
-AskUserQuestion 완료 직후, 결정된 트랙에 따라 아래 텍스트를 출력하세요:
+AskUserQuestion으로 대상 프로젝트 경로와 **압축 인터뷰 A1~A10** (이름·유형·솔로팀·성능 수준·품질 축·사용 빈도·운영 성숙도·작업 복잡도·**적정 규모 합의**) 을 묶어 받으세요. 인터뷰 구성·옵션 description 기준은 본 문서 아래 "Phase 0 인터뷰 옵션 description 기준" 섹션 및 `.claude/rules/orchestrator-protocol.md` "Phase 0에서 인터뷰 사전 수행" 섹션을 따르세요.
 
-- Fast Track 선택 또는 "빠르게"/"--fast" 키워드: `"Fast Track으로 진행합니다. 예상 소요: 10–15분."`
-- 에이전트 파이프라인 프로젝트: `"에이전트 파이프라인 경로로 진행합니다. 예상 소요: 30–40분 (Advisor 재검토 발생 시 Phase당 +5~8분 추가 가능)."`
-- 그 외 표준 경로: `"표준 경로로 진행합니다. 예상 소요: 20–45분 (프로젝트 복잡도에 따라 / Advisor 재검토 발생 시 Phase당 +5~8분 추가)."`
+AskUserQuestion 완료 직후, 결정된 운영 모드와 A10 적정 규모 합의에 따라 아래 텍스트를 출력하세요:
 
-> **소요 시간 주의**: Phase 3·4 산출물은 운영 가드(Session Recovery Protocol / Failure Recovery & Artifact Versioning) 필수 섹션이 추가되었다. 에이전트 파이프라인 프로젝트에서 누락 시 Advisor Dim 13이 BLOCK을 발행하여 Phase 재실행 루프가 발생할 수 있다. 최악의 경우 풀 트랙 60분+ 소요. 일반 웹앱/CLI 프로젝트는 대상 프로젝트가 에이전트 파이프라인 구조가 아니므로 Dim 13이 스킵되어 추가 소요 없음.
+- **Fast Mode** (사용자 발화에 "빠르게" / "--fast" 키워드 포함): `"Fast Mode 로 진행합니다. 초반 압축 인터뷰가 끝났으므로 이후 Phase 진행 중 추가 질문을 최소화하고, 산출물 규모는 A10 합의 ({합의값}) 기준으로 조정합니다. 예상 소요: A10=슬림 25-35분 / A10=중간 40-55분 / A10=풀 60분+ (Advisor 재검토 발생 시 Phase당 +5~8분 추가 가능)."`
+- **Full Mode** (키워드 없음): `"표준 모드로 진행합니다. Phase별로 추가 확인이 필요할 수 있습니다. 예상 소요: A10 합의 ({합의값}) 기준 — 슬림 25-35분 / 중간 40-55분 / 풀 60분+ (프로젝트 복잡도·Advisor 재검토에 따라 변동)."`
 
-### Phase 0 성능 수준 옵션 description 기준
+> **중요 — "빠르게" 키워드 의미**: Fast Mode 는 *트랙 단축이나 산출물 축소가 아닙니다*. Phase별 분산 질문을 초반 압축 인터뷰로 모으고, AI 가 사용자 발화·미발화 맥락을 종합 추론하여 적정 규모를 A10 옵션으로 한 번 합의하는 **운영 모드 전환** 신호입니다. 산출물 규모는 A10 합의에 따라 슬림/중간/풀 모두 가능합니다. 의미 상세는 `.claude/rules/orchestrator-protocol.md` "Fast Keyword Semantics" 섹션.
 
-AskUserQuestion으로 성능 수준을 물을 때 options의 description 필드:
+> **소요 시간 주의**: Phase 3·4 산출물은 운영 가드(Session Recovery Protocol / Failure Recovery & Artifact Versioning) 필수 섹션이 추가되었다. 에이전트 파이프라인 프로젝트에서 누락 시 Advisor **Dim 13 "상태 지속성"** 이 BLOCK을 발행하여 Phase 재실행 루프가 발생할 수 있다. 또한 v0.11.0 부터 신규 **Dim 14 "Scope-Intent Match"** 가 A10 합의·A7 사용 빈도·A8 운영 성숙도와 산출물 규모의 격차를 검사한다 — A10 = 슬림인데 11 에이전트가 생성되면 BLOCK. 최악의 경우 풀 트랙 60분+ 소요. **Dim 14 는 일반 웹앱/CLI 프로젝트에서도 항상 실행** (복잡도 게이트 우회 불가).
+
+### Phase 0 인터뷰 옵션 description 기준
+
+#### A5 성능 수준 (단일 선택)
 - 경제형: "Haiku 위주. 빠르고 저렴 (Opus 대비 약 1/15 비용). 단순 프로젝트·빠른 프로토타입에 적합."
 - 균형형 (권장): "Sonnet 중심, 복잡 설계 판단만 Opus 사용. 대부분 프로젝트에 최적."
 - 고성능형: "Opus 중심. 균형형 대비 약 5배 비용. 복잡한 에이전트 아키텍처 설계에 적합."
+
+> 본 옵션의 "(권장)" 라벨은 슬래시 커맨드 정의가 명시한 것 — `question-discipline.md` "Recommended Label Discipline" 예외 (b) 에 해당하여 허용.
+
+#### A6 품질 축 (멀티 선택, 0~5개)
+- 프론트엔드 디자인·UX: "frontend-designer + frontend-ux-reviewer 에이전트, frontend-design 스킬 자동 주입."
+- Strict Coding: "타입·린트·테스트 엄격. strict-coding-6step 워크플로우 채택 제안."
+- 보안·컴플라이언스: "설정·훅 레벨 가드 강화 (deny 강화, 비밀값 패턴 감시)."
+- 에이전트 파이프라인: "Phase 3-5 통합 (Fast-Forward) 경로 우선 고려."
+- 해당 없음: "자동 주입 없음."
+
+#### A7 사용 빈도 (단일 선택)
+- 1회성·실험: "POC, 학습용, 단발 작업. 운영 인프라 패턴 자동 부여 안 함."
+- 저빈도 (주 1-2회 이하): "솔로 도구, 개인 워크플로우. Session Recovery 등 운영 패턴 비활성."
+- 중빈도 (주 3회 ~ 매일): "일상 도구. 본인 + 소수 사용자. 기본 견제 패턴만."
+- 고빈도·운영 (매일 다회 또는 팀 인프라): "다중 사용자, 운영 환경. Pipeline Review Gate / Session Recovery 자동 부여 후보."
+
+#### A8 운영 성숙도 (단일 선택)
+- 개인 도구: "본인만 사용. 장애 = 본인 불편. reviewer/HITL 자동 부여 안 함."
+- 팀 공유 도구: "동료 N명 사용. 장애 영향 제한적. reviewer 0-1, HITL 0-1 권장 상한."
+- 운영 인프라: "다운타임 = 비즈니스 영향. 복구·감사 요구. Pipeline Review Gate 활성, Session Recovery 권장."
+
+#### A9 작업 복잡도 (단일 선택)
+- 단순: "단일 기능, 명확한 입출력. 슬림 A10 매칭."
+- 중간: "다단계, 분기 있음. 중간 A10 매칭."
+- 복잡: "외부 시스템·검토 게이트 다수, 다중 워크플로우. 풀 A10 매칭 후보."
+
+#### A10 적정 규모 합의 (단일 선택, AI 추정 → 사용자 확인) — **암묵적 합의 방지 게이트**
+
+각 옵션의 label 에는 정량 견적을 명시하고, description 에는 (1) 추정 근거, (2) 트레이드오프, (3) 어떤 프로젝트에 맞는지를 적습니다. **"(권장)" 라벨 자동 부착 금지** — 도메인 적합도가 높다고 느껴도 추정 표현은 description 본문에만 적습니다.
+
+옵션 골격:
+- label: `슬림 (3-5 SKILL.md / 에이전트, reviewer 0, ~10 파일, 15-25분)`
+  description: "AI 추정 근거: {도메인} + A7={저빈도/1회성} + A8={개인 도구} → MRSO 등 유사 도메인의 슬림 운영 코드 참조. 트레이드오프: reviewer 없음 = 자체 검증 책임 사용자에게. 적합: 솔로 + 주 1-2회 사용 도구."
+- label: `중간 (5-8 에이전트, reviewer 1-2, ~25 파일, 35-50분)`
+  description: "AI 추정 근거: {도메인} + A7={중빈도} + A8={팀 공유} → 검토 게이트 1단으로 품질 견제. 트레이드오프: 슬림 대비 토큰/시간 ~2배. 적합: 본인 + 소수 사용자, 산출물 품질 견제 필요."
+- label: `풀 (10+ 에이전트, reviewer 3+, ~50 파일, 60분+, HITL gate 다수, Session Recovery)`
+  description: "AI 추정 근거: {도메인} + A7={고빈도·운영} + A8={운영 인프라} → 다단계 검토·복구·감사 패턴. 트레이드오프: 회의록 1건당 sub-agent 호출 7-10회, 토큰/지연 한 자릿수~두 자릿수 배. 적합: 팀 운영 인프라, 다중 사용자, 장애 = 비즈니스 영향."
+
+#### A10 옵션 노출 시 AI 책임
+
+1. 사용자 발화·미발화 맥락 (도메인·사용 강도·복잡도) 을 1차 추출하여 각 옵션 description 에 자기 추정 사유 포함
+2. **추정 사유는 description 본문에만** — "(권장)" 라벨 부착 금지 (Pillar 5)
+3. 사용자가 다른 옵션을 선택하거나 자유 텍스트로 "더 작게/크게" 명시하면 A10 옵션 description 의 추정을 보정
+4. A10 답변은 산출물 `01-discovery-answers.md` 의 `## Context for Next Phase` 에 `Agreed Scope: {답변}, AI Recommended: {추정}, Justification: {추론 사유}` 형식으로 기록
+
+### "(권장)" 라벨 부착 규칙
+
+AskUserQuestion 옵션 라벨에 `(권장)` 표기는 **다음 두 경우에만** 허용:
+- (a) 슬래시 커맨드 정의에 라벨이 박혀있는 경우 (예: A5 "균형형 (권장)")
+- (b) 플러그인 규칙·플레이북·도메인 KB 가 명시적으로 권장 옵션을 정의한 경우 — 인용 근거 의무
+
+**모델 자체 판단으로 "(권장)" 부착 금지**. 도메인 적합도 등 AI 추정은 옵션 description 본문에 명시. 상세: `.claude/rules/question-discipline.md` "Recommended Label Discipline".
 
 ### 인자로 경로를 받은 경우 (`$ARGUMENTS`)
 

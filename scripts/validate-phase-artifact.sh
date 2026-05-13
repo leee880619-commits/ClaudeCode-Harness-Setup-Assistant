@@ -76,14 +76,61 @@ fi
 
 # --- Escalations 섹션 비어있음 경고 (fail 올리지 않음) ---
 # "없음" 미기록 시 오케스트레이터가 Escalation 없음으로 오판할 수 있음
-ESCAL_CONTENT="$(awk '/^## Escalations$/{p=1;next} /^## /{p=0} p{print}' "$FILE" | tr -d '[:space:]')"
-if [[ -z "$ESCAL_CONTENT" ]]; then
+ESCAL_BLOCK="$(awk '/^## Escalations$/{p=1;next} /^## /{p=0} p{print}' "$FILE")"
+ESCAL_COMPACT="$(printf '%s' "$ESCAL_BLOCK" | tr -d '[:space:]')"
+if [[ -z "$ESCAL_COMPACT" ]]; then
   warn "Escalations 섹션이 비어있습니다 (\"없음\" 명시 권장) — ${BASE}"
 fi
 
+# --- Escalation 카운트 (Phase Gate [ASK] 차단의 입력) ---
+# [ASK] / [BLOCKING] 항목을 세고, 같은 라인 또는 직후 라인에 `→ [RESOLVED]` 마커가 있으면 제외.
+# stdout 에 ESCALATION_COUNT 라인을 출력하여 orchestrator 가 파싱.
+ASK_TOTAL=0
+BLOCK_TOTAL=0
+ASK_RESOLVED=0
+BLOCK_RESOLVED=0
+
+if [[ -n "$ESCAL_BLOCK" ]]; then
+  # 전체 매치 카운트
+  ASK_TOTAL="$(printf '%s\n' "$ESCAL_BLOCK" | grep -cE '\[ASK\]' || true)"
+  BLOCK_TOTAL="$(printf '%s\n' "$ESCAL_BLOCK" | grep -cE '\[BLOCKING\]' || true)"
+  # 해결된 항목 카운트: [ASK] 또는 [BLOCKING] 이 포함된 라인의 다음 6 라인 내에 `→ [RESOLVED]` 등장
+  # awk 로 ASK / BLOCKING 발견 → 다음 6 라인을 확인 → RESOLVED 있으면 카운트
+  ASK_RESOLVED="$(printf '%s\n' "$ESCAL_BLOCK" | awk '
+    /\[ASK\]/ { window=6; matched=0; next_lines[0]=$0; idx=1; resolved=0; }
+    window > 0 {
+      if (/→ ?\[RESOLVED\]/ || /\[RESOLVED\]/) { resolved=1; }
+      window--;
+      if (window == 0 && resolved) { count++; resolved=0; }
+    }
+    END { print count+0 }
+  ' || echo 0)"
+  BLOCK_RESOLVED="$(printf '%s\n' "$ESCAL_BLOCK" | awk '
+    /\[BLOCKING\]/ { window=6; matched=0; next_lines[0]=$0; idx=1; resolved=0; }
+    window > 0 {
+      if (/→ ?\[RESOLVED\]/ || /\[RESOLVED\]/) { resolved=1; }
+      window--;
+      if (window == 0 && resolved) { count++; resolved=0; }
+    }
+    END { print count+0 }
+  ' || echo 0)"
+fi
+
+ASK_OPEN=$(( ASK_TOTAL - ASK_RESOLVED ))
+BLOCK_OPEN=$(( BLOCK_TOTAL - BLOCK_RESOLVED ))
+[[ $ASK_OPEN -lt 0 ]] && ASK_OPEN=0
+[[ $BLOCK_OPEN -lt 0 ]] && BLOCK_OPEN=0
+
+# orchestrator 가 파싱하는 stdout 라인 (단일 권위 형식 — 변경 시 orchestrator-protocol.md 동반 갱신)
+printf 'ESCALATION_COUNT: ASK=%d, BLOCKING=%d, RESOLVED_ASK=%d, RESOLVED_BLOCKING=%d\n' \
+  "$ASK_OPEN" "$BLOCK_OPEN" "$ASK_RESOLVED" "$BLOCK_RESOLVED"
+
 # --- 결과 ---
+# exit code 규약 (변경 시 orchestrator-protocol.md "Phase Gate 검증 절차" 동반 갱신):
+#   0: 구조 통과. Escalation 카운트는 stdout 으로 별도 노출 — orchestrator 가 [ASK]/[BLOCKING] 미해결 시 자체 차단
+#   1: 구조 실패 (frontmatter 누락 / 필수 섹션 누락)
 if [[ $fail -eq 0 ]]; then
-  ok "Phase 산출물 구조 검증 통과: ${BASE}"
+  ok "Phase 산출물 구조 검증 통과: ${BASE} (미해결: ASK=${ASK_OPEN}, BLOCKING=${BLOCK_OPEN})"
   exit 0
 fi
 exit 1

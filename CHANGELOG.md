@@ -6,6 +6,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-05-13
+
+**의도-규모 미스매치 견제 시스템 도입 — Advisor Dim 14 + Phase 0 압축 인터뷰 (A7~A10) + Scope Confirmation Gate + Fast Keyword 의미 재정의.**
+
+배경: v0.10.x 세션에서 솔로 + "빠르게" + 주 1-2회 회의록 작성이라는 사용자 의도와 정반대로 11 에이전트 + 14 playbook + 5 reviewer + HITL 2-gate + Session Recovery 의 50+ 파일 하네스가 생성된 incident. 9-Phase 가 모두 정의대로 동작했고 final validation 도 통과했지만 사용자가 "오버엔지니어링" 으로 평가. 두 축의 문제: (1) Advisor 의 Dim 1~13 중 어디에도 "산출물 규모가 사용자 발화 의도와 매칭되는가" 차원이 없음, (2) "빠르게" 키워드가 Phase 0 에서 "질문 최소화", Phase 5-9 에서 "Advisor/Gate 생략 정당화" 로 재해석되어 사용자 비공지. 본 릴리즈는 두 축을 모두 견제하는 3-layer 방어선 도입.
+
+### Added
+- **`playbooks/design-review.md` — 신규 Dimension 14 "Scope-Intent Match"**. Phase 3-4·5·6 산출물에 대해 사용자 의도 신호 (A10 Agreed Scope, A7 사용 빈도, A8 운영 성숙도, A3 솔로/팀, "빠르게" 키워드) 와 산출물 규모 (에이전트 수, reviewer 수, HITL gate 수, playbook 수, Session Recovery 자동 부여) 격차를 검사. 9개 임계치 룰 (R1~R9) + 동일 도메인 운영 코드 참조 비교. **복잡도 게이트와 Skip Gate 우회 불가** (Dim 6 보안 격). BLOCK 발행 시 사용자 3-선택 (산출물 축소 / 의도 신호 보정 / 그대로 진행).
+- **`.claude/rules/orchestrator-protocol.md` Phase 0 인터뷰 A7~A10**. A7 사용 빈도 (1회성·실험 / 저빈도 / 중빈도 / 고빈도·운영), A8 운영 성숙도 (개인 도구 / 팀 공유 / 운영 인프라), A9 작업 복잡도 자기 평가, **A10 적정 규모 합의 (AI 추정 → 사용자 확인)** — 슬림 / 중간 / 풀 3옵션 + AI 가 description 본문에 자기 추정 사유 노출 (라벨 부착 금지). A10 답변은 Phase 3-6 에이전트 프롬프트의 `[Agreed Scope]` 로 전달.
+- **`.claude/rules/orchestrator-protocol.md` 신규 섹션 "Fast Keyword Semantics"**. "빠르게" / "--fast" 는 트랙 단축이 아니라 **운영 모드 전환** 신호. Phase 0 압축 깊이 인터뷰 + AI 자율 추론 + A10 1회 합의 + 자율 운영 + 자체 견제 강화. Skip Gate 외 경로 생략 금지 사유 5종 명시 (Advisor 생략 정당화 / Model Confirmation Gate 생략 / Scope Gate 생략 / [ASK] 무시 / "BLOCK 없으니 상식적 생략").
+- **`.claude/rules/orchestrator-protocol.md` 신규 섹션 "Scope Confirmation Gate (Phase 5 직후)"**. Dim 14 가 BLOCK 을 놓친 경우의 **최종 안전망**. 에이전트 수 ≥ 5 OR reviewer 수 ≥ 2 OR HITL gate ≥ 1 시 발화. A10 합의와 현재 규모 격차를 정량 노출. 3-선택 (이 규모로 진행 / 축소 재소환 / 의도 재확인). Phase 6 Model Confirmation Gate 와 별개로 직렬 실행.
+- **`.claude/rules/orchestrator-protocol.md` 트랙 판별 10번째 조건**. A7 ∈ {1회성·실험, 저빈도} AND A8 = `개인 도구` AND A10 ∈ {슬림, 중간} 시 강한 경량 트랙 신호 — 다른 8개 조건 일부 불충족이어도 경량 트랙 제안 유지.
+- **`.claude/rules/question-discipline.md` 신규 섹션 "Recommended Label Discipline"**. AskUserQuestion 옵션 라벨에 `(권장)` 자체 부착 금지. 슬래시 커맨드 정의·플러그인 규칙·플레이북·KB 명시 정의 시에만 허용 (인용 근거 의무). 추론 표현은 옵션 description 본문에. v0.10.x incident 의 "(권장)" 모델 자체 부착 사례 재발 차단.
+- **`playbooks/final-validation.md` 신규 Step 5.5 "Advisor Completion Audit"**. `docs/{요청명}/*.md` 의 frontmatter `advisor_status` 전수 점검. Phase별 기대값 매트릭스 + `:skip-gate` 접미사 허용 여부 + Scope Confirmation Gate / Model Confirmation Gate 통과 여부 + 미해결 [ASK]/[BLOCKING] 잔존 검사. 오케스트레이터 자체 Advisor 생략 차단의 final-validation 레이어.
+
+### Changed
+- **`playbooks/fresh-setup.md` "Fast Track Mode" → "Fast Mode" 로 이름 변경 + 전면 재작성**. v0.10.x 의 "Q5~Q9 합리적 기본값" 패턴 폐기. 압축 깊이 인터뷰는 오케스트레이터 책임 — 본 스킬 실행 시점에 A1~A10 누락이면 `[BLOCKING]` Escalation. A10 = `슬림` 시 Step 3-D/3-E 자동 주입을 [ASK] 강등. Fast Mode 가 단축하는 것 (질문 분산) 과 단축하지 않는 것 (Phase 수·Advisor·Scope Gate·산출물 규모) 명시. Pre-collected Answers 에 A6/A7/A8/A9/A10 추가. Step 1.5 User-Declared Structure 에 사용 강도·운영 성숙도 발화 추출 카테고리 추가 (A7/A8 답변과 불일치 시 [ASK]).
+- **`commands/harness-setup.md` Phase 0 출력 규칙 보강**. 트랙별 안내문 정정 — "Fast Mode" 로 변경, 예상 소요는 A10 합의 기준 (슬림 25-35분 / 중간 40-55분 / 풀 60분+). Phase 0 옵션 description 기준 섹션 확장 — A5/A6 + 신규 A7/A8/A9/A10 description 가이드 + A10 옵션 본문 정량 견적 표기 의무 + "(권장)" 라벨 부착 규칙. 마스터 워크플로우 표에 Phase 5+ "Scope Confirmation Gate" 행 추가. Dim 14 "Scope-Intent Match" 동작 안내 추가.
+- **`.claude/rules/orchestrator-protocol.md` Advisor Skip Gate 보강**. "Skip Gate 외 경로 생략 금지 (자체 우회 차단)" 항목 신설. thinking 안에서 "사용자가 빠르게 원함" / "BLOCK 없으니 상식적 생략" / "final-validation 이 잡아줄 것" 인용 금지. 위반 시 Phase 9 Advisor Completion Audit 가 BLOCK 으로 감지.
+- **`.claude/rules/orchestrator-protocol.md` Phase Gate 검증 절차에 "[ASK] 차단" Step 신설**. `validate-phase-artifact.sh` stdout 의 Escalation 카운트를 파싱하여 미해결 [ASK]/[BLOCKING] ≥ 1 시 다음 Phase 진입 차단. 오케스트레이터 thinking 내 자체 결정으로 [ASK] 처리 불가. 사용자 일괄 답변 후 산출물 `## Escalations` 에 `→ [RESOLVED]` 마커 Edit 추가.
+- **`scripts/validate-phase-artifact.sh` Escalation 카운트 출력 추가**. stdout 에 `ESCALATION_COUNT: ASK=N, BLOCKING=M, RESOLVED_ASK=R, RESOLVED_BLOCKING=R'` 한 줄. exit code 는 구조 검증만 — Escalation 카운트는 orchestrator 가 별도 차단.
+- **`playbooks/pipeline-design.md` `[Agreed Scope]` 입력 처리 신규 섹션**. 슬림/중간/풀 별 reviewer / HITL gate 상한. `mandatory_review` 분류라도 A10 = 슬림이면 `review_exempt: agreed_scope_slim` 허용.
+- **`playbooks/agent-team.md` `[Agreed Scope]` 입력 처리 신규 섹션**. 슬림 ≤ 4 / 중간 ≤ 7 / 풀 무제한 에이전트 수 상한. Agent Model Table 에 Agreed Scope 명시. 동일 도메인 운영 코드 인용 시 격차 사전 자기 검사.
+- **`playbooks/skill-forge.md` `[Agreed Scope]` 입력 처리 신규 섹션**. 슬림 SKILL.md ≤ 5 / 중간 ≤ 10 / 풀 무제한. 슬림에서 SKILL.md 통합 권장 (MRSO 평면 구조 참조).
+
+### Design Notes
+- **3-layer 방어선 설계**: Layer 1 = Phase 0 압축 인터뷰 A10 (암묵적 합의 방지), Layer 2 = Dim 14 (산출물 규모 검사), Layer 3 = Scope Confirmation Gate (사후 안전망). 어느 한 층이 뚫려도 다음 층이 잡는 구조.
+- **"빠르게" 의 정확한 의미** (사용자 정정 기반): 트랙 단축이나 산출물 축소가 아니라 *AI 가 사용자 발화·미발화 맥락·프로젝트 복잡도를 종합 추론해서 합리적 설계 파이프라인을 자율 운영*. 동시에 *암묵적 합의가 생기지 않도록* Phase 0 에서 압축 인터뷰로 맥락 한 번에 수집. 풀 9-Phase 식 분산 질문은 금지.
+- **Dim 6 (보안) 와 Dim 14 (의도-규모) 동일 격**: 둘 다 복잡도 게이트와 Skip Gate 모두 우회 불가. 산출물 규모 미스매치는 보안 위반과 같은 격의 사용자 피해 (시간·토큰·인지 부담 = 시스템 신뢰 침식) 로 본다.
+- **임계치 튜닝 보수적**: Dim 14 의 9개 임계치 (R1~R9) 는 초안. 실제 사용 데이터를 모은 뒤 v0.11.x patch 에서 조정. false positive 보다 false negative 비용이 더 크므로 초기는 보수적 (BLOCK 우선).
+- **Backward compatibility**: 기존 산출물 (frontmatter 없는 구형) 은 Advisor Completion Audit 에서 `[NOTE]` 로만 기록 (BLOCK 아님). v0.11.0 이전 세션 재개 호환.
+
 ## [0.10.3] - 2026-05-13
 
 **런타임 버그 픽스 — `subagent_type` 네임스페이스 prefix 누락 (Agent type not found 에러 해소).**

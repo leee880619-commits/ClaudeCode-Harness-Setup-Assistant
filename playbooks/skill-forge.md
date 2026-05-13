@@ -11,6 +11,24 @@ Phase 5에서 편성된 각 에이전트에 대해 구체적인 SKILL.md(HOW)를
 
 **Agent-Skill 분리 모델(모델 D) 적용 시:** 에이전트 정의(WHO)는 Phase 5에서 이미 생성되어 있다. 이 Phase는 순수하게 스킬(HOW) 파일만 제작한다.
 
+## [Agreed Scope] 입력 처리 (v0.11.0+)
+
+오케스트레이터 프롬프트의 `[Agreed Scope]` 필드 값(`슬림` / `중간` / `풀`)을 SKILL.md / playbook 수에 반영한다.
+
+**규모별 SKILL.md / playbook 수 상한**:
+
+| Agreed Scope | SKILL.md 수 상한 | playbook 수 상한 | 에이전트당 평균 playbook |
+|--------------|------------------|------------------|--------------------------|
+| `슬림` | ≤ 5 | ≤ 5 | ≤ 1 |
+| `중간` | ≤ 10 | ≤ 10 | ≤ 1.5 |
+| `풀` | 무제한 | 무제한 | 무제한 |
+
+**상한 초과 시**: Phase 6 Advisor 의 Dim 14 가 ASK 발화 (룰 R7: playbook 수 ≥ 10 AND 에이전트당 평균 playbook ≥ 1.5 → "playbook 단순화 검토"). 본 섹션 상한 준수 시 자동 통과.
+
+**SKILL.md 통합 권장 (A10 = 슬림)**: 슬림 모드에서 도메인 패턴이 작거나 중복되면 별도 SKILL.md 가 아닌 단일 SKILL.md 의 다중 워크플로우로 통합. MRSO 운영 코드 패턴 (단일 도메인 = 9 SKILL.md 평면 구조) 을 참조.
+
+**A10 답변 누락 시**: `[BLOCKING] [Agreed Scope] 입력 누락 — Phase 0 A10 답변 부재. 오케스트레이터 재진입 필요`.
+
 ## Prerequisites
 - Phase 5 완료: 팀 구조, 에이전트 목록, 모델/모드/범위 설정 확정
 - 각 에이전트의 담당 스킬명이 Phase 4에서 매핑된 상태
