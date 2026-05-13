@@ -52,7 +52,7 @@ Pre-flight 통과 후 `harness-auditor` 에이전트에 감사 위임:
 
 ```
 Agent(
-  subagent_type: "harness-auditor",
+  subagent_type: "harness-architect:harness-auditor",
   description: "Harness Configuration Audit",
   prompt: "[Target Project Root]
     {대상 프로젝트 절대 경로}

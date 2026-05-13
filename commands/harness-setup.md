@@ -42,7 +42,7 @@ description: Build a complete Claude Code harness for any project via a 9-phase 
 5. **Playbook 직접 실행 금지** — 방법론은 반드시 Agent 도구로 서브에이전트(opus)를 소환해 실행.
 
 금지: `Skill(skill: "fresh-setup")`
-필수: `Agent(subagent_type: "phase-setup", description: "...", prompt: "...")`
+필수: `Agent(subagent_type: "harness-architect:phase-setup", description: "...", prompt: "...")`
 
 ## Orchestrator Architecture
 

@@ -6,6 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.3] - 2026-05-13
+
+**런타임 버그 픽스 — `subagent_type` 네임스페이스 prefix 누락 (Agent type not found 에러 해소).**
+
+플러그인 매니페스트(`plugin.json`)에 `"name": "harness-architect"` 가 등록되어 있으면 Claude Code 런타임이 모든 에이전트를 `harness-architect:<name>` 으로 네임스페이스 처리한다. 그러나 오케스트레이터·playbooks·command 파일들이 `subagent_type: "phase-setup"` 처럼 prefix 없이 소환을 시도해 외부 프로젝트(설치된 플러그인 컨텍스트)에서 `Error: Agent type 'phase-setup' not found` 가 발생했다. 개발 레포 내부에서는 `.claude/agents/*.md` 가 프로젝트-로컬 에이전트로도 접근 가능해 prefix 없는 호출이 우연히 성공했기 때문에 그동안 노출되지 않았다.
+
+### Fixed
+- **`.claude/rules/orchestrator-protocol.md`** — Phase 2.5 / Phase 1-2 / security-auditor 병렬 소환 / red-team Advisor 4개 소환 템플릿에 `harness-architect:` prefix 추가.
+- **`commands/harness-setup.md`** — `필수 패턴` 예시 prefix 추가.
+- **`commands/audit.md`** — 3개 auditor (harness/ops/fit) 병렬 소환 prefix 추가.
+- **`commands/harness-audit.md`, `commands/ops-audit.md`, `commands/fit-audit.md`** — 각 auditor 직접 소환 prefix 추가.
+- **`playbooks/final-validation.md`** — `security-auditor` 소환 예시 prefix 추가.
+
+### Changed
+- **`CONTRIBUTING.md` 명명 규약** — 네임스페이스 prefix 규칙 명시 + 개발 모드(`claude --plugin-dir .`) 와 설치 모드 모두 동일하게 네임스페이스가 적용됨을 강조. 향후 신규 `subagent_type` 호출 작성 시 prefix 누락 방지.
+- **`CLAUDE.md`, `ARCHITECTURE.md`** — 기여자 가이드 예시도 prefix 포함 형태로 갱신 (일관성).
+
+### Design Notes
+- 외부 검증은 작성 시점에 자동화하지 않음. 이번 픽스는 grep 기반 회귀 방지로 충분 — `subagent_type:\s*"(phase-[a-z-]+|red-team-advisor|security-auditor|ops-auditor|fit-auditor|harness-auditor)"` 가 매칭 0건이 되도록 유지하는 것이 회귀 가드. 추후 `scripts/` 에 prefix 검증 스크립트 도입 검토.
+
 ## [0.10.2] - 2026-05-07
 
 **Phase 3+4 통합 — `phase-design` 단일 에이전트 (workflow-design → pipeline-design 순차 실행).**

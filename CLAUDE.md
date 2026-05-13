@@ -34,7 +34,7 @@ claude --plugin-dir .
 ## 금지 / 필수 패턴
 
 - 금지: `Skill(skill: "fresh-setup")` — 방법론을 메인 세션이 직접 실행.
-- 필수: `Agent(subagent_type: "phase-setup", ...)` — 서브에이전트 소환 후 playbook을 서브에이전트가 Read하여 실행.
+- 필수: `Agent(subagent_type: "harness-architect:phase-setup", ...)` — 서브에이전트 소환 후 playbook을 서브에이전트가 Read하여 실행. **플러그인 매니페스트(`plugin.json`)에 등록된 모든 에이전트는 런타임에서 `harness-architect:` 네임스페이스 prefix가 자동 부여**되며, prefix 없이 소환 시 `Agent type not found` 에러가 발생한다.
 
 ## 릴리즈 워크플로우
 

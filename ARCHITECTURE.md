@@ -18,7 +18,7 @@ Skill(skill: "fresh-setup")
 필수 패턴:
 ```
 Agent(
-  subagent_type: "phase-setup",
+  subagent_type: "harness-architect:phase-setup",
   description: "Phase 1-2: scan + interview",
   prompt: "Target project: {path}, Artifacts: {path}/docs/{request-name}/"
 )

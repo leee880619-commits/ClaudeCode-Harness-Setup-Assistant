@@ -117,7 +117,7 @@ Pre-flight 통과 후 **한 응답에 3개 Agent 를 동시 호출** (independen
 
 ```
 Agent(
-  subagent_type: "harness-auditor",
+  subagent_type: "harness-architect:harness-auditor",
   description: "Unified Audit — Configuration",
   prompt: "[Target Project Root] {대상 절대 경로}
     [Assistant Project Root] ${CLAUDE_PLUGIN_ROOT}
@@ -128,7 +128,7 @@ Agent(
 )
 
 Agent(
-  subagent_type: "ops-auditor",
+  subagent_type: "harness-architect:ops-auditor",
   description: "Unified Audit — Runtime",
   prompt: "[Target Project Root] {대상 절대 경로}
     [Assistant Project Root] ${CLAUDE_PLUGIN_ROOT}
@@ -139,7 +139,7 @@ Agent(
 )
 
 Agent(
-  subagent_type: "fit-auditor",
+  subagent_type: "harness-architect:fit-auditor",
   description: "Unified Audit — Project Fit",
   prompt: "[Target Project Root] {대상 절대 경로}
     [Assistant Project Root] ${CLAUDE_PLUGIN_ROOT}
