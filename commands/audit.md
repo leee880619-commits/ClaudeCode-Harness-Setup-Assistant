@@ -263,6 +263,7 @@ fit-audit 이 `heuristic-only-mode` 로 실행된 경우(대상 프로젝트에 
 - Critical 0 & High 2+ 있으면: "가까운 시점에 `/harness-architect:harness-setup <대상 경로>` 재실행 권장"
 - Medium 만 있으면: "settings.json 권한 범위 갱신·agent 모델 티어 조정 등 국소 수동 리팩터 권장 (`/harness-architect:harness-setup` 재실행은 선택)"
 - 전부 Aligned/Low: "하네스가 현재 프로젝트와 정합. 조치 불필요"
+- **v0.11.0 Intent-Scope 베이스라인 finding (pre-v0.11.0 빌드, v0.11.1+)** 가 harness-audit 의 MEDIUM 으로 + fit-audit Dim 3.5 의 MAJOR-DRIFT 로 함께 발행되면 통합 리포트의 Recommendation 에 우선 노출: "**의도-규모 견제 부재 — 본 하네스는 사용 빈도·운영 성숙도·적정 규모 합의(A7~A10) 가 기록되지 않은 pre-v0.11.0 빌드입니다. 현재 산출물 규모와 사용자 의도 격차가 감지됐습니다. `/harness-architect:harness-setup <대상 경로>` 재실행 시 Phase 0 의 A10 인터뷰로 적정 규모를 재합의한 뒤 Phase 5 Scope Confirmation Gate 가 자동 축소 옵션을 제시합니다.**"
 
 ## 🛠 다음 실행 방법 (How to apply)
 

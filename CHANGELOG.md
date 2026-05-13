@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-05-13
+
+**v0.11.0 의도-규모 견제 시스템의 audit 커버리지 보강 — `/harness-architect:audit` 가 pre-v0.11.0 빌드 또는 현재 빌드의 의도-규모 미스매치를 사후 진단.**
+
+배경: v0.11.0 은 build 측 (`/harness-architect:harness-setup`) 에 Advisor Dim 14 + Phase 0 A7~A10 + Scope Confirmation Gate 를 도입했으나, audit 측 (`/harness-architect:audit`) 3개 sub-auditor (harness/ops/fit) 어디에도 v0.11.0 새 개념이 반영되지 않은 누락. 결과적으로 v0.10.x 의 50+ 파일 incident 와 동일 패턴의 기 설치된 하네스를 audit 가 진단해도 의도-규모 격차를 감지하지 못함. 본 patch 는 build/audit 양쪽 커버리지를 정합화.
+
+### Added
+- **`playbooks/fit-audit.md` Dim 3.5 "의도-규모 미스매치 (Intent-Scope Mismatch)"** — Dim 14 의 audit 버전. baseline (`01-discovery-answers.md`) 의 A3/A7/A8/A10 답변과 현재 산출물 규모 (.claude/agents, reviewer 수, HITL gate, playbook 수) 격차를 7개 룰 (F1~F7) 로 검사. A10 답변 누락 (pre-v0.11.0 빌드) 시 F4 fallback 룰로 [MINOR-DRIFT] 발행. 격차 발견 시 처리 경로 3-선택 안내 (harness-setup 재실행 / 수동 편집 / 유지).
+- **`playbooks/harness-audit.md` Phase 4 "v0.11.0 Intent-Scope 베이스라인 누락" 특례** — `01-discovery-answers.md` 의 Pre-collected Answers 에서 A7/A8/A10 grep 매칭이 < 3 이면 단일 MEDIUM finding 발행. 자동 패치 불가 (사용자 입력 필요), 대신 Escalation 으로 재실행 / 수동 보충 / 유지 3-선택 안내. fit-audit Dim 3.5 와 상호 보완 (베이스라인 존재 검사 vs 실제 격차 검사).
+- **`commands/audit.md` Recommendation 우선 노출 규칙** — harness-audit MEDIUM (베이스라인 누락) + fit-audit Dim 3.5 MAJOR-DRIFT (실제 격차) 동시 발행 시 통합 리포트 Recommendation 최상단에 "의도-규모 견제 부재 — harness-setup 재실행 시 A10 인터뷰 + Scope Confirmation Gate 자동 축소 옵션" 안내.
+
+### Design Notes
+- **build 와 audit 의 상호 보완**: build (v0.11.0) = 신규 하네스의 사전 차단, audit (v0.11.1) = 기존 하네스의 사후 감지. 둘 다 동일한 임계치 (R1~R9 / F1~F7) 사용으로 일관성 유지.
+- **자동 패치 vs 사용자 입력**: Intent Gate 베이스라인 (v0.10.0) 은 정적 템플릿 복사라 자동 패치 가능했지만, A7~A10 베이스라인은 사용자 답변 필수라 자동 패치 불가. 대신 audit 가 누락을 명시 노출 + harness-setup 재실행 경로를 권장하는 방식.
+- **False Positive 방어**: fit-audit Dim 3.5 의 F4 룰 (pre-v0.11.0 빌드 + 에이전트 ≥ 7) 은 MINOR-DRIFT 로만 발행 — v0.11.0 이전 빌드는 *원래* 의도-규모 견제가 없었으므로 단순 "Unknown" 만으로 MAJOR 승격 금지. 정량적 격차 (F1~F3·F5~F7) 가 있을 때에만 MAJOR.
+
 ## [0.11.0] - 2026-05-13
 
 **의도-규모 미스매치 견제 시스템 도입 — Advisor Dim 14 + Phase 0 압축 인터뷰 (A7~A10) + Scope Confirmation Gate + Fast Keyword 의미 재정의.**

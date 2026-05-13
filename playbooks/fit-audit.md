@@ -176,6 +176,44 @@ test -f {대상}/.claude/settings.json && echo yes
 
 **False Positive 주의**: 신규 프로젝트(소스 <100)인데 하네스가 풀 트랙으로 설치된 경우 오버피팅처럼 보이나, 사용자가 "앞으로 확장할 것" 이라 의도한 경우 드리프트 아님 — baseline 의 A6 답변에서 "확장 의지" 증거가 있으면 `[MINOR-DRIFT]` 로 낮춤.
 
+### Dim 3.5 — 의도-규모 미스매치 (Intent-Scope Mismatch, v0.11.1+)
+
+> **목적**: Dim 3 의 사후 진단 버전 — v0.10.x 까지 솔로 + "빠르게" 발화에 11 에이전트 / 5 reviewer / HITL 2-gate 가 자동 생성된 incident 의 *기 설치된 하네스* 에서 동일 패턴을 감지. build 측은 v0.11.0 에서 Advisor Dim 14 + Scope Confirmation Gate 로 차단되지만, 그 이전 빌드는 audit 가 잡아야 한다.
+
+**스캔 대상**: `docs/{요청명}/01-discovery-answers.md` 의 Pre-collected Answers (A3 솔로/팀, A7 사용 빈도, A8 운영 성숙도, A10 적정 규모 합의) + `docs/{요청명}/04-agent-team.md` Agent Model Table + reviewer 수 + HITL gate 수.
+
+**검사 절차**:
+1. baseline 답변 추출:
+   - A3, A7, A8, A10 (`grep -E '^A[0-9]+\.|^- A[0-9]+\.' 01-discovery-answers.md`)
+   - 답변 누락 (v0.11.0 이전 빌드) 시 fallback: A3 → CLAUDE.md / settings.json 단서로 솔로/팀 추정, A7/A8 → "Unknown — pre-v0.11.0 build", A10 → "Unknown"
+2. 현재 산출물 규모 카운트:
+   - 에이전트 수: `find {대상}/.claude/agents -name "*.md" | wc -l`
+   - reviewer 수: `.claude/agents/*-redteam.md` 또는 `*-reviewer.md` 카운트
+   - HITL gate 수: `playbooks/**/*.md` 또는 `03-pipeline-design.md` 의 `HITL` / `human-in-the-loop` / `gate-presenter` 흔적 grep
+   - playbook 수: `find {대상}/playbooks -name "*.md" | wc -l`
+3. 격차 판정 (Dim 14 의 audit 버전 — 임계치는 동일 R1~R9):
+
+| 룰 # | 조건 | 판정 |
+|------|------|------|
+| F1 | A10 = `슬림` AND 에이전트 ≥ 5 | `[MAJOR-DRIFT]` |
+| F2 | A10 = `중간` AND 에이전트 ≥ 8 | `[MAJOR-DRIFT]` |
+| F3 | A3 = 솔로 AND 에이전트 ≥ 7 | `[MAJOR-DRIFT]` |
+| F4 | A10 = `Unknown (pre-v0.11.0)` AND 에이전트 ≥ 7 | `[MINOR-DRIFT]` — v0.11.0 의 의도-규모 견제 부재한 빌드, 사용자 의도 재확인 권장 |
+| F5 | reviewer ≥ 3 AND A8 ∈ {개인 도구, 팀 공유 도구} | `[MAJOR-DRIFT]` |
+| F6 | HITL gate ≥ 2 AND A7 ∈ {1회성·실험, 저빈도} | `[MAJOR-DRIFT]` |
+| F7 | A8 ≠ 운영 인프라 AND 산출물에 Session Recovery / Artifact Versioning / Complexity Gate S/M/L 자동 부여 | `[MAJOR-DRIFT]` |
+
+4. **인용 의무**: MAJOR-DRIFT 발행 시 (a) 어느 baseline 답변과 충돌하는지, (b) 어느 산출물 항목 축소를 제안하는지 명시.
+
+**등급 판정**:
+- `[MAJOR-DRIFT]` — 위 F1~F3, F5~F7 중 하나 충족
+- `[MINOR-DRIFT]` — F4 충족 (pre-v0.11.0 빌드 + 규모 우려), 또는 동일 도메인 운영 코드 인용 시 인벤토리 격차 2-3배
+- `[ALIGN]` — A10 합의와 규모 매칭 OR A7/A8 신호와 정합
+
+**False Positive 주의**: 사용자가 명시적으로 "운영 인프라급 필요" 라고 발화한 경우 (`01-discovery-answers.md` 본문 grep `운영|production|enterprise|매일|팀.*공유`) `[MINOR-DRIFT]` 로 낮춤. v0.11.0 이전 빌드는 *원래* 의도-규모 견제가 없었으므로, 단순 "Unknown" 만으로 MAJOR 발행하지 않음 — 격차가 정량적으로 큰 경우(F1~F3·F5~F7) 에만 MAJOR.
+
+**처리 경로 안내**: MAJOR-DRIFT 발견 시 통합 리포트에 다음 옵션 노출 — (a) `/harness-architect:harness-setup` 재실행 (v0.11.0+ 의 A10 인터뷰로 재합의 후 산출물 축소), (b) 수동 편집 (사용자가 `.claude/agents/` reviewer 일부 삭제), (c) 그대로 유지 (사유 명시).
+
 ### Dim 4 — 권한 경로 드리프트 + 위험 패턴 감지 (Permission Path Drift + Security Warning)
 
 **스캔 대상**: `.claude/settings.json` `permissions.allow` + 각 agent frontmatter `allowed_dirs` (존재 시) + settings 내 위험 패턴 / 비밀값
