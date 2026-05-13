@@ -176,43 +176,62 @@ test -f {대상}/.claude/settings.json && echo yes
 
 **False Positive 주의**: 신규 프로젝트(소스 <100)인데 하네스가 풀 트랙으로 설치된 경우 오버피팅처럼 보이나, 사용자가 "앞으로 확장할 것" 이라 의도한 경우 드리프트 아님 — baseline 의 A6 답변에서 "확장 의지" 증거가 있으면 `[MINOR-DRIFT]` 로 낮춤.
 
-### Dim 3.5 — 의도-규모 미스매치 (Intent-Scope Mismatch, v0.11.1+)
+### Dim 3.5 — 의도-규모 미스매치 (Intent-Scope Mismatch, v0.11.1+ / v0.11.2 보강)
 
 > **목적**: Dim 3 의 사후 진단 버전 — v0.10.x 까지 솔로 + "빠르게" 발화에 11 에이전트 / 5 reviewer / HITL 2-gate 가 자동 생성된 incident 의 *기 설치된 하네스* 에서 동일 패턴을 감지. build 측은 v0.11.0 에서 Advisor Dim 14 + Scope Confirmation Gate 로 차단되지만, 그 이전 빌드는 audit 가 잡아야 한다.
 
-**스캔 대상**: `docs/{요청명}/01-discovery-answers.md` 의 Pre-collected Answers (A3 솔로/팀, A7 사용 빈도, A8 운영 성숙도, A10 적정 규모 합의) + `docs/{요청명}/04-agent-team.md` Agent Model Table + reviewer 수 + HITL gate 수.
+**스캔 대상**: `docs/{요청명}/01-discovery-answers.md` 의 Pre-collected Answers (A3 솔로/팀, A7 사용 빈도, A8 운영 성숙도, A10 적정 규모 합의) + `docs/{요청명}/04-agent-team.md` Agent Model Table + reviewer 수 + HITL gate 수. `docs/` 디렉터리 자체가 없는 매우 오래된 하네스는 본 Dim 진단 불가 → Coverage Gaps 에 명시.
 
 **검사 절차**:
-1. baseline 답변 추출:
-   - A3, A7, A8, A10 (`grep -E '^A[0-9]+\.|^- A[0-9]+\.' 01-discovery-answers.md`)
-   - 답변 누락 (v0.11.0 이전 빌드) 시 fallback: A3 → CLAUDE.md / settings.json 단서로 솔로/팀 추정, A7/A8 → "Unknown — pre-v0.11.0 build", A10 → "Unknown"
+1. baseline 답변 추출 — **복합 grep 패턴** (산출물 형식이 자유롭게 기록될 수 있으므로 다중 형식 매칭):
+   ```
+   grep -iE 'A[3789]|A10|사용[ _-]?빈도|운영[ _-]?성숙도|적정[ _-]?규모|Agreed[ _-]?Scope|솔로|팀' \
+     {대상}/docs/{요청명}/01-discovery-answers.md
+   ```
+   - 매칭된 라인을 5개 항목(A3, A7, A8, A9, A10)별로 분류. 분류 실패 라인은 무시.
+   - **각 항목 추출 실패 시 `Unknown`** 으로 처리 (false negative 가 false positive 보다 안전 — incident 재현 차단이 우선이므로 보수적 판정).
+   - heuristic fallback (A3 만 적용): A3 = Unknown 이면 CLAUDE.md / settings.json grep 으로 "솔로" / "단일 사용자" / "본인" 단서 추정. **추정 불가 시 A3 = Unknown 유지** — F3 룰 skip 처리 (False Positive 회피).
+   - A7/A8/A10 은 추정하지 않는다 — pre-v0.11.0 빌드라는 사실 자체가 신호.
 2. 현재 산출물 규모 카운트:
-   - 에이전트 수: `find {대상}/.claude/agents -name "*.md" | wc -l`
-   - reviewer 수: `.claude/agents/*-redteam.md` 또는 `*-reviewer.md` 카운트
-   - HITL gate 수: `playbooks/**/*.md` 또는 `03-pipeline-design.md` 의 `HITL` / `human-in-the-loop` / `gate-presenter` 흔적 grep
-   - playbook 수: `find {대상}/playbooks -name "*.md" | wc -l`
-3. 격차 판정 (Dim 14 의 audit 버전 — 임계치는 동일 R1~R9):
+   - 에이전트 수: `find {대상}/.claude/agents -maxdepth 2 -name "*.md" -type f | wc -l`
+   - reviewer 수: `find {대상}/.claude/agents -maxdepth 2 \( -name "*-redteam.md" -o -name "*-reviewer.md" -o -name "*-redteam-*.md" \) | wc -l`
+   - HITL gate 수: `find {대상}/playbooks {대상}/docs -name "*.md" -type f -exec grep -lE 'HITL|human-in-the-loop|gate-presenter' {} \; 2>/dev/null | wc -l` — `find` 명령 사용 (bash globstar 환경 의존 회피).
+   - playbook 수: `find {대상}/playbooks -maxdepth 2 -name "*.md" -type f | wc -l`
+3. 격차 판정 (Dim 14 의 audit 버전 — 임계치는 동일 R1~R9, 권고 강도만 audit 시점에 맞춰 완화):
 
-| 룰 # | 조건 | 판정 |
-|------|------|------|
-| F1 | A10 = `슬림` AND 에이전트 ≥ 5 | `[MAJOR-DRIFT]` |
-| F2 | A10 = `중간` AND 에이전트 ≥ 8 | `[MAJOR-DRIFT]` |
-| F3 | A3 = 솔로 AND 에이전트 ≥ 7 | `[MAJOR-DRIFT]` |
-| F4 | A10 = `Unknown (pre-v0.11.0)` AND 에이전트 ≥ 7 | `[MINOR-DRIFT]` — v0.11.0 의 의도-규모 견제 부재한 빌드, 사용자 의도 재확인 권장 |
-| F5 | reviewer ≥ 3 AND A8 ∈ {개인 도구, 팀 공유 도구} | `[MAJOR-DRIFT]` |
-| F6 | HITL gate ≥ 2 AND A7 ∈ {1회성·실험, 저빈도} | `[MAJOR-DRIFT]` |
-| F7 | A8 ≠ 운영 인프라 AND 산출물에 Session Recovery / Artifact Versioning / Complexity Gate S/M/L 자동 부여 | `[MAJOR-DRIFT]` |
+| 룰 # | 조건 | 판정 | 대응 build Dim 14 룰 |
+|------|------|------|---------------------|
+| F1 | A10 = `슬림` AND 에이전트 ≥ 5 | `[MAJOR-DRIFT]` | R1 |
+| F2 | A10 = `중간` AND 에이전트 ≥ 8 | `[MAJOR-DRIFT]` | R2 |
+| F3 | A3 = 솔로 AND 에이전트 ≥ 7 (A3 = Unknown 시 skip) | `[MAJOR-DRIFT]` | R3 |
+| F4 | A7/A8/A10 모두 `Unknown` (pre-v0.11.0) AND 에이전트 ≥ 7 | `[MINOR-DRIFT]` — 의도-규모 견제 부재한 빌드 | R4 변형 |
+| F5 | reviewer ≥ 3 AND A8 ∈ {개인 도구, 팀 공유 도구} | `[MAJOR-DRIFT]` | R5 |
+| F6 | HITL gate ≥ 2 AND A7 ∈ {1회성·실험, 저빈도} | `[MAJOR-DRIFT]` | R6 |
+| F7 | A8 ≠ 운영 인프라 AND 산출물에 Session Recovery / Artifact Versioning / Complexity Gate S/M/L 자동 부여 | `[MAJOR-DRIFT]` | R8 |
+| **F8** | playbook 수 ≥ 10 AND 에이전트당 평균 playbook ≥ 1.5 | `[MINOR-DRIFT]` "playbook 단순화 검토" | **R7** (v0.11.2 추가) |
+| **F9** | A10 = `슬림` AND 산출물에 Complexity Gate S/M/L 도입 흔적 (grep `S/M/L` in `03-pipeline-design.md`) | `[MAJOR-DRIFT]` | **R9** (v0.11.2 추가) |
+
+build 측 R1~R9 와 audit 측 F1~F9 의 1:1 매핑 완성 (v0.11.2 에서 F8·F9 신설).
 
 4. **인용 의무**: MAJOR-DRIFT 발행 시 (a) 어느 baseline 답변과 충돌하는지, (b) 어느 산출물 항목 축소를 제안하는지 명시.
 
 **등급 판정**:
-- `[MAJOR-DRIFT]` — 위 F1~F3, F5~F7 중 하나 충족
-- `[MINOR-DRIFT]` — F4 충족 (pre-v0.11.0 빌드 + 규모 우려), 또는 동일 도메인 운영 코드 인용 시 인벤토리 격차 2-3배
+- `[MAJOR-DRIFT]` — 위 F1~F3, F5~F7, F9 중 하나 충족
+- `[MINOR-DRIFT]` — F4 (pre-v0.11.0) 또는 F8 (playbook 과다) 충족, 또는 동일 도메인 운영 코드 인용 시 인벤토리 격차 2-3배
 - `[ALIGN]` — A10 합의와 규모 매칭 OR A7/A8 신호와 정합
 
-**False Positive 주의**: 사용자가 명시적으로 "운영 인프라급 필요" 라고 발화한 경우 (`01-discovery-answers.md` 본문 grep `운영|production|enterprise|매일|팀.*공유`) `[MINOR-DRIFT]` 로 낮춤. v0.11.0 이전 빌드는 *원래* 의도-규모 견제가 없었으므로, 단순 "Unknown" 만으로 MAJOR 발행하지 않음 — 격차가 정량적으로 큰 경우(F1~F3·F5~F7) 에만 MAJOR.
+**False Positive 주의**: 사용자가 명시적으로 "운영 인프라급 필요" 라고 발화한 경우 (`01-discovery-answers.md` 본문 grep `운영|production|enterprise|매일|팀.*공유`) `[MINOR-DRIFT]` 로 낮춤. v0.11.0 이전 빌드는 *원래* 의도-규모 견제가 없었으므로, 단순 "Unknown" 만으로 MAJOR 발행하지 않음 — 격차가 정량적으로 큰 경우(F1~F3·F5~F7·F9) 에만 MAJOR.
 
-**처리 경로 안내**: MAJOR-DRIFT 발견 시 통합 리포트에 다음 옵션 노출 — (a) `/harness-architect:harness-setup` 재실행 (v0.11.0+ 의 A10 인터뷰로 재합의 후 산출물 축소), (b) 수동 편집 (사용자가 `.claude/agents/` reviewer 일부 삭제), (c) 그대로 유지 (사유 명시).
+**처리 경로 안내 (v0.11.2 권고 강도 완화)**: build 측 Dim 14 는 "에이전트 생성 직전 차단" 이지만 audit 측 Dim 3.5 는 *이미 사용 중인 에이전트* 를 다룬다. "삭제" 권고는 사용자 UX 충격이 크므로 다음 형식으로 완화:
+
+> 통합 리포트의 Recommendation 텍스트에 다음 옵션 노출 — (a) `/harness-architect:harness-setup` 재실행으로 **다음 빌드 시 규모 축소** (v0.11.0+ 의 A10 인터뷰 + Scope Confirmation Gate 가 자동 축소 옵션 제시 — 기존 에이전트 즉시 삭제 아님), (b) 수동 편집 (사용자가 자신의 판단으로 `.claude/agents/` reviewer 일부 비활성화 — 권고 아님), (c) 그대로 유지 (사용자 의도와 매칭됨을 본인이 확신하는 경우).
+
+본 권고는 **"즉시 삭제"** 가 아니라 **"다음 재빌드 시 적정선 재합의"** 가 기본값이다. 사용자가 이미 운영 중인 에이전트 인벤토리를 audit 가 강제로 깨뜨리지 않는다.
+
+**Backward Compatibility — Coverage Gaps**:
+- `docs/` 디렉터리 자체가 없는 매우 오래된 하네스 (v0.4.x 이전): Dim 3.5 진단 불가. `[NOT-APPLICABLE]` 으로 표기하고 통합 보고서 Coverage Gaps 에 "docs/ 부재 — 의도-규모 진단 skip" 한 줄 기록.
+- `01-discovery-answers.md` 파일은 있으나 모든 답변 grep 매칭 실패 시: F4 fallback 으로 처리 (A7/A8/A10 = Unknown).
+- `04-agent-team.md` 가 없는 단일 SKILL.md 하네스 (에이전트 0): 본 Dim 진단 skip (`.claude/agents/` 카운트 0 이면 매칭 룰 없음).
 
 ### Dim 4 — 권한 경로 드리프트 + 위험 패턴 감지 (Permission Path Drift + Security Warning)
 
@@ -390,7 +409,7 @@ test -f {대상}/.claude/settings.json && echo yes
 - heuristic-only-mode: Step B (현재 스캔) 후 Step C (추정 baseline 재구성)
 
 ### Step 2: Dimension 순차 실행
-- Dim 1 → Dim 2 → Dim 3 → Dim 4 → Dim 5 → Dim 7 순으로 수행 (Dim 6 은 모드 의존)
+- Dim 1 → Dim 2 → Dim 3 → **Dim 3.5** → Dim 4 → Dim 5 → Dim 7 순으로 수행 (Dim 6 은 모드 의존). Dim 3.5 는 v0.11.1+ 신설 — 누락 금지.
 - heuristic-only-mode 이면 Dim 6 추가 기록
 - Dim 4 검사 절차 B (위험 패턴·비밀값 감지) 결과는 드리프트 버킷과 **별도로** Security Warning 버킷에 수집
 - 각 Dim 결과를 등급별 버킷으로 수집

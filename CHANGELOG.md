@@ -6,6 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-05-13
+
+**v0.11.1 audit 패치의 자체 레드팀 검증 누락 회귀 해소 — Red-team Advisor 사후 리뷰에서 발견된 BLOCK 2건 + ASK 5건 + NOTE 3건 일괄 반영.**
+
+배경: v0.11.1 patch (audit 커버리지 보강) 를 자체 레드팀 검증 없이 릴리즈한 회귀를 사용자가 즉시 지적. red-team-advisor 사후 소환 결과 grep 패턴 침묵 실패·상반 신호 병합 위험·권고 강도 부적절 등 실동작 결함 다수 발견. 본 patch 는 그 검증을 사후 보완.
+
+### Fixed (BLOCK 해소)
+- **`playbooks/fit-audit.md` Dim 3.5 + `playbooks/harness-audit.md` 특례 — grep 패턴 침묵 실패**: v0.11.1 의 단일 패턴 `^- A[789]\.|^- A10\.` 은 `01-discovery-answers.md` 산출물 형식이 자유 형식일 경우 매칭 0건 → MEDIUM finding 미발행 (False Negative). v0.11.2 에서 **복합 패턴** `iE 'A[3789]|A10|사용[ _-]?빈도|운영[ _-]?성숙도|적정[ _-]?규모|Agreed[ _-]?Scope'` 로 교체 + 매칭 실패 시 `Unknown` 보수적 처리 명시.
+- **`commands/audit.md` SSoT 공유 항목 충돌 처리 — 상반 신호 병합 위험**: ops-audit Dim A (Session Recovery 부재 RISK-HIGH) ↔ fit-audit Dim 3.5 F7 (Session Recovery 자동 부여 MAJOR-DRIFT) 동시 발행 시 Jaccard 70% 알고리즘이 오병합 위험. **예외 명시 추가** — 의미적 모순 페어(`추가/필요/부재 ↔ 과잉/축소/Drift`)는 병합 금지, 양쪽 모두 별도 노출. 일반화 휴리스틱으로 향후 유사 페어 자동 감지.
+
+### Changed (ASK 해소)
+- **F1~F3 권고 강도 완화 (audit 시점 UX 충격 회피)**: build 측 Dim 14 는 "에이전트 생성 직전 차단" 이지만 audit 측 Dim 3.5 는 *이미 사용 중인 에이전트* 를 다룬다. "삭제" 권고를 **"다음 재빌드 시 적정선 재합의"** 로 완화. 처리 경로 안내 텍스트 전면 재작성 — 즉시 삭제 옵션 제거, harness-setup 재실행 후 Scope Confirmation Gate 가 자동 축소 옵션 제시하는 흐름 강조.
+- **heuristic-only-mode A3 추정 실패 처리 명시**: A3 = Unknown 시 F3 룰 skip (False Positive 회피 — 팀 프로젝트를 솔로로 오판해서 MAJOR 발행 방지). A7/A8/A10 은 추정 자체를 금지 — pre-v0.11.0 빌드 사실 자체가 신호.
+- **harness-audit 특례 `[ASK]` 처리 경로 명시**: 통합 리포트 Recommendation 텍스트로 노출 (오케스트레이터 별도 AskUserQuestion 수집 아님). `commands/audit.md` 의 "read-only, no AskUserQuestion" 명시와 일관. 사용자가 보고서를 읽고 다음 세션에서 자율 선택.
+- **`playbooks/fit-audit.md` Step 2 Workflow 순서**: `Dim 1 → Dim 2 → Dim 3 → Dim 3.5 → Dim 4 → Dim 5 → Dim 7` 로 Dim 3.5 명시 삽입. v0.11.1 에서 Step 2 목록에 누락되어 에이전트가 건너뛸 구조적 위험 해소.
+
+### Added (NOTE 해소 + 일관성 확보)
+- **fit-audit Dim 3.5 F8 / F9 룰 신설** — build 측 R7 (playbook 과다) / R9 (슬림 + Complexity Gate) 의 audit 버전. v0.11.1 에서 R1~R9 9개 룰 중 R7/R9 에 대응하는 F 룰이 누락되어 build/audit 일관성 깨졌던 점 해소. F8 (playbook ≥ 10 + 평균 ≥ 1.5 → MINOR), F9 (A10 = 슬림 + Complexity Gate S/M/L 흔적 → MAJOR).
+- **bash glob 환경 의존 픽스**: v0.11.1 의 `playbooks/**/*.md` 는 bash globstar 비활성 환경에서 동작 안 함. `find {대상}/playbooks ... -type f -exec grep -lE ...` 형식으로 교체.
+- **Backward Compatibility — Coverage Gaps 명시**: `docs/` 자체가 없는 매우 오래된 하네스(v0.4.x 이전)는 Dim 3.5 진단 불가 → `[NOT-APPLICABLE]` 표기 + 통합 보고서 Coverage Gaps 에 "docs/ 부재 — 의도-규모 진단 skip" 한 줄 기록.
+
+### Design Notes
+- **자체 회귀 — 레드팀 누락의 메타 교훈**: v0.11.0 plan 은 9개 task 를 명시 분해 후 진행했으나 v0.11.1 audit 패치는 사용자 지적 직후 4개 task 로 즉흥 분해하면서 "Red-team Advisor 사후 리뷰" 단계를 task 목록에 포함하지 않은 회귀. 향후 patch 도 build 패치와 동일한 워크플로우 강도 (plan → execute → red-team → release) 를 따라야 한다는 메타 결론. CONTRIBUTING.md 후속 patch (별도) 에 반영 예정.
+- **build/audit 1:1 매핑 완성**: v0.11.2 에서 R1~R9 와 F1~F9 의 1:1 매핑이 완성됨. 향후 build 측 임계치 변경 시 audit 측도 동반 갱신 필수. 회귀 가드: grep `R[0-9]+|F[0-9]+` 매칭 수가 양쪽 동일해야 한다는 검증을 향후 `scripts/` 에 추가 검토.
+- **권고 강도의 audit/build 차이**: 동일 임계치 R/F 라도 권고 강도는 audit 시점이 항상 약하다 (이미 사용 중 에이전트 보호). 향후 R/F 룰 추가 시 audit 버전은 자동으로 "다음 재빌드 시 축소" 권고 형식 사용.
+
+총 4 파일 변경 (118 insertions, 12 deletions).
+
 ## [0.11.1] - 2026-05-13
 
 **v0.11.0 의도-규모 견제 시스템의 audit 커버리지 보강 — `/harness-architect:audit` 가 pre-v0.11.0 빌드 또는 현재 빌드의 의도-규모 미스매치를 사후 진단.**

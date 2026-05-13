@@ -121,10 +121,22 @@ Present results as a structured report:
 - (3) 누락 시: 위 안전장치에 따라 CLAUDE.md 최상단에 `## 작업 시작 전` 섹션 prepend (템플릿은 fresh-setup Step 6 의 동일 본문)
 - 적용 후 재스캔하여 복합 HIGH 항목이 해소되었는지 확인, 산출물에 기록.
 
-**"v0.11.0 Intent-Scope 베이스라인 누락" 특례 (v0.11.1+)**: 기존 하네스의 `docs/{요청명}/01-discovery-answers.md` 의 Pre-collected Answers 에 A7 (사용 빈도) / A8 (운영 성숙도) / A10 (적정 규모 합의) 중 **2개 이상 누락**이면 단일 MEDIUM finding 으로 통합 (`pre-v0.11.0 build — 의도-규모 견제 베이스라인 부재`). grep 패턴: `grep -E '^- A[789]\.|^- A10\.' 01-discovery-answers.md` 매칭 수가 < 3 이면 finding.
+**"v0.11.0 Intent-Scope 베이스라인 누락" 특례 (v0.11.1+ / v0.11.2 패턴 보강)**: 기존 하네스의 `docs/{요청명}/01-discovery-answers.md` 의 Pre-collected Answers 에 A7 (사용 빈도) / A8 (운영 성숙도) / A10 (적정 규모 합의) 중 **2개 이상 누락**이면 단일 MEDIUM finding 으로 통합 (`pre-v0.11.0 build — 의도-규모 견제 베이스라인 부재`).
+
+**복합 grep 패턴 (v0.11.2)** — 산출물 형식이 자유 형식일 수 있으므로 다중 형식 매칭:
+```
+grep -ciE 'A[789]|A10|사용[ _-]?빈도|운영[ _-]?성숙도|적정[ _-]?규모|Agreed[ _-]?Scope' \
+  {대상}/docs/{요청명}/01-discovery-answers.md
+```
+매칭 라인 수 < 3 이면 (= A7/A8/A10 중 적어도 2개 미언급) finding 발행. **v0.11.1 의 단일 패턴(`^- A[789]\.|^- A10\.`) 은 산출물 형식 변경에 침묵 실패하던 결함** — v0.11.2 에서 복합 패턴으로 교체.
 
 자동 패치는 **불가**: A7/A8/A10 답변은 사용자 입력이 필요하며, 플러그인이 임의 추정으로 채울 수 없다. 대신 Escalations에 다음 형식으로 기록:
-`[ASK] v0.11.0 의도-규모 베이스라인 누락 — 본 하네스는 pre-v0.11.0 빌드로 사용 빈도·운영 성숙도·적정 규모 합의가 기록되지 않았습니다. (a) /harness-architect:harness-setup 재실행 (A7~A10 인터뷰 후 산출물 재합의) (b) 수동 보충 (01-discovery-answers.md 에 답변 직접 추가) (c) 그대로 유지 — fit-audit Dim 3.5 가 규모 격차만 진단. 선택?`
+`[ASK] v0.11.0 의도-규모 베이스라인 누락 — 본 하네스는 pre-v0.11.0 빌드로 사용 빈도·운영 성숙도·적정 규모 합의가 기록되지 않았습니다. (a) /harness-architect:harness-setup 재실행 (A7~A10 인터뷰 후 다음 빌드 시 산출물 재합의) (b) 수동 보충 (01-discovery-answers.md 에 답변 직접 추가) (c) 그대로 유지 — fit-audit Dim 3.5 가 규모 격차만 진단. 선택?`
+
+**`[ASK]` 처리 경로 (v0.11.2 명시)**: 본 finding 의 `[ASK]` 는 **통합 리포트의 Recommendation 섹션에 텍스트로 노출**되며, 오케스트레이터가 별도 AskUserQuestion 으로 수집하지 않는다. 이유:
+1. audit 는 read-only 진단 — 즉시 의사결정을 강제하지 않는다 (사용자가 보고서를 읽고 판단할 시간을 주는 게 audit UX 의 의도).
+2. 통합 보고서 안에 3선택지(a/b/c) 가 그대로 노출되므로 사용자가 다음 세션에서 자율 선택 가능.
+3. `commands/audit.md` 의 오케스트레이터 역할 섹션에 "read-only, no AskUserQuestion" 명시와 일관.
 
 본 finding 은 fit-audit Dim 3.5 (Intent-Scope Mismatch) 와 **상호 보완**: harness-audit 는 *베이스라인 답변 존재 여부* 만 검사, 실제 규모 격차는 fit-audit 가 답변 누락 시 fallback 로직(F4 룰)으로 진단. 둘이 동시 발행되면 통합 리포트에서 한 묶음으로 사용자 노출.
 
