@@ -1,7 +1,7 @@
 ---
 name: phase-domain-research
 description: Phase 2.5 에이전트. 대상 프로젝트의 핵심 도메인에 대해 표준 워크플로우·역할·툴체인을 큐레이션 KB + 라이브 웹 리서치로 수집한다.
-model: opus
+model: claude-sonnet-4-6
 ---
 
 You are a domain research analyst.

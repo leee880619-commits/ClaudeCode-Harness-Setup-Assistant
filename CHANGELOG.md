@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-05-15
+
+**9-Phase 에이전트의 모델 배정을 작업 복잡도 기준으로 재정렬 — 적대적 리뷰 강화, 큐레이션·글쓰기 작업 비용 절감, `opus` 별칭 표기 통일.**
+
+배경: 풀 트랙 9-Phase 각 에이전트의 모델 배정이 작업의 개방형 판단 비중과 정합하는지 점검. 설계 핵심 Phase(3-4·5)는 Opus 로 적절했으나, 전체 품질 백스톱인 `red-team-advisor` 가 한 단계 낮은 모델이라 설계-검증 간 모델 역전이 존재했고, 리서치·스킬 글쓰기 Phase 는 큐레이션·구조화 글쓰기 성격에 비해 과다 배정 상태였다.
+
+### Changed
+- **`red-team-advisor` 모델 승격 (Sonnet → Opus)**: 산출물에 *없는 것*(암묵 가정·빠진 스텝·미묘한 모순)을 찾는 적대적 추론은 Opus 우위 영역이며, 이 에이전트는 매 Phase 직후 실행되는 9-Phase 전체의 단일 품질 백스톱이다. 설계 핵심 Phase 를 Opus 로 두고 그 검증자를 하위 모델로 두던 구조적 역전을 해소. Advisor Skip Gate(Phase 3-4·7-8 조건부 경량화)가 호출 수를 이미 억제하므로 비용 증가는 제한적.
+- **`phase-domain-research` 모델 강등 (Opus → Sonnet)**: Phase 2.5 의 본질은 도메인 표준 패턴 *큐레이션*(KB 우선 + 보조 웹 리서치)이며 아키텍처 설계가 아니다. 출처 신뢰성 판단 수준은 Sonnet 으로 충분 — 품질 손실 없이 비용 절감.
+- **`phase-skills` 모델 강등 (Opus → Sonnet)**: "어떤 스킬을 만들지"는 Phase 5(`phase-team`)에서 이미 결정되며, Phase 6 은 결정된 스킬의 SKILL.md(HOW)를 구조화 양식에 맞춰 작성하는 글쓰기 작업이다. Opus 대비 효익이 약해 Sonnet 으로 조정.
+- **모델 ID 표기 통일**: `phase-design`·`phase-team` frontmatter 의 `model: opus` 별칭을 풀 ID `claude-opus-4-7` 로 교체. 이제 13개 에이전트 전체가 풀 모델 ID(`claude-opus-4-7` / `claude-sonnet-4-6` / `claude-haiku-4-5-20251001`)로 일관 표기.
+
+### Design Notes
+- **변경 후 풀 트랙 모델 배정**: phase-setup=Sonnet, phase-domain-research=Sonnet, phase-design=Opus, phase-team=Opus, phase-skills=Sonnet, phase-hooks=Sonnet, phase-validate=Sonnet, red-team-advisor=Opus, security-auditor=Haiku. Opus 는 "다중 제약이 상호작용하는 개방형 아키텍처 판단"(설계 + 적대적 검증)에만 한정, 휴리스틱·체크리스트·큐레이션·정형 글쓰기는 Sonnet, grep 수준 패턴 매칭은 Haiku.
+- **`security-auditor` Haiku 유지**: `red-team-advisor.md` Dim 11 이 명시하듯 grep 수준 패턴 매칭 전용이라 Haiku 가 정당. 본 변경 대상 아님.
+
+총 5 파일 변경 (.claude/agents/ 5개 frontmatter).
+
 ## [0.11.2] - 2026-05-13
 
 **v0.11.1 audit 패치의 자체 레드팀 검증 누락 회귀 해소 — Red-team Advisor 사후 리뷰에서 발견된 BLOCK 2건 + ASK 5건 + NOTE 3건 일괄 반영.**

@@ -1,7 +1,7 @@
 ---
 name: phase-team
 description: Phase 5 에이전트. Teams/Agent/SendMessage 기반으로 에이전트 팀을 편성한다.
-model: opus
+model: claude-opus-4-7
 ---
 
 You are a team coordinator.

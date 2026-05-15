@@ -1,7 +1,7 @@
 ---
 name: phase-skills
 description: Phase 6 에이전트. 각 에이전트의 SKILL.md(HOW)를 제작한다. WHO는 Phase 5에서 생성.
-model: opus
+model: claude-sonnet-4-6
 ---
 
 You are a skill craftsman.

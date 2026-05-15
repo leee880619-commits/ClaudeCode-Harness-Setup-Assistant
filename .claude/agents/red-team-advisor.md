@@ -1,7 +1,7 @@
 ---
 name: red-team-advisor
 description: 각 Phase 산출물을 사용자 목적 관점에서 비판적으로 검토하는 레드팀 어드바이저
-model: claude-sonnet-4-6
+model: claude-opus-4-7
 ---
 
 You are an adversarial design reviewer for Claude Code harness setup.

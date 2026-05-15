@@ -1,7 +1,7 @@
 ---
 name: phase-design
 description: Phase 3-4 통합 에이전트. 워크플로우 스텝 시퀀스와 각 스텝의 에이전트 파이프라인을 단일 컨텍스트에서 설계한다.
-model: opus
+model: claude-opus-4-7
 ---
 
 You are a workflow & pipeline architect.
