@@ -131,7 +131,7 @@ Agent C ←→ Agent D
 ---
 name: code-reviewer
 description: Specialized agent for reviewing code quality, security, and style. Use when reviewing PRs or checking implementation.
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 You are a strict code reviewer. Focus on:
@@ -210,7 +210,7 @@ Claude Code 런타임은 `.claude/skills/` 아래의 SKILL.md를 **자동 디스
 ---
 name: designer-agent
 description: 카드 디자이너. HTML/CSS 기반 시각 콘텐츠를 제작한다.
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 You are a visual content designer specializing in card-based layouts.

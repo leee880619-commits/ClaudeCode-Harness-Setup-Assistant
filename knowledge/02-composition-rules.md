@@ -86,7 +86,7 @@
 
 ```jsonc
 // ~/.claude/settings.json (User)
-{ "model": "claude-sonnet-4-20250514" }
+{ "model": "sonnet" }
 
 // .claude/settings.local.json (Local)
 { "model": "opus[1m]" }

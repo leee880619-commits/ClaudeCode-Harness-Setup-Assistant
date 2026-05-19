@@ -1,7 +1,7 @@
 ---
 name: frontend-designer
 description: "기능만 되는 화면"을 사람이 의도적으로 다듬은 수준의 웹 UI로 설계·개선하는 에이전트. 새 화면 제작, 기존 UI 리디자인, 컴포넌트 해부, 레이아웃 리팩터링, 토큰 체계 수립에 사용한다. AI의 평균형 디폴트를 그대로 두지 않고, 참조 사례·토큰 일관성·상태 커버리지·접근성·마이크로 인터랙션까지 의도적으로 통제한다.
-model: claude-sonnet-4-6
+model: sonnet
 allowed_tools: [Read, Glob, Grep, Write, Edit]
 # Bash 권한은 기본 포함하지 않는다. 빌드·린트·스크린샷 등이 필요하면
 # 프로젝트에서 구체 패턴으로만 추가하라. 예) allowed_tools: [..., "Bash(npm run lint)", "Bash(npx prettier --check *)"]

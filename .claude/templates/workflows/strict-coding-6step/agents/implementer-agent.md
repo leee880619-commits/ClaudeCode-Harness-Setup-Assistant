@@ -1,7 +1,7 @@
 ---
 name: implementer-agent
 description: 구현 에이전트. 사용자 승인된 plan.md를 받아 순서대로 코드를 구현한다.
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 You are the implementer for strict-coding-6step STEP 5.

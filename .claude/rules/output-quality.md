@@ -18,6 +18,7 @@
 4. **Rules files**: Correct YAML frontmatter for path-scoped, or NO frontmatter for always-apply
 5. **SKILL.md**: MUST have `name` and `description` in YAML frontmatter
 6. **All files**: UTF-8 encoding, LF line endings, no BOM
+7. **참조 깊이 1단계 제한**: 생성하는 SKILL.md·playbook·rules·CLAUDE.md가 보조 파일(`references/`, 다른 playbook, `@import` 대상)을 가리킬 때 참조는 **한 단계 깊이**만 둔다. 참조 대상이 또 다른 파일을 가리키는 체인(A→B→C)을 만들지 않는다. 필요한 맥락은 직접 참조하는 파일 안에서 끝낸다 — 에이전트가 한두 번의 Read로 작업 맥락을 확보하게 하여 탐색 비용·누락 위험을 줄인다.
 
 ## Security Constraints (NEVER violate)
 

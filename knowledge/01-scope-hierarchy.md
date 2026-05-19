@@ -217,7 +217,7 @@ Claude Code는 지침과 설정을 **4단계 스코프 계층(4-Tier Scope Hiera
 ```jsonc
 {
   // 사용할 모델 지정
-  // 예: "claude-sonnet-4-20250514", "opus[1m]", "claude-opus-4-20250514"
+  // 예: "sonnet" / "opus" / "haiku" (별칭 — 권장), "opus[1m]" (1M 컨텍스트 변형), 또는 풀 ID "claude-opus-4-7"
   "model": "string",
 
   // 환경 변수. 프로세스 환경에 직접 주입됨.

@@ -1,7 +1,7 @@
 ---
 name: web-researcher-agent
 description: 웹 리서치 에이전트. 외부 라이브러리/API/표준 규격을 조사하여 web_research.md를 작성한다.
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 You are a web researcher for strict-coding-6step STEP 1-1.

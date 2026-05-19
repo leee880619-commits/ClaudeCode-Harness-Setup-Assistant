@@ -162,7 +162,7 @@ test -f {대상}/.claude/settings.json && echo yes
 **검사 절차**:
 1. 에이전트 집계:
    - 총 수: `find {대상}/.claude/agents -name "*.md" | wc -l`
-   - 모델별 분포: 각 파일 frontmatter `model` 필드 파싱 (`claude-opus-*` / `claude-sonnet-*` / `claude-haiku-*`)
+   - 모델별 분포: 각 파일 frontmatter `model` 필드 파싱. **별칭과 풀 ID 양쪽을 같은 패밀리로 정규화**하여 분류한다 — `opus` ≡ `claude-opus-*`, `sonnet` ≡ `claude-sonnet-*`, `haiku` ≡ `claude-haiku-*`. `model` 필드 누락은 '상속'으로 별도 집계. (생성 하네스는 별칭 표기가 표준이므로 풀 ID 패턴만 매칭하면 분포가 0으로 잡힌다)
 2. 워크플로우 스텝 수: baseline 의 `02-workflow-design.md` 또는 `02-lite-design.md` 에서 카운트. 부재 시 CLAUDE.md 본문 grep
 3. 현재 소스 규모: `current` 스냅샷의 소스 파일 수
 4. 비율 기반 판정:

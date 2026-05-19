@@ -119,6 +119,8 @@ Phase 3-6의 전용 플레이북(workflow-design, pipeline-design, agent-team, s
   - name: {이름}, role: {역할}, model: sonnet, allowed_dirs: [{경로}]
 ```
 
+> `model` 은 별칭(`opus`/`sonnet`/`haiku`)으로만 기록한다 — 풀 ID 금지. 풀 트랙 업그레이드 시 `phase-team` 이 이 명세를 실체 `.claude/agents/*.md` 로 옮기며, 그쪽도 별칭 전용 규약(`agent-team.md` Step 5)을 따른다.
+
 ## Step 3: 파이프라인 리뷰 게이트 판단 (pipeline-review-gate.md 준수)
 
 이 스텝은 경량 트랙에서도 **항상 전체 실행**한다 (복잡도 게이트 면제 불가).

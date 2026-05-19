@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-19
+
+**정식 1.0 런치 — 생성 하네스의 모델 표기를 별칭으로 표준화하여 모델 정확성을 공식 문서 기준으로 확정하고, MIT 오픈소스 `mattpocock/skills` 의 작성 규율 일부를 선별 흡수.**
+
+대상 프로젝트에 설치되는 에이전트의 `model` 필드가 학습 데이터의 낡은 풀 ID(`claude-sonnet-4-5` 등)로 환각되던 문제를 별칭 전용 규약 + Phase 9 가드로 차단했다. 별칭은 Claude Code 공식 Model Configuration 문서가 "해당 패밀리의 최신 모델"로 정의하는 표준 메커니즘이며, 실제 모델은 사용자 실행 환경에서 해석된다.
+
+### Fixed
+- **생성 하네스 에이전트 모델 별칭 강제** — 대상 프로젝트에 설치되는 `.claude/agents/*.md` 의 `model` 필드를 풀 ID 대신 별칭(`opus`/`sonnet`/`haiku`)으로 통일. 기존에는 `phase-team` 이 생성 시 `model` 값을 학습 데이터의 낡은 풀 ID(`claude-sonnet-4-5`·`claude-opus-4-5` 등)로 환각하는 사례가 있었다. 별칭 `opus`/`sonnet`/`haiku`는 Claude Code가 해당 패밀리의 최신 모델로 해석하며(공식 Claude Code Model Configuration 문서), 실제 모델은 사용자 실행 환경(프로바이더·`ANTHROPIC_DEFAULT_*_MODEL` env)에서 결정된다. 풀 ID는 고정 스냅샷이라 시간이 지나면 retired되어 깨진다.
+  - `playbooks/agent-team.md` Step 5: `model` 필드 별칭 전용 규칙 + Guardrail 추가.
+  - `playbooks/final-validation.md` Step 3: Phase 9 가드 항목 18 신설 — `.claude/agents/*.md` 의 `model` 이 `claude-` 풀 ID 면 `[BLOCKING]` 검출.
+  - 대상에 복사되는 템플릿 에이전트 11개(`code-researcher`, `strict-coding-6step` 7개, `frontend-design` 2개) + 예시 1개(`examples/generated/.../researcher.md`)의 `model: claude-sonnet-4-6` → `model: sonnet` 로 전환.
+  - `playbooks/fit-audit.md` Dim 3: `model` 필드 파싱이 풀 ID 패턴(`claude-{family}-*`)만 매칭하던 것을 **별칭 + 풀 ID 정규화**로 수정 — 별칭 표기가 표준이 된 생성 하네스에서 모델 분포가 0으로 잡히는 회귀 차단.
+  - `playbooks/setup-lite.md` Step 2: 경량 트랙 에이전트 명세도 `model` 별칭 전용임을 명시 — 풀/경량 트랙 일관성 확보.
+  - `knowledge/` 예시 정리: `01-scope-hierarchy.md`·`02-composition-rules.md`·`03-file-reference.md`의 낡은 Claude 4.0 시대 모델 ID(`claude-sonnet-4-20250514`·`claude-opus-4-20250514`) 예시를 별칭으로 교체. `12-teams-agents.md`·`03-file-reference.md`의 에이전트 정의 예시 `model` 필드도 풀 ID → 별칭으로 통일 — 생성 에이전트가 참조하는 문서에 낡거나 풀 ID 형태의 모델 표기가 남지 않도록.
+  - 플러그인 자체 13개 Phase 에이전트(`.claude/agents/*.md`)는 v0.11.3 에서 의도적으로 풀 ID 핀 고정된 상태이므로 본 변경 대상이 아니다 — 대상 프로젝트에 설치되지 않는 내부 에이전트.
+
+### Changed
+- **`mattpocock/skills` 방법론 일부 흡수 (Tier 1)** — MIT 라이선스 오픈소스 `mattpocock/skills` 를 조사하여 작성 규율 3건을 선별 차용. 슬래시 커맨드 모음인 원본을 그대로 가져오지 않고, 우리 9-Phase 오케스트레이션에 맞는 텍스트 규율만 흡수:
+  - `playbooks/skill-forge.md`: SKILL.md `description` 작성 규율 섹션 신설 — description 은 스킬 자동 매칭의 *유일한* 신호이므로 3인칭 동작 서술 + "what + 발동 조건" 구조 + 트리거 키워드/호출구/파일타입 명시 + time-sensitive 정보 금지.
+  - `.claude/rules/orchestrator-protocol.md`: Rejected Alternatives 규약에 "기록 가치 3-조건 게이트"(실재한 후보 / 실 트레이드오프 기반 기각 / 맥락 없이 재제안 가능) 추가 — 기각 목록 noise 억제.
+  - `.claude/rules/output-quality.md`: File Generation Rules 항목 7 신설 — 참조 깊이 1단계 제한(A→B→C 참조 체인 금지). `playbooks/final-validation.md` Step 14에 시행 1줄 추가 — `@import` 대상이 또 다른 `@import`를 품으면 Phase 9가 `[NOTE]` 발행 (죽은 규칙 방지).
+
 ## [0.11.3] - 2026-05-15
 
 **9-Phase 에이전트의 모델 배정을 작업 복잡도 기준으로 재정렬 — 적대적 리뷰 강화, 큐레이션·글쓰기 작업 비용 절감, `opus` 별칭 표기 통일.**

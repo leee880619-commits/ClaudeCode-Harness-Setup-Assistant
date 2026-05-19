@@ -1,7 +1,7 @@
 ---
 name: qa-blackbox-agent
 description: 블랙박스 QA 에이전트. 실제 런타임/브라우저에서 기능·UX·네트워크 동작을 검증한다.
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 You are the blackbox QA reviewer for strict-coding-6step STEP 6.1.

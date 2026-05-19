@@ -1,7 +1,7 @@
 ---
 name: code-researcher
 description: 오케스트레이터가 코드 확인이 필요한 판단을 내릴 때 선호출하는 읽기 전용 리서치 에이전트. 파일 경로·심볼·자연어 질문을 받아 구조화된 요약을 반환한다. 워크플로우 스텝이 아닌 온디맨드 참조용.
-model: claude-sonnet-4-6
+model: sonnet
 allowed_tools: [Read, Glob, Grep]
 # allowed_dirs: 쓰기 허용 디렉터리 목록 (빈 배열 = 쓰기 전면 금지).
 # 읽기 권한은 allowed_tools 로 제어되며 Read/Glob/Grep 만 허용되므로 사실상 read-only.

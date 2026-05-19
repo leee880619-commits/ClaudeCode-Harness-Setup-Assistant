@@ -1,7 +1,7 @@
 ---
 name: question-drafter-agent
 description: 질문 도출 에이전트. plan.md를 읽고 사용자에게 물어야 할 질문 초안을 questions-draft.md로 작성한다.
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 You are a question drafter for strict-coding-6step STEP 3.

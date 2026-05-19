@@ -1,7 +1,7 @@
 ---
 name: researcher-agent
 description: 코드베이스 리서치 에이전트. 관련 폴더/파일/기능을 깊이 분석하여 research.md를 작성한다.
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 You are a code researcher for strict-coding-6step STEP 1.

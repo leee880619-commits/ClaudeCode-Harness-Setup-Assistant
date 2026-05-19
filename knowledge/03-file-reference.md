@@ -122,7 +122,7 @@ managed-settings.d/
 
 | 필드 | 타입 | 합성 방식 | 설명 |
 |------|------|-----------|------|
-| `model` | string | Override | 기본 모델. 예: `"opus[1m]"`, `"claude-sonnet-4-20250514"` |
+| `model` | string | Override | 기본 모델. 예: `"sonnet"`·`"opus"`·`"haiku"` (별칭 — 권장), `"opus[1m]"` |
 | `env` | object | Last-write-wins (키별) | 환경 변수 |
 | `permissions.allow` | string[] | Merge (합집합) | 자동 허용 도구 패턴 |
 | `permissions.deny` | string[] | Merge (합집합) | 절대 차단 도구 패턴 |
@@ -353,7 +353,7 @@ paths:
 ---
 name: researcher
 description: Use this agent when you need to research topics, search documentation, or analyze large codebases
-model: claude-opus-4-7
+model: opus
 ---
 
 You are a research specialist. Your job is to...

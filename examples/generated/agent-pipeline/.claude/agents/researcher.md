@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: 주어진 주제에 대해 웹 검색으로 출처를 수집하고 원문을 요약하는 리서치 에이전트
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 <!-- generated-with: harness-architect v0.3.3 | sanitized for public use -->

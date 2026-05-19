@@ -1,7 +1,7 @@
 ---
 name: frontend-ux-reviewer
 description: 새 화면·컴포넌트·레이아웃·인터랙션이 만들어진 직후 방어적으로 감사하는 UX·UI 리뷰어. 스크린샷·동영상·실행 중인 앱·프론트엔드 diff를 받아 실제 사용자 흐름 기준으로 결함을 찾는다. 디자인은 동작하는데 "어딘가 어색함"이 남아 있을 때 호출한다. 쓰기 권한이 없다.
-model: claude-sonnet-4-6
+model: sonnet
 allowed_tools: [Read, Glob, Grep]
 # 리뷰 전용. 파일 수정 금지. 보고서만 반환.
 allowed_dirs: []
