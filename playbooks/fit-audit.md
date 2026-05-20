@@ -341,20 +341,35 @@ build 측 R1~R9 와 audit 측 F1~F9 의 1:1 매핑 완성 (v0.11.2 에서 F8·F9
 
 #### 7-A: MCP 서버 드리프트
 
+> **v3 스캔 대상 갱신** — Claude Code 의 MCP 설정은 `settings.json` 에 있지 않다 (`02-verification.md` §항목 1·B-2 결론, `knowledge/03-file-reference.md`). 올바른 저장소는 스코프별로 다음과 같다. fit-audit 는 이 위치를 인벤토리하고, `settings.json` 의 `mcpServers` 키 잔존은 별도로 **레거시 결함 신호** 로 검출한다.
+
+**스캔 대상** (인벤토리 — 우선순위 순):
+- **project 스코프**: `<project-root>/.mcp.json` (VCS 커밋 대상). 파일 존재 시 `mcpServers` 객체를 파싱
+- **user 스코프**: `~/.claude.json` 최상위 `mcpServers` 객체. 파일 존재 시 파싱 (모든 프로젝트에 적용되는 글로벌 항목이지만, 대상 프로젝트가 사용하는 활성 MCP 표면을 평가하려면 함께 본다)
+- **local 스코프**: `~/.claude.json` 의 `projects["<대상 프로젝트 절대 경로>"].mcpServers` 객체. 대상 프로젝트 경로 키가 있으면 파싱
+- **레거시 결함 신호 (negative)**: `<project-root>/.claude/settings.json` 또는 `<project-root>/.claude/settings.local.json` 에 `mcpServers` 키가 잔존하면 — 이 키는 Claude Code 가 읽지 않는 잘못된 위치이며, 과거 v2 이전 빌드 또는 잘못된 자료를 따른 하네스의 흔적이다. 발견 시 7-A 점수에 negative signal 로 반영 (아래 등급 판정 참조)
+
+**스캔 가능성 / 부재 처리**:
+- `<project-root>/.mcp.json` 부재 — 정상 (project 스코프 MCP 미사용)
+- `~/.claude.json` 부재 또는 권한 부족 — `Coverage Gaps` 에 "user/local 스코프 인벤토리 불가 — `~/.claude.json` 접근 불가" 기록, 해당 스코프 스킵
+- `~/.claude.json` 의 `projects["<대상 경로>"]` 엔트리 부재 — 정상 (local 스코프 MCP 미사용)
+
 **검사 절차**:
-1. `settings.json` 파싱 (필수). `settings.local.json` 은 **존재 시에만** 파싱 — 부재 시 해당 단계 스킵 (`.gitignore` 로 제외되어 공유 환경에 없는 것이 기본값, 부재 자체는 드리프트가 아님)
-2. 각 파일의 `mcpServers` 객체에서 서버 항목별 `command` / `args` / `url` / `env` 필드 추출
-3. 각 MCP 서버에 대해 유형별 정적 검증:
+1. 위 스캔 대상을 순서대로 파싱하여 발견된 MCP 서버 항목을 모두 인벤토리. 항목별 출처 스코프(project/user/local) 와 정의(`command`/`args`/`url`/`type`/`env`/`headers`) 추출
+2. 동일 이름이 여러 스코프에 등장하면 Claude Code 우선순위(Local > Project > User) 를 적용해 활성 정의를 결정하고, 비활성 중복은 NOTE 로 기록 (드리프트 아님)
+3. 각 활성 MCP 서버에 대해 유형별 정적 검증:
    - **command 기반 MCP** (`command: "python"`, `"node"` 등): `which {command}` 로 PATH 상 존재 확인. `args` 의 스크립트 경로가 있으면 `test -f` 로 실존 확인
    - **런처 기반 MCP** (`command: "npx"` / `"uvx"` / `"bunx"`): `which {launcher}` 만 확인. `args` 의 패키지명(`@modelcontextprotocol/server-postgres` 같은 npm 레지스트리 식별자) 은 파일 경로가 아니므로 `test -f` 스킵. **결과는 NOTE 등급** — "런처 존재, 패키지 설치 여부는 런타임에서만 확인 가능" 로 보고. MINOR/MAJOR 승격 금지
-   - **url 기반 MCP**: URL 형식 유효성 검사(`http(s)?://`, 도메인 구조). 응답성은 확인하지 않음
-   - **env 참조**: `env` 블록이 참조하는 환경 변수(`${API_KEY}` 등) 가 대상 프로젝트의 `.env`·`.env.example`·`.env.template` 에 선언되어 있는지 grep
-4. 결과 분류: `실행 가능` / `PATH 없음` / `스크립트 파일 없음` / `런처 통과 (패키지 미검증)` / `env 변수 누락` / `URL 형식 오류`
+   - **url 기반 MCP** (`type: "http"` + `url`): URL 형식 유효성 검사(`http(s)?://`, 도메인 구조). 응답성은 확인하지 않음
+   - **env / headers 참조**: `env` 또는 `headers` 블록이 참조하는 환경 변수(`${API_KEY}` 등) 가 대상 프로젝트의 `.env`·`.env.example`·`.env.template` 또는 `.claude/settings.local.json` 의 `env` 에 선언되어 있는지 grep
+4. **레거시 결함 검출**: `<project-root>/.claude/settings.json` / `settings.local.json` 의 `mcpServers` 키 존재 여부를 grep 또는 jq 로 확인. 발견 시 출처 파일·항목 수·항목명을 기록
+5. 결과 분류: `실행 가능` / `PATH 없음` / `스크립트 파일 없음` / `런처 통과 (패키지 미검증)` / `env 변수 누락` / `URL 형식 오류` / `레거시 위치 발견 (settings.json mcpServers)`
 
 **등급 판정 (7-A)**:
-- `[MAJOR-DRIFT]` — 등록된 MCP 서버의 절반 이상이 검증 실패 (사실상 MCP 레이어 불능)
-- `[MINOR-DRIFT]` — 1~2개 MCP 서버 실패, 또는 env 참조 누락 1건 이상
-- `[ALIGN]` — 모든 MCP 정적 검증 통과
+- `[MAJOR-DRIFT]` — (가) 활성 MCP 서버의 절반 이상이 검증 실패 (사실상 MCP 레이어 불능), 또는 (나) `settings.json`/`settings.local.json` 에 `mcpServers` 키가 잔존 (잘못된 저장 위치 — 사용자가 의도한 MCP가 Claude Code 에 실제로 로드되지 않음, 즉시 마이그레이션 필요)
+- `[MINOR-DRIFT]` — 1~2개 활성 MCP 서버 실패, 또는 env/headers 참조 누락 1건 이상, 또는 동일 이름의 서로 다른 정의가 여러 스코프에 충돌 (우선순위로 1개만 활성이지만 사용자 의도 불명)
+- `[ALIGN]` — 모든 활성 MCP 정적 검증 통과 + 레거시 위치 잔존 없음
+- `[NOTE]` — 인벤토리 결과 활성 MCP 0건 (사용자가 아직 등록 안 한 새 모델 정상 상태) — 드리프트 아님, 단순 보고
 
 #### 7-B: 훅 실행 가능성 드리프트
 

@@ -267,7 +267,7 @@ user-invocable: false
 instagram-card/
 ├── CLAUDE.md                          프로젝트 정체성, 워크플로우, 에이전트 팀 구조
 ├── .claude/
-│   ├── settings.json                  권한 + MCP 설정
+│   ├── settings.json                  권한 + 훅 설정 (MCP는 프로젝트 루트 .mcp.json)
 │   ├── rules/                         ── 항상 적용 규칙 ──
 │   │   ├── card-generation.md         에이전트 팀 소환 프로토콜
 │   │   └── instagram-format.md        인스타 규격/디자인 기준

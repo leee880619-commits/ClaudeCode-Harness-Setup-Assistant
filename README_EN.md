@@ -103,7 +103,7 @@ If the session is interrupted, state is persisted under `docs/{request-name}/` i
 | 5 | Agent team assembly + model-tier matrix assignment | `phase-team` |
 | 6 | SKILL / playbook authoring | `phase-skills` |
 | 6+ | **Model Confirmation Gate** — single final approval of the agent·model·skill table | (orchestrator) |
-| 7-8 | Hooks / MCP installation | `phase-hooks` |
+| 7-8 | Hooks installation + MCP recommendation (list · snippet) | `phase-hooks` |
 | 9 | Final validation | `phase-validate` |
 | every phase | Independent critical review | `red-team-advisor` |
 

@@ -601,7 +601,9 @@ Harness Agent가 정확하게 작동하기 위해 내장해야 하는 지식 영
 선택 필드:
 - env: 프로젝트 환경변수
 - hooks: PreToolUse/PostToolUse 훅
-- mcpServers: MCP 서버 구성
+- model: 프로젝트 기본 모델
+
+> `mcpServers`는 settings.json 지원 필드가 아니다. MCP 설정은 project 스코프 = 프로젝트 루트 `.mcp.json`, local/user 스코프 = `claude mcp add --scope` CLI로 관리한다.
 
 품질 기준:
 - jq로 파싱 가능
@@ -904,7 +906,8 @@ alwaysApply: true
 ```
 
 ```json
-// Claude Code settings.json에 병합
+// 프로젝트 루트 .mcp.json 에 작성 (Cursor .cursor/mcp.json → Claude Code project 스코프 .mcp.json). VCS 커밋 가능.
+// MCP 설정은 settings.json 에 쓰지 않는다 — Claude Code 는 settings.json 에서 MCP 를 읽지 않는다.
 {
   "mcpServers": {
     "filesystem": {

@@ -80,7 +80,7 @@ Phase 9 final-validation 이 빌드 직후 보안·실패 복구·라우팅·개
 | 4 | 파이프라인 설계 | `03-pipeline-design.md` |
 | 5 | 에이전트 팀 편성 | `04-agent-team.md`, `.claude/agents/` |
 | 6 | SKILL/Playbook 작성 | `05-skill-specs.md`, `.claude/skills/` |
-| 7-8 | 훅/MCP 설치 | `06-hooks-mcp.md`, `.claude/hooks/` |
+| 7-8 | 훅 설치 + MCP 추천 | `06-hooks-mcp.md`, `.claude/hooks/` |
 | 9 | 최종 검증 보고 | `07-validation-report.md` |
 
 각 Phase 직후 **Red-team Advisor** 가 BLOCK/ASK/NOTE로 리뷰합니다.

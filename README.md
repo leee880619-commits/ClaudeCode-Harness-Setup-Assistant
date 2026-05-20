@@ -43,8 +43,9 @@ claude
 ```
 your-project/
 ├── CLAUDE.md                    ← Claude의 프로젝트 이해 기반
+├── .mcp.json                    ← MCP 서버 설정 (project 스코프, 해당 시)
 ├── .claude/
-│   ├── settings.json            ← 권한·환경변수·훅·MCP
+│   ├── settings.json            ← 권한·환경변수·훅
 │   ├── rules/                   ← 항상 적용되는 규칙
 │   ├── agents/                  ← 에이전트 정의 (에이전트 프로젝트)
 │   └── skills/                  ← 재사용 가능한 스킬
@@ -170,7 +171,7 @@ v0.9.2 부터 슬래시 autocomplete 에는 위 2개 + `/harness-architect:help`
 | 5 | 에이전트 팀 편성 + 모델 티어 매트릭스 배정 | `phase-team` |
 | 6 | SKILL/playbook 작성 | `phase-skills` |
 | 6+ | **Model Confirmation Gate** — 에이전트-모델-스킬 통합 표로 최종 1회 승인 | (Orchestrator) |
-| 7-8 | 훅/MCP 설치 | `phase-hooks` |
+| 7-8 | 훅 설치 + MCP 추천(리스트·스니펫) | `phase-hooks` |
 | 9 | 최종 검증 | `phase-validate` |
 | 매 Phase | 독립 비판 리뷰 | `red-team-advisor` |
 

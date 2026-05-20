@@ -261,6 +261,8 @@ paths:
 | `hooks` | object | — | PreToolUse, PostToolUse, Stop 등 훅 설정 |
 | `model` | string | Override | 프로젝트 기본 모델 |
 
+> **주의: `mcpServers`는 `settings.json` 지원 필드가 아니다.** Claude Code는 `settings.json`에서 MCP 설정을 읽지 않는다. MCP 설정은 project 스코프 = 프로젝트 루트 `.mcp.json`, local/user 스코프 = `claude mcp add --scope` CLI 위임으로 관리한다.
+
 **흔한 실수**:
 - `settings.local.json`에 넣어야 할 개인 설정을 여기에 커밋하는 것
 - 민감한 환경 변수(API 키, 토큰)를 `env`에 넣고 Git에 커밋하는 것 (→ `.claude/settings.local.json`으로)

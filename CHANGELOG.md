@@ -6,6 +6,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-20
+
+**Phase 8 (MCP) 를 "리스트 + 설정 스니펫" 모델로 재설계 — `settings.json` 의 `mcpServers` 라는 (지원되지 않는) 위치로 안내하던 실제 버그를 제거하고, "MCP 후보 0건 침묵 스킵" 으로 사용자가 한 번도 단계를 인지하지 못하던 형해화를 차단했다.**
+
+배경: 사용자의 "Phase 8을 한 번도 제대로 본 적이 없다" 는 보고로 시작한 4-에이전트 팀 트랙 (진단 → 검증 → 설계 → 레드팀 → 구현 → 파일럿 → v3 재설계 → 레드팀 재검증). 초기 v2 (설치 자동화 강화) 를 실 동작 파일럿에서 검증한 결과 후보 패키지 npm 404 다수 발견 → 사용자 결정으로 v3 "리스트 + 스니펫" (에이전트가 설치 실행 안 함) 모델로 방향 전환. audit 패밀리·Fast Mode·경량 트랙 표현 정합화까지 동반 처리.
+
+### Fixed
+- **F-01 — `settings.json` 의 `mcpServers` 안내 폐기 (실제 버그)**: Claude Code 는 `settings.json` 에서 MCP 설정을 읽지 않는다 (`settings.json` 은 hooks·permissions·env·plugins 전용). 공식 문서 + `claude mcp add` 실증 + `~/.claude.json`·`.mcp.json` 실 파일 3중 확인으로 확정. 정답 경로: project 스코프 = 프로젝트 루트 `.mcp.json`, local 스코프 = `~/.claude.json` 의 `projects[...].mcpServers`, user 스코프 = `~/.claude.json` 최상위 `mcpServers`. `playbooks/hooks-mcp-setup.md` Part 2 + 잔존 오안내 7곳 (`README.md`, `README_EN.md`, `commands/harness-setup.md`, `knowledge/03/07/10/12-*.md`, `.claude/agents/phase-hooks.md`) 일괄 정정.
+- **F-05 — MCP 0건 침묵 스킵 차단 (형해화 핵심)**: 후보 ≥1건이면 `[ASK]` 강제 발행 (`[NOTE]` 금지) → 오케스트레이터가 AskUserQuestion 으로 사용자 노출. 후보 0건이어도 `.claude/rules/orchestrator-protocol.md` Phase 7-8 완료 알림에 `MCP: 추천 {N}건 — 사용자 설치 필요 / 추천 후보 없음` 1줄 상시 노출. "관심 없으면 즉시 건너뛴다" → "후보를 제시하고 사용자가 명시 결정" 으로 전환.
+- **F-02 — 후보 패키지명 낡음**: 1차 정정에서 `@anthropic/` → `@modelcontextprotocol/` 로 교체했으나 실 동작 파일럿에서 `server-fetch`·`server-sqlite` 등 npm 404 다수 발견 → v3 에서 하드코딩 테이블 자체 폐기.
+- **fit-audit Dim 7-A 구조적 false negative**: v3 권위 진술 (MCP 는 settings.json 에 없음) 에 정합되도록 스캔 대상을 `.mcp.json` / `~/.claude.json` 로 재정의. `settings.json` / `settings.local.json` 의 `mcpServers` 키 잔존은 레거시 결함 (MAJOR-DRIFT) 으로 검출하여 과거 버그 빌드 식별. 등급 체계 (MAJOR/MINOR/ALIGN/NOTE) 무변경.
+
+### Changed
+- **Phase 8 모델: 설치 자동화 → 리스트 + 설정 스니펫**: 에이전트는 `claude mcp add` 호출·패키지 설치를 **수행하지 않는다**. 산출물에 추천 리스트 + 사용자가 바로 복붙 가능한 `.mcp.json` 스니펫 + `claude mcp add` 명령 + 환경변수/인증 안내 + 출처 (npm 네임스페이스 + 1차 레퍼런스 URL) 를 기록. 책임 경계 = 조사·추천 (에이전트) / 등록·인증·비밀값 관리 (사용자).
+- **후보 발굴: 하드코딩 테이블 → 웹 검색**: WebSearch/WebFetch 로 현재 npm·MCP 생태계에서 신호별 후보 조사. 1차 출처 우선순위 (`modelcontextprotocol.io` / `modelcontextprotocol/servers` 레포 / Anthropic 공식 문서 / 1st-party 조직). stale-on-arrival 문제의 구조적 차단.
+- **`playbooks/final-validation.md` Step 5-B**: MCP 항목을 실 설치 검증에서 산출물 정적 검사로 재정의 — 1차 출처 + npm 네임스페이스 / Step 6.5 흔적 / 비밀값 평문 패턴 / 스코프별 스니펫·명령 형식.
+- **경량 트랙 `playbooks/setup-lite.md` 표현 정합**: "MCP 서버 포함" → "MCP 추천 후보로 기록", `훅/MCP 후보` → `훅 후보 + MCP 추천`. v3 책임 경계 (등록은 사용자) 와 일관.
+- **사용자 노출 문서 정정**: `ARCHITECTURE.md`, `README.md`, `README_EN.md`, `commands/help.md`, `commands/harness-setup.md` 의 Phase 7-8 단계 명칭을 "훅 설치 + MCP 추천 (리스트·스니펫)" 으로 통일.
+- **`.claude/agents/phase-hooks.md`**: description / Identity / Playbooks / Rules 를 "MCP 추천" + "등록 불수행" 으로 정합.
+
+### Added
+- **`playbooks/hooks-mcp-setup.md` Step 6.5 — MCP 공급망 경량 점검**: 네임스페이스 신뢰성 · 1차 출처 URL 의무 표기 · 임의 코드 실행 고지 · 출처 불명 시 `[ASK]`. 풀 보안 감사가 아닌 "출처 1줄 점검 + 사용자 고지" 게이트.
+- **`claude mcp list` 사전 조회 (Step 6 첫 단계)**: 기존 등록 MCP 와 중복 후보 자동 제외 — 동일 이름 → `[NOTE]` 제외, 동일 용도 다른 서버 → `[ASK]` 선택.
+- **Phase 7-8 완료 알림 1줄 (`orchestrator-protocol.md`)**: 침묵 스킵 차단의 핵심 가시성 장치.
+
+### Process Notes
+- 6 라운드 팀 기반 트랙. 산출물 12종 (`docs/phase8-mcp-improvement/01~11`) 보존.
+- 실 동작 파일럿 (스크래치 웹앱+DB 프로젝트, `claude mcp add` 실 실행 확인) 으로 v2 의 핵심 동작 7종 검증 후 사용자 결정으로 v3 전환.
+- audit 패밀리 일관성 확인: `harness-audit.md` · `ops-audit.md` 는 MCP 무참조 (변경 없음), `commands/audit.md` 통합 흐름 무영향, `fit-audit.md` Dim 7-A 만 갱신.
+- Fast Mode 호환: `hooks-mcp-setup.md` 에 Fast Mode 분기 없음. Phase 8 `[ASK]` 게이트는 Fast Mode 의미 ("Phase 1-9 [ASK] 무시 금지") 와 일관하게 발화.
+
+총 16 파일 변경.
+
 ## [1.0.0] - 2026-05-19
 
 **정식 1.0 런치 — 생성 하네스의 모델 표기를 별칭으로 표준화하여 모델 정확성을 공식 문서 기준으로 확정하고, MIT 오픈소스 `mattpocock/skills` 의 작성 규율 일부를 선별 흡수.**

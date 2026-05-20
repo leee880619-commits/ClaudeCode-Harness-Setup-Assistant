@@ -83,7 +83,7 @@ docs/myapp-setup/
 | 5+ | **Scope Confirmation Gate** | (Orchestrator) | — | — |
 | 6 | SKILL/Playbook 작성 | phase-skills | skill-forge | red-team-advisor |
 | 6+ | **Model Confirmation Gate** | (Orchestrator) | — | — |
-| 7-8 | 훅/MCP 설치 | phase-hooks | hooks-mcp-setup | red-team-advisor |
+| 7-8 | 훅 설치 + MCP 추천(리스트·스니펫) | phase-hooks | hooks-mcp-setup | red-team-advisor |
 | 9 | 최종 검증 | phase-validate | final-validation | red-team-advisor |
 
 > Phase 2.5는 옵션이다. Phase 1-2의 Escalation(`[ASK] 핵심 도메인 식별`)에 대한 사용자 답변이 "해당 없음"/공백이거나 초기 발화에 "--fast"/"빠르게"가 있으면 소환하지 않고 Phase 3로 직행한다.
@@ -150,7 +150,7 @@ Fast-Forward(Phase 3-5 통합)가 활성화된 경우에도 각 내부 단계의
 | # | 파일 | 담당 Phase |
 |---|------|-----------|
 | 1 | `CLAUDE.md` | 1-2 (후속 Phase에서 섹션 증분) |
-| 2 | `.claude/settings.json` | 1-2 (기본), 7-8 (훅/MCP 추가) |
+| 2 | `.claude/settings.json` | 1-2 (기본), 7-8 (훅 추가 — MCP는 추천 리스트·스니펫만 산출물에 기록, 사용자가 `.mcp.json`/`claude mcp add` 로 직접 등록) |
 | 3 | `.claude/rules/*.md` | 1-2 (always-apply 기본) |
 | 4 | `.claude/agents/*.md` | 5 (에이전트 프로젝트일 때) |
 | 5a | `.claude/skills/*/SKILL.md` | 6 (사용자 진입점) |
