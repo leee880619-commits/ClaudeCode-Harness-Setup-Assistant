@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-05-21
+
+**`red-team-advisor` 라우팅 오용 차단 — 일반 프로젝트의 "레드팀 리뷰" 요청이 harness 메타 산출물 전용 에이전트로 잘못 라우팅되어 일반 코드에 부적합한 13개 Dimension(특히 Dim 6/8/9/11/12)을 적용하던 위험을 차단했다.**
+
+배경: harness-architect 외부 사용자 보고. `harness-architect:red-team-advisor` 의 description 에 "레드팀 어드바이저" 키워드가 노출되어 있고 등록된 에이전트 풀 중 "red-team / 레드팀" 키워드를 가진 후보가 사실상 1개뿐이라, 일반 프로젝트(웹앱·CLI·데이터 스크립트)에서 "레드팀으로 검토" 요청이 이 에이전트로 라우팅 → 13개 Dim 중 8개가 harness 메타 구조(`permissions.allow` JSON 조각, `allowed_dirs` 충돌, Escalations 섹션, `03-pipeline-design.md` 등)에 종속되어 false BLOCK / 무의미한 [Dim N] 태그 생성. Dim 13 에만 "메타 누수 방지" 가드가 있어 나머지 차원은 가드 없이 적용되던 구조적 결함.
+
+### Fixed
+- **`red-team-advisor` description 스코프 명시**: `각 Phase 산출물을 사용자 목적 관점에서 비판적으로 검토하는 레드팀 어드바이저` → `harness-architect 의 9-Phase 산출물(03-pipeline-design.md, 04-agent-team.md 등) 전용 레드팀 어드바이저. 일반 프로젝트의 코드/PR 리뷰에는 사용하지 않는다.` 로 변경. 라우터가 일반 "레드팀 리뷰" 요청을 후보에서 자연스럽게 배제하고, 사용자에게도 스코프가 가시화된다.
+- **`red-team-advisor` 본문 Scope Guard 섹션 신규 (셀프 가드)**: Identity 섹션 위에 `## Scope Guard (필수 선행 검사)` 섹션 추가. 호출 시 검토 대상이 harness-architect Phase 산출물(`docs/{요청명}/{00..07}-*.md` / 대상 프로젝트 `.claude/agents/*.md` / `.claude/skills/**/SKILL.md` / `playbooks/*.md` / `.claude/settings.json` / `.claude/hooks/hooks.json`)인지, 또는 호출 프롬프트에 `[Phase] N` / `[Review Target]` 형식의 harness 컨텍스트가 있는지 먼저 확인. 인정 신호 0건이면 13개 Dimension 적용을 중단하고 `general-purpose` / `code-reviewer` / `/review` / `/security-review` 사용을 권유하는 안내 메시지를 반환 후 종료. 판정이 애매한 경우(예: 대상 프로젝트가 `.claude/` 는 있으나 harness-architect 구조가 아님)는 `[ASK]` 1건만 반환. 라우팅이 잘못 걸려도 에이전트 자신이 셀프 가드로 거절하여 false BLOCK 을 원천 차단.
+
+### Process Notes
+- 외부 사용자 보고서(`KBR/red-team-advisor-routing-issue.md`, 2026-05-21) 기반 P0 패치 두 항목(보고서 §4.1 description 스코프 명시 + §4.3 본문 Scope Guard) 적용.
+- 미적용 항목: §4.5 Dim 6/8/9/11/12 차원별 가드(P1, Scope Guard 로 1차 차단되므로 후속 사안) / §4.2 에이전트 이름 변경(P2, breaking change) / §4.4 별도 일반용 redteam 에이전트(P2, 신규 에이전트 1개 추가 필요).
+- 보고서 §7 인용대로 0.9.0 ~ 1.0.1 모든 캐시에서 동일 이슈 재현 가능. v1.0.2 부터 해소.
+
 ## [1.0.1] - 2026-05-20
 
 **Phase 8 (MCP) 를 "리스트 + 설정 스니펫" 모델로 재설계 — `settings.json` 의 `mcpServers` 라는 (지원되지 않는) 위치로 안내하던 실제 버그를 제거하고, "MCP 후보 0건 침묵 스킵" 으로 사용자가 한 번도 단계를 인지하지 못하던 형해화를 차단했다.**
