@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-05-22
+
+**`red-team-advisor` 라우팅 오용 차단 2차 — v1.0.2 의 description 스코프·본문 Scope Guard 가 적용된 뒤에도 일반 "레드팀 리뷰" 요청에 이 에이전트가 라우팅되는 사례가 사용자 환경에서 재발하여, 라우터 단계의 의미 매칭 신호를 약화하고 Scope Guard 의 인정 신호와 reject 메시지를 강화했다.**
+
+배경: v1.0.2 적용 후에도 사용자 보고 "여전히 레드팀 에이전트가 소환된다". 본 세션의 시뮬레이션 (일반 PR diff 프롬프트로 자동 라우팅 호출) 으로 두 단계가 분리되어 동작함을 확인 — (1) Scope Guard 는 정상 fire 하여 tool_uses 0 / 7s self-reject 종료, 13 Dim 적용 0회. (2) 그러나 라우팅 자체는 description 의 "전용 / 사용하지 않는다" 표현을 hard constraint 로 해석하지 않아 routing 성립. 사용자 입장에서는 "엉뚱한 에이전트가 소환되어 거절 메시지를 뱉음" 으로 인식되어 "여전히 소환된다" 로 보고된 것. 라우터 단계 차단은 description 의 매칭 키워드 약화 + reject 메시지에 라우팅 실수 안내 prepend 로 1차 완화하고, 라우팅 자체의 완전 차단(agent name 변경, breaking change) 은 v1.1.0 으로 미룬다.
+
+### Changed
+- **`red-team-advisor` description 의 매칭 키워드 톤 다운**: `harness-architect 의 9-Phase 산출물(...) 전용 레드팀 어드바이저. 일반 프로젝트의 코드/PR 리뷰에는 사용하지 않는다.` → `harness-architect 9-Phase 산출물(03-pipeline-design.md, 04-agent-team.md 등) 정합성 검증 전용. 일반 프로젝트의 코드·PR·문서 review 에는 사용 금지 — 호출 시 self-reject 후 즉시 종료한다.` "레드팀 어드바이저" 표기 제거, "정합성 검증" 으로 도메인 한정 표현으로 교체. 라우터의 의미 매칭 신호에서 "red-team / advisor" 키워드 노출을 줄임.
+- **Scope Guard 본문의 인정 신호 강화**: 종전에는 `[Review Target]` 라벨 단독 매칭만으로도 통과 가능했으나, 이제 라벨 뒤 1행 안에 `docs/{요청명}/{NN}-` / `.claude/` / `playbooks/` / `.claude-plugin/` 중 하나의 경로 조각이 동반될 때만 통과. 일반 PR 리뷰 프롬프트의 우연한 라벨 일치로 인한 우회 차단. 인정 신호 A (파일 경로) / B (프롬프트 컨텍스트) 두 종류로 분리하여 명세 명확화.
+- **Scope Guard reject 메시지 첫 줄에 라우팅 실수 안내 prepend**: `⚠️ 본 메시지가 노출됐다면 라우팅이 이 에이전트로 잘못 진입한 것입니다. 호출자(메인 세션)는 일반 코드·PR·문서 review 대신 /review 또는 /security-review 슬래시 커맨드를 사용해주세요.` 한 줄을 기존 메시지 위에 추가. mis-routing 시 사용자가 메타 원인을 즉시 인지하도록 함.
+
+### Process Notes
+- 본 패치는 v1.0.2 후속의 Stage 1 (no-breaking). description 키워드 약화는 라우터 단계의 매칭 신호를 줄이는 효과가 있으나 라우팅 자체의 완전 차단은 보장하지 않는다 — Claude Code 의 sub-agent 라우팅은 agent `name` 필드가 의미 매칭의 주된 신호이며, 현 이름 `red-team-advisor` 의 "red-team" 키워드가 일반 red-team 요청과 매칭될 여지가 남는다.
+- Stage 2 (v1.1.0 후보, breaking change): agent name 을 `red-team-advisor` → `phase-artifact-validator` 등으로 변경하여 routing 키워드를 원천 제거. plugin.json / README.md / ARCHITECTURE.md / playbooks/*.md / .claude/rules/*.md / .claude/agents/security-auditor.md 의 모든 활성 참조 일괄 갱신 + CHANGELOG BREAKING 마이그레이션 안내 동반 필요. 별도 의사결정 후 진행.
+- 시뮬레이션 근거: 본 세션에서 일반 PR diff 프롬프트로 `harness-architect:red-team-advisor` 호출 → Scope Guard 가 정상 self-reject (tool_uses 0, duration 7s). routing 은 description hint 와 무관하게 성립함을 실측 확인.
+
 ## [1.0.2] - 2026-05-21
 
 **`red-team-advisor` 라우팅 오용 차단 — 일반 프로젝트의 "레드팀 리뷰" 요청이 harness 메타 산출물 전용 에이전트로 잘못 라우팅되어 일반 코드에 부적합한 13개 Dimension(특히 Dim 6/8/9/11/12)을 적용하던 위험을 차단했다.**
