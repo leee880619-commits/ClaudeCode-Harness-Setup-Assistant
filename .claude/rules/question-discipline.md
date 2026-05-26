@@ -42,10 +42,57 @@ AI 가 사용자에게 추정 적정선을 전달하고 싶을 때의 올바른 
 - "알아서 해줘" → 후보 목록을 AskUserQuestion으로 제시하고 선택받아야 함
 - 모델, 권한, 훅, 환경변수, 스킬 범위, 프로젝트 설명 등은 절대 암묵적 결정 금지
 
+## Free-form Utterance Inference Discipline — 자유 발화 추론 규율
+
+사용자가 슬래시 커맨드 호출과 함께 자유 발화로 정보를 제공할 때 (예: `/harness-architect:harness-setup 리서치 에이전트 만들거야. brightdata mcp 사용. 빠르게 설정`), 발화에서 추출한 값은 **답변이 아니라 추정** 이다. 모델이 추정을 답변으로 승격 처리하면 사용자에게 보이지 않는 silent inference 가 되어 "암묵적 합의 금지" 원칙을 우회한다.
+
+### 정의 분리
+- **명시적 답변 (explicit answer)**: 오케스트레이터가 호출한 AskUserQuestion 의 옵션 선택 또는 "Other" 자유 텍스트 입력 응답. `tool_result` 로 모델 컨텍스트에 도달.
+- **암묵적 추정 (implicit inference)**: 사용자의 슬래시 커맨드 인자, 자유 발화, 이전 대화 맥락에서 모델이 추출한 값.
+
+**규율**: 설정값·인터뷰 답변·설계 결정의 입력으로 **명시적 답변만 인정**. 암묵적 추정은 (a) AskUserQuestion 옵션 description 의 "AI 추정 근거" 표기, 또는 (b) 옵션 prefill 후보 노출 — 둘 중 하나의 용도로만 사용 가능하며, 그 자체로 답변 슬롯을 채우지 않는다.
+
+### 금지 패턴 (Forbidden)
+- 사용자 발화에 "에이전트 파이프라인" 키워드가 있다고 A6 (품질 축) 을 AskUserQuestion 없이 `에이전트 파이프라인` 으로 자체 기록
+- "빠르게" 키워드가 있다고 A1~A10 항목 중 일부를 AskUserQuestion 발화에서 제외
+- `$ARGUMENTS` 가 자유 발화 텍스트일 때 그 텍스트에서 프로젝트 이름·유형·도메인을 추출하여 A1·A2·도메인 답변으로 기록
+- 사용자 발화에서 "솔로" / "팀" 단어 추출 후 A3 답변으로 기록
+- thinking 내부에서 "사용자가 발화로 X 라고 했으니 옵션 발화 생략" 같은 사유 인용
+
+### 허용 패턴 (Allowed)
+- 자유 발화에서 추출한 "리서치 에이전트, brightdata mcp 사용" 을 A2 (유형) 옵션의 `에이전트 파이프라인` description 본문에 "AI 추정 근거: 사용자 발화 '리서치 에이전트' 명시" 로 노출 (옵션은 정상 발화)
+- A10 옵션 label / description 의 정량 견적 (에이전트 수·파일 수·소요) 을 발화에서 추출한 사용 강도·복잡도로 보정 (옵션 *내용* 보정은 OK, 옵션 *생략* 은 금지)
+- `$ARGUMENTS` 가 **유효 디렉터리 경로** 일 때 "경로" 항목만 prefill 로 생략 (값 자체가 명확하고 사용자가 의도적으로 입력했으므로 — A1~A10 발화는 그대로)
+
+### description ≠ 답변 (Patch D-4 — QA HIGH 반례 차단)
+
+옵션 description 본문의 "AI 추정 근거: ..." 표기는 **사용자가 옵션을 명시 선택하지 않은 상태로는 답변으로 인정되지 않는다**. `tool_result` 의 명시 선택 (옵션 선택 또는 "Other" 자유 텍스트 응답) 만 답변 슬롯을 채운다. 모델이 "description 에 답이 다 있으니 사용자가 응답 안 해도 description = 답변" 으로 해석하는 것은 silent inference 의 변형이며 금지. AskUserQuestion 호출의 `tool_result` 가 비어있는 채로 Phase 0 자기점검 표를 작성하면 표의 "답변" 열도 비어있어야 하고, 빈 항목은 추가 발화 대상이다.
+
+### 빈 `tool_result` / 부분 응답 / dismiss 처리
+
+AskUserQuestion 의 `tool_result` 가 다음 상태로 반환된 경우의 처리 (silent fill 금지):
+
+| `tool_result` 상태 | 의미 | 처리 |
+|--------------------|------|------|
+| 정상 응답 (모든 question 에 answer 존재) | 사용자가 모든 항목 선택 완료 | 정상 진행. 표 "답변" 열 채움 |
+| 일부 question 만 응답 (부분 응답) | 사용자가 일부만 선택 (UI 가 허용한 경우) | **빈 슬롯은 발화 추정 채움 금지** — 미응답 항목만 추려 새 AskUserQuestion 추가 호출. 표는 미응답 항목을 빈 셀로 두지 않고 새 응답 기다림 |
+| 전체 dismiss / 빈 응답 (사용자가 ESC 또는 취소) | 사용자가 응답 거부 의사 | **silent fill 금지**. 다음 텍스트 안내 후 동일 호출 재시도: "Phase 0 인터뷰가 응답 없이 종료됐습니다. 이 인터뷰는 silent inference 차단의 핵심이므로 응답이 필요합니다. 작업을 일시 중단하시거나 모든 항목에 응답해주세요." 그 다음 동일 question 들로 AskUserQuestion 재발화. 사용자가 명시적으로 "작업 중단" 응답 시 작업 폴더에 partial state 만 저장하고 정상 종료 |
+| `tool_result` 자체가 누락된 컨텍스트로 다음 액션 (모델 컨텍스트 파싱 버그 가능성) | 도구 호출 자체 실패 | 동일 호출 1회 재시도. 재시도 실패 시 사용자에게 "도구 호출 응답 누락 — Claude Code 세션 재시작 권장" 텍스트 안내 |
+
+**금지 명시**: 모델이 thinking 안에서 "사용자가 ESC 눌렀으니 description 기반으로 추정 채워 진행" / "부분 응답이니 나머지는 사용자 발화에서 추출" 같은 사유로 빈 슬롯을 채우는 것은 silent inference 의 변형이며 금지. 위반 시 phase-setup 의 Step 0 검증에서 출처 토큰 누락으로 BLOCKING 자동 검출 (3중 게이트).
+
+### Auto Mode 의 자체 회피와의 관계
+사용자가 Auto Mode 활성화 상태로 본 슬래시 커맨드를 호출한 경우, Auto Mode 의 "Bias toward working without stopping for clarifying questions" 가 silent inference 를 유인할 수 있다. 그러나 Auto Mode 자체가 명시한 예외 조항 — *"If the user, a skill, or the shape of the task suggests they want you to ask, do so"* — 에 본 슬래시 커맨드의 task shape (Phase 0 압축 인터뷰 A1~A10 발화 요구) 이 정확히 해당. **Auto Mode 활성 상태에서도 A1~A10 명시 발화는 의무**.
+
+### 위반 시 결과
+- Phase 0 자기점검 표 (`commands/harness-setup.md` "Phase 0 완료 자기점검") 에서 출처가 "AskUserQuestion#N" 또는 "$ARGUMENTS prefill" 이 아닌 항목이 발견되면 phase 전환 중단하고 즉시 추가 AskUserQuestion 발화
+- Phase 1-2 의 `phase-setup` 이 산출물 `01-discovery-answers.md` 의 "Pre-collected Answers" 표에서 출처 열이 "AskUserQuestion#N" 이 아닌 항목을 감지하면 `[BLOCKING]` Escalation (출처 검증 의무)
+
 ## 금지 패턴
 - 텍스트로 질문 출력하고 응답 대기
 - 질문 없이 기본값 가정하고 진행
 - 여러 질문을 텍스트로 나열
+- 사용자 자유 발화에서 추출한 값을 AskUserQuestion 응답으로 위장 (silent inference)
 
 ## 재질문 트리거
 다음 상황 발생 시 즉시 AskUserQuestion으로 재질문:

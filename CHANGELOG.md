@@ -6,6 +6,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-05-26
+
+### Phase 0 silent inference 차단 (라운드 1~6 누적)
+
+**Incident 배경**: 사용자가 `/harness-architect:harness-setup ... 빠르게 설정해줘` 호출 시, 오케스트레이터가 Phase 0 압축 인터뷰 A1~A10 중 3슬롯 (A5/A7+A8/A10) 만 발화하고 A1·A2·A3·A6·A9 를 사용자 자유 발화에서 silent inference 로 채우는 incident 발생. 사용자가 "암묵적 합의 없이 100% 동작" 요구.
+
+**근본 원인** (red-team 검증 후 압축):
+- `commands/harness-setup.md:206` 발화 명령이 부정형 없음 ("묶어 받으세요" 만)
+- `commands/harness-setup.md:278-284` $ARGUMENTS 분기에 시대착오적 "3문항만" 안내 (라인 206 과 모순)
+- `orchestrator-protocol.md` "Fast Keyword Semantics" 의 "5-8문항" 캡 (A1~A10 = 9-10항목과 불일치)
+- `orchestrator-protocol.md` Full Mode 정의 "5문항 기본 인터뷰 (A1~A6)" (A7~A10 미요구)
+- `question-discipline.md` 의 "암묵적 합의 금지" 가 자유 발화 추론을 커버 안 함
+- `fresh-setup.md` BLOCKING 대상이 A1~A3/A7/A8/A10 6항목으로 한정 (A2/A6/A9 누락)
+- Phase 0 → Phase 1-2 전환 시 외부 검증 게이트 부재
+
+**도입된 메커니즘**:
+- A1~A10 의 9개 필수 항목 (A4 옵션 제외) AskUserQuestion 연속 3회 분할 발화 의무
+- Phase 0 자기점검 표 4열 (항목/답변/출처 호출#/옵션 라벨 원문)
+- `00-target-path.md` 의 `## Pre-collected Answers` 섹션 작성 의무
+- 외부 검증 스크립트 `validate-phase-artifact.sh` (Phase 0 전용 블록) — **SSoT**
+- Windows fallback `validate-phase-artifact.ps1` (bash 미가용 환경)
+- `phase-setup` 에이전트 Step 0 — 라우트 무관 검증 스크립트 재실행 (cursor-migration / harness-audit 라우트 갭 방어)
+- Phase 9 `final-validation` Step 5.4 — `validation_bypassed: true` 무조건 BLOCK (이중 안전망)
+- 빈 `tool_result` / 부분 응답 / ESC dismiss 의 silent fill 차단
+- 라우트별 기존 답변 prefill (감사·마이그레이션 모드 UX 보정 — 발화 의무는 유지)
+- 자유 발화 추론 규율 (`question-discipline.md` 신설 섹션): description ≠ 답변, Auto Mode 의 "shape of task suggests asking" 예외 인용
+
+**SSoT 모델**:
+- `validate-phase-artifact.sh` (+ `.ps1` 등가본) = 작동 SSoT
+- 텍스트 규약 6곳 (commands/harness-setup.md, .claude/rules/orchestrator-protocol.md, .claude/rules/question-discipline.md, playbooks/fresh-setup.md, playbooks/final-validation.md, .claude/agents/phase-setup.md) = 의도 SSoT
+- 충돌 시 스크립트 우선
+
+**수정 파일**:
+- `commands/harness-setup.md` — Phase 0 발화 강화, $ARGUMENTS 단축 폐지, 자기점검 표 4열, 라우트별 prefill 분기
+- `.claude/rules/orchestrator-protocol.md` — Fast/Full Mode 발화 깊이 통일, Phase 0 검증 영수증 섹션 (PowerShell fallback 포함)
+- `.claude/rules/question-discipline.md` — Free-form Utterance Inference Discipline, description ≠ 답변, 빈 tool_result 처리
+- `playbooks/fresh-setup.md` — BLOCKING 9항목 확장, Step 0 다층 방어
+- `playbooks/final-validation.md` — Step 5.4 Phase 0 Validation Bypass Audit
+- `.claude/agents/phase-setup.md` — Step 0 라우트 무관 검증
+- `scripts/validate-phase-artifact.sh` — Phase 0 전용 검증 (SSoT 선언, N/A 변형 15+ 패턴)
+- `scripts/validate-phase-artifact.ps1` — **신규** Windows PowerShell 등가본
+
 ## [1.0.3] - 2026-05-22
 
 **`red-team-advisor` 라우팅 오용 차단 2차 — v1.0.2 의 description 스코프·본문 Scope Guard 가 적용된 뒤에도 일반 "레드팀 리뷰" 요청에 이 에이전트가 라우팅되는 사례가 사용자 환경에서 재발하여, 라우터 단계의 의미 매칭 신호를 약화하고 Scope Guard 의 인정 신호와 reject 메시지를 강화했다.**

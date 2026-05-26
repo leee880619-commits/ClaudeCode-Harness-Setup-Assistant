@@ -71,7 +71,7 @@
 나머지 질문(Q5~Q9 + 도메인 후보)은 서브에이전트가 스캔 결과를 기반으로 Escalations에 기록하고,
 오케스트레이터가 Phase 1-2 완료 후 일괄 처리한다.
 
-**"빠르게" / "--fast" 키워드 입력 시 Phase 0 동작**: 위 A1~A10 인터뷰를 **한 번에 묶어** 발화 (5-8문항, 단일 AskUserQuestion 호출 또는 연속 1-2회 호출). 풀 모드처럼 Phase별로 분산하지 않는다. AI 는 사용자 발화에서 도메인·추정 사용 강도·추정 복잡도를 1차 추출하여 A10 옵션 description 에 자기 추정을 함께 노출한다. 의미 상세는 본 문서 "Fast Keyword Semantics" 섹션 참조.
+**"빠르게" / "--fast" 키워드 입력 시 Phase 0 동작**: 위 A1~A10 인터뷰의 **A4 (Fast-Forward 옵션) 를 제외한 9개 필수 항목 전부** 를 **연속 3회 분할 AskUserQuestion 호출** (4 + 4 + 2 또는 4 + 3 + 3 등, AskUserQuestion 도구의 호출당 4질문 상한 준수) 로 받는다. **항목 수는 9개 모두 의무 — 발화에서 추출한 값으로 항목을 생략하는 것은 금지** (Phase 0 silent inference 재발 차단 — 배경: CHANGELOG.md [Unreleased]). 풀 모드처럼 Phase별로 분산하지 않는다. AI 는 사용자 발화에서 도메인·추정 사용 강도·추정 복잡도를 1차 추출하여 옵션 description 본문에 "AI 추정 근거: ..." 로 노출하되 **각 항목의 옵션 노출 자체는 의무**. 의미 상세는 본 문서 "Fast Keyword Semantics" 섹션 참조.
 
 **도메인 식별은 Phase 0 질문에 포함하지 않는다.** phase-setup이 스캔 결과로 후보 1~3개를 추정해 Escalations에 `[ASK] 핵심 도메인 식별 — 후보 ...`로 기록 → 오케스트레이터가 AskUserQuestion으로 확인. 답변은 Phase 2.5 소환 여부와 `[Domain Hint]` 값이 된다.
 
@@ -119,7 +119,7 @@ Agent(
 ### 의미
 
 **O (정확한 의미)**:
-- Phase 0 에서 **압축된 깊이 인터뷰** 로 추론에 필요한 맥락 한 번에 수집 (A1~A10, 5-8문항). 풀 9-Phase 식 분산 질문 금지.
+- Phase 0 에서 **압축된 깊이 인터뷰** 로 추론에 필요한 맥락 한 번에 수집 (A1~A10 의 A4 옵션 제외 9개 필수 항목 전부, AskUserQuestion 연속 3회 분할 호출). 풀 9-Phase 식 분산 질문 금지. **발화 추출로 항목 생략 금지** — 옵션 노출 자체가 의무 (`.claude/rules/question-discipline.md` "Free-form Utterance Inference Discipline").
 - AI 가 사용자 발화 + 미발화 맥락 (도메인·사용 강도·운영 성숙도·프로젝트 복잡도) 종합 추론하여 적정 규모 추정.
 - 추정한 적정 규모를 A10 옵션 본문 description 으로 사용자에게 **1회 공유** (암묵적 합의 방지).
 - A10 합의 후 Phase 1-9 진행 중 추가 사용자 질문 최소화. 부득이한 `[ASK]` 는 발생 시 즉시 노출 (Phase Gate `[ASK]` 차단 참조).
@@ -135,8 +135,10 @@ Agent(
 
 | 모드 | 초반 (Phase 0) | 후반 (Phase 1-9) |
 |------|---------------|-------------------|
-| **Fast Mode** ("빠르게" 입력) | 5-8문항 압축 깊이 인터뷰 (A1~A10) | 자율 진행, 추가 질문 최소 |
-| **Full Mode** (키워드 없음) | 5문항 기본 인터뷰 (A1~A6) | Phase별 분산 질문 슬롯 다수 |
+| **Fast Mode** ("빠르게" 입력) | A1~A10 의 9개 필수 항목 (A4 옵션 제외) 전부, AskUserQuestion 연속 3회 호출 | 자율 진행, 추가 질문 최소 |
+| **Full Mode** (키워드 없음) | A1~A10 의 9개 필수 항목 (A4 옵션 제외) 전부, AskUserQuestion 연속 3회 호출 | Phase별 분산 질문 슬롯 다수 |
+
+> **Phase 0 발화 깊이는 Fast/Full 동일** (9개 필수 항목). 차이는 **후반 Phase 1-9 의 질문 분포 모델** 뿐이다. Fast Mode 가 인터뷰 *개수* 를 줄인다는 해석은 Phase 0 silent inference 의 직접 원인 — 명시적으로 금지 (배경: CHANGELOG.md).
 
 ### 오케스트레이터 thinking 내 인용 금지 사유
 
@@ -153,6 +155,48 @@ Skip Gate 의 명시 조건 (Phase ∈ {3-4, 7-8} AND Escalations `[BLOCKING]`/`
 
 두 신호는 충돌 아님. "빠르게" = 운영 모드, "에이전트 파이프라인" = 프로젝트 유형. 동시 가능.
 Phase 0 A10 옵션 본문에 두 신호의 정합성을 명시 — 에이전트 파이프라인이라도 슬림/중간/풀 3 옵션 모두 가능 (A7 사용 강도에 따라).
+
+## Phase 0 검증 영수증 (Validation Receipt) — 자기 신고 우회 차단
+
+오케스트레이터가 `00-target-path.md` 의 `## Pre-collected Answers` 섹션을 Write 한 직후, **반드시 다음 Bash tool 호출을 수행**하여 외부 스크립트로 silent inference 차단을 검증한다. 이 검증은 자기 신고 우회를 차단하는 multi-layer 방어의 외부 권위 레이어다.
+
+### 의무 실행 명령
+
+플랫폼별로 다음 명령 중 *하나* 를 Bash tool 로 실행한다. 실패 시 fallback 순서대로 시도한다:
+
+**1차 (Unix/Linux/macOS/Git Bash 보유 Windows)**:
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/validate-phase-artifact.sh ${TARGET_PROJECT_ROOT}/docs/{요청명}/00-target-path.md
+```
+
+**2차 fallback (Windows + bash 미가용 환경)**:
+```powershell
+pwsh -File ${CLAUDE_PLUGIN_ROOT}/scripts/validate-phase-artifact.ps1 ${TARGET_PROJECT_ROOT}/docs/{요청명}/00-target-path.md
+```
+
+(`pwsh` 가 없으면 `powershell -File ...` 시도)
+
+두 스크립트는 동일 종료 코드·동일 stdout 형식·동일 검증 항목을 보장한다. 1차 실패 시 자동으로 2차 시도, 2차도 실패하면 아래 표의 "Bash tool 자체가 실패" 분기 처리.
+
+### 검증 결과 해석
+
+| 상황 | 처리 |
+|------|------|
+| exit 0 + stdout 에 `Phase 산출물 구조 검증 통과` 포함 | phase-setup 소환 진행 |
+| exit 1 (구조 실패) | 누락/위반 항목을 추가 AskUserQuestion 으로 재발화 → `00-target-path.md` 갱신 → 검증 재실행. 통과 전 phase-setup 소환 금지 |
+| Bash tool 자체가 실패 (스크립트 없음 / bash 미가용 / 권한 거부 등) | **모든 항목을 BLOCKING 으로 간주**. 사용자에게 "Phase 0 외부 검증 실패: {에러 메시지}" 안내 후 2선택 AskUserQuestion 으로 `진행 중단 (Git Bash 설치 / 환경 점검 후 재시도)` / `명시 우회 — 위험 수용 후 진행` 제시 (이전 3선택 모델은 무심 클릭 우회 사례로 폐기). "명시 우회" 선택 시 추가 확인 AskUserQuestion 1회 더: "이 선택은 A1~A10 silent inference 검증을 우회합니다. Phase 0 압축 인터뷰가 silent inference 로 채워질 위험이 재발할 수 있습니다. 정말 우회하시겠습니까?" 두 단계 모두 통과해야 진행. 통과 시 `00-target-path.md` frontmatter 에 `validation_bypassed: true` + `bypass_reason: {사용자가 명시한 사유}` + `bypass_acknowledged_at: {ISO8601}` 3필드 기록. **Phase 9 final-validation 은 `validation_bypassed: true` 발견 시 무조건 [BLOCK] 발행** — 사용자가 두 단계 우회를 거쳤어도 최종 검증 단계에서 다시 명시적 확인 받음 (이중 안전망) |
+| Bash tool 호출 없이 검증 결과만 텍스트로 자기 신고 | **금지** — phase-setup 이 첫 동작으로 동일 스크립트를 재실행하여 자기 신고를 무력화 (`playbooks/fresh-setup.md` Step 0 다층 방어) |
+
+### 자기 신고 우회의 구조적 차단
+
+오케스트레이터 thinking 안에서 다음 사유를 인용하여 검증 실행을 생략하는 것은 금지된다:
+- "사용자가 답변했으니 검증 불필요" — silent inference 의 핵심 패턴, 절대 금지
+- "스크립트가 Windows 에서 안 돌 수도 있으니 스킵" — 그 경우 Bash 호출 결과 (stderr/stdout) 를 사용자에게 노출하고 위 3선택 분기로 처리. 모델 자체 판단 우회 금지
+- "이전 세션에서 검증 통과한 적 있음" — 매 세션 매 갱신마다 신규 실행 의무
+
+### Windows / PowerShell 환경 호환성
+
+Windows 사용자가 PowerShell 환경에서 Claude Code 를 실행하는 경우, Bash tool 은 자동으로 Git Bash 또는 WSL bash 를 호출한다. bash 가 시스템에 설치되지 않은 환경에서는 Bash tool 호출 자체가 실패하며, 위 표의 "Bash tool 자체가 실패" 경로로 처리한다. 사용자는 `git --version` 으로 Git Bash 가용성을 확인할 수 있다.
 
 ## AskUserQuestion 소유권
 
@@ -736,6 +780,14 @@ Advisor 완료:
 2. **수정 감지**: 각 파일의 `mtime` > `completed` 필드면 "마지막 완료 이후 사용자가 편집함"으로 간주 → 해당 Phase Advisor를 재실행 대상에 포함. 추가로 **편집된 Phase 의 번호보다 큰 모든 하류 Phase (예: Phase 3 편집 시 Phase 4, 5, 6, ...)의 산출물**도 "상류 전제 변경" 상태로 표시하여 재개 시 사용자에게 "하류 Phase 산출물을 어떻게 처리할까요? 유지 / 해당 Phase부터 재실행" 선택지를 AskUserQuestion으로 묻는다. 상류 편집이 하류 설계에 구조적 영향을 주는 경우를 놓치지 않기 위함.
 3. **미해결 Escalation 수집**: 각 산출물의 `## Escalations` 섹션에서 `[BLOCKING]` / `[ASK]` 태그를 읽어 미해결 목록 구성. 재개 직후 사용자에게 일괄 AskUserQuestion으로 해소 요청.
 4. **Advisor 리포트 확인**: 산출물에 `advisor_status: block | manual_override` 가 있으면 해당 Phase는 "미완" 상태로 간주 — "계속 선택 시 이 Phase부터 재개"로 분기.
+5. **구버전 작업 폴더 감지 (Phase 0 silent inference 차단 도입 이전 자산)**: `00-target-path.md` 의 `## Pre-collected Answers` 섹션 부재 시 "구버전 작업 폴더" 로 분류.
+   - 검출 방법: `bash scripts/validate-phase-artifact.sh docs/{요청명}/00-target-path.md` 실행 → stderr 에 `^## Pre-collected Answers$` 누락 메시지가 포함되면 구버전.
+   - 처리: 일반 AskUserQuestion 으로 3선택 제시 (header: `구버전 자산`):
+     - `(권장) 답변 재추출` — Phase 0 압축 인터뷰를 정상 재실행. 기존 `01-discovery-answers.md` 의 답변이 있으면 옵션 prefill 후보로 사용 (P2-4 라우트별 prefill 적용). 재실행 후 `00-target-path.md` 의 `## Pre-collected Answers` 섹션 신규 작성. *발화 의무는 유지*. (권장 라벨 근거: 구버전 자산은 출처 토큰 부재로 silent inference 검증을 통과할 수 없으므로 재추출만이 안전한 정상 경로 — `.claude/rules/question-discipline.md` "Recommended Label Discipline" 예외 (b) 의 "플러그인 규칙 명시 정의" 에 해당)
+     - `새로 시작` — 기존 작업 폴더 보존 (재명명 `{요청명}-prev-{timestamp}` 또는 사용자가 명시한 이름) 후 신규 폴더로 처음부터 9-Phase 재구축.
+     - `명시 우회 — 위험 수용 후 진행` — 검증 우회. `00-target-path.md` frontmatter 에 `validation_bypassed: true` + `bypass_reason: "구버전 자산 재개 명시 우회"` + `bypass_acknowledged_at: {ISO8601}` 기록. Phase 9 `final-validation` Step 5.4 가 다시 BLOCK 발행 (이중 안전망).
+   - 자동 마이그레이션은 수행하지 않는다 — 답변의 출처 토큰을 정확히 복원할 수 없어 위조 출처가 될 위험. "답변 재추출" 이 정상 경로.
+   - 배경 incident: CHANGELOG.md [Unreleased].
 
 ### Phase 완료 시 저장
 각 Phase 완료 시 산출물 파일 최상단에 **YAML frontmatter** 를 기록한다 (기존 HTML 주석은 역호환을 위해 두어도 무방하나, 신규 파일부터는 frontmatter를 기본으로):

@@ -3,6 +3,23 @@
 # Phase 산출물 Markdown 파일의 필수 구조를 검증한다.
 # 사용: bash scripts/validate-phase-artifact.sh <artifact_file>
 # 종료 코드: 0 = 통과, 1 = 형식 실패
+#
+# ============================================================================
+# SSoT (Single Source of Truth) — Phase 0 silent inference 차단의 작동 권위
+# ============================================================================
+# 본 스크립트는 Phase 0 의 silent inference 차단 (Pre-collected Answers 출처 토큰
+# 검증, A1~A10 9항목 필수 행, 옵션 라벨 N/A 변형 차단 등) 의 **작동 SSoT** 이다.
+# 텍스트 규약 (commands/harness-setup.md, .claude/rules/orchestrator-protocol.md,
+# .claude/rules/question-discipline.md, playbooks/fresh-setup.md,
+# playbooks/final-validation.md, .claude/agents/phase-setup.md) 은 본 스크립트의
+# 검증 항목을 *기술하는 의도 SSoT* 이며, 작동 결과 충돌 시 본 스크립트가 이긴다.
+#
+# 검증 항목 변경 시:
+# 1. 본 스크립트의 해당 블록을 먼저 수정
+# 2. 텍스트 규약 6곳에 "validate-phase-artifact.sh 검증 항목 참조" 한 줄로만 인용
+#    (정의 본문을 텍스트에 복제 금지 — DRY 위반)
+# 3. CHANGELOG.md 에 변경 사유 기록 (incident inline 인용은 가시 텍스트 외 위치)
+# ============================================================================
 
 set -euo pipefail
 
@@ -71,6 +88,54 @@ fi
 if [[ "$BASE" == "03-pipeline-design.md" ]]; then
   if ! grep -qE "^## Failure Recovery & Artifact Versioning$" "$FILE"; then
     err "Phase 4 필수 섹션 누락: ^## Failure Recovery & Artifact Versioning$ — ${BASE} (각 파이프라인별 max_retries·timeout·버저닝 전략 품질은 Advisor Dim 13이 검증)"
+  fi
+fi
+
+# --- Phase 0 전용 Pre-collected Answers 검증 (silent inference 차단 게이트) ---
+# v1.0.x 까지 오케스트레이터가 사용자 자유 발화에서 A1·A2·A6·A9 등을 추출하여 AskUserQuestion 발화를 건너뛴
+# incident 가 발생. 본 검증은 00-target-path.md 의 ## Pre-collected Answers 섹션에 9개 필수 항목이
+# 모두 기록되어 있고, 출처가 AskUserQuestion#N 또는 $ARGUMENTS prefill (경로 한정) 인지 확인.
+if [[ "$BASE" == "00-target-path.md" ]]; then
+  if ! grep -qE "^## Pre-collected Answers$" "$FILE"; then
+    err "Phase 0 필수 섹션 누락: ^## Pre-collected Answers$ — 사용자 발화 추론 검증 게이트 (v1.0.x silent inference incident 재발 차단)"
+  else
+    PCA_BLOCK="$(awk '/^## Pre-collected Answers$/{p=1;next} /^## /{p=0} p{print}' "$FILE")"
+    # 9개 필수 항목 (A4 옵션 제외) 행 존재 확인 — 표 셀에 "A1 " "A2 " 등이 포함되어야 함
+    for item in A1 A2 A3 A5 A6 A7 A8 A9 A10; do
+      if ! printf '%s\n' "$PCA_BLOCK" | grep -qE "\| ${item}[[:space:]]" ; then
+        err "Phase 0 Pre-collected Answers 누락 항목: ${item} (silent inference 차단)"
+      fi
+    done
+    # 출처 토큰 금지어 검출 — 발화 추출/AI 추정/자동 결정/기본값 적용 등은 금지
+    if printf '%s\n' "$PCA_BLOCK" | grep -qiE "발화 추출|발화 기반|AI 추정|자동 결정|기본값 적용|self-inferred|silently inferred|inferred from utterance"; then
+      err "Phase 0 Pre-collected Answers 에 금지 출처 토큰 발견 (발화 추출/AI 추정/자동 결정/기본값 적용 등) — 모든 항목은 AskUserQuestion#N 또는 \$ARGUMENTS prefill (경로 한정) 출처만 허용. .claude/rules/question-discipline.md \"Free-form Utterance Inference Discipline\" 참조"
+    fi
+    # 각 필수 항목 행에 출처 토큰 (AskUserQuestion#1|2|3 또는 \$ARGUMENTS prefill) 이 있는지 확인
+    for item in A1 A2 A3 A5 A6 A7 A8 A9 A10; do
+      LINE="$(printf '%s\n' "$PCA_BLOCK" | grep -E "\| ${item}[[:space:]]" || true)"
+      if [[ -n "$LINE" ]] && ! printf '%s\n' "$LINE" | grep -qE "AskUserQuestion#[1-3]|\\\$ARGUMENTS prefill"; then
+        err "Phase 0 Pre-collected Answers 의 ${item} 행에 유효한 출처 토큰 없음 (AskUserQuestion#1|2|3 필요)"
+      fi
+    done
+    # 고정 카탈로그 항목 (A2/A3/A5/A7/A8/A9/A10) 의 옵션 라벨 원문 우회 차단 — R-3 + R-4a
+    # 자유 텍스트 응답이 정상인 항목 (A1, A6 멀티선택+Other 가능, 경로) 만 라벨 N/A 허용
+    # R-4a: N/A 변형 우회 차단 — "미정"/"없음"/"na"/"none"/"-"/"—"/em-dash/빈 셀(`| |`) 모두 매칭
+    for item in A2 A3 A5 A7 A8 A9 A10; do
+      LINE="$(printf '%s\n' "$PCA_BLOCK" | grep -E "\| ${item}[[:space:]]" || true)"
+      [[ -z "$LINE" ]] && continue
+      # 라벨 셀의 N/A 변형 검출
+      if printf '%s\n' "$LINE" | grep -qiE "\\| ?(N/A|NA|n/a|none|null|미정|미상|없음|모름|불명|자유 텍스트|label N/A|TBD|todo|TODO|undecided) ?\\|"; then
+        err "Phase 0 Pre-collected Answers 의 ${item} 행에 옵션 라벨 원문 placeholder 값 (N/A 변형 또는 미정/없음 등) — 고정 카탈로그 항목은 카탈로그 라벨 정확 인용 필수 (출처 토큰 위조 의심). 자유 텍스트 응답 허용은 A1·A6·경로 한정"
+      fi
+      # 빈 셀 검출 — 마지막 열이 비어있거나 공백만 (예: `| A2 유형 | 값 | AskUserQuestion#1 | |`)
+      if printf '%s\n' "$LINE" | grep -qE "\\|[[:space:]]*\\|[[:space:]]*$"; then
+        err "Phase 0 Pre-collected Answers 의 ${item} 행 마지막 열 (옵션 라벨 원문) 이 빈 셀 — 고정 카탈로그 항목은 카탈로그 라벨 정확 인용 필수"
+      fi
+      # em-dash / hyphen 만 적힌 셀 검출
+      if printf '%s\n' "$LINE" | grep -qE "\\|[[:space:]]*[—\\-][[:space:]]*\\|"; then
+        err "Phase 0 Pre-collected Answers 의 ${item} 행에 라벨 셀이 dash 만 (—/-) — placeholder 우회 의심. 카탈로그 라벨 정확 인용 필수"
+      fi
+    done
   fi
 fi
 
