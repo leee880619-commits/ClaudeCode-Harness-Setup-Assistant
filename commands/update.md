@@ -58,11 +58,3 @@ harness-architect 업데이트 available
 
 릴리즈 노트가 30줄을 초과하면 30줄만 출력 후 "... (전체 내용: GitHub Releases 참조)" 를 추가합니다.
 
-### Step 4 — 캐시 무효화 (업데이트 있을 때만)
-
-업데이트가 있는 경우, 아래 명령으로 check-update 캐시를 삭제합니다.
-(삭제 후 다음 세션 시작 시 최신 버전이 즉시 반영되도록)
-
-```bash
-rm -f "/tmp/harness-architect-update-check-$(id -u 2>/dev/null || echo 0)" 2>/dev/null || true
-```

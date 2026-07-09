@@ -31,7 +31,7 @@
 ```
 > /harness-architect:harness-setup /path/to/my-dashboard
 
-[오케스트레이터] 경로 확인됨: /path/to/my-dashboard → TARGET_PROJECT_ROOT export.
+[오케스트레이터] 경로 확인됨: /path/to/my-dashboard → 00-target-path.md 에 기록.
 
 [AskUserQuestion: Phase 0]
   1. 프로젝트 이름 + 한 줄 설명은?
@@ -43,7 +43,7 @@
 
 ## 주의 사항
 
-- 경로에 **공백이나 한글이 포함**된 경우 오케스트레이터가 절대 경로로 정규화해 `TARGET_PROJECT_ROOT` 에 export한다.
+- 경로에 **공백이나 한글이 포함**된 경우 오케스트레이터가 절대 경로로 정규화해 `00-target-path.md` 에 기록한다.
 - 유효하지 않은 경로를 넘기면 오케스트레이터가 경로를 다시 요청하는 AskUserQuestion을 띄운다 (입력값을 에러 메시지에 포함해서).
 - 인자를 안 넘겨도 기존 동작 그대로 — 첫 번째 AskUserQuestion에 경로 질문이 포함된다.
 

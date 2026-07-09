@@ -29,7 +29,7 @@ _Last updated: 2026-04-17_
 
 - 플러그인은 생성한 파일을 **오직 대상 프로젝트 디렉터리와 명시된 플러그인 캐시(`~/.claude/plugins/cache/...`) 안에만** 둡니다.
 - API 키·토큰 같은 비밀값은 **`settings.local.json` (gitignored) 로 안내**하여 버전 관리 대상에서 자동 제외되도록 합니다. 비밀값을 외부로 전송하지 않습니다.
-- `ownership-guard.sh` 훅이 대상 프로젝트 범위 밖 쓰기를 선제적으로 차단합니다.
+- 대상 프로젝트 범위 밖 쓰기는 Claude Code 의 `permissions.deny` 와 도구 승인 프롬프트로 통제됩니다. (v1.0.4 까지 이 항목은 `ownership-guard.sh` 훅을 근거로 들었으나, 해당 훅은 실제로 동작하지 않아 v1.0.5 에서 제거했습니다.)
 
 ## 5. 로그
 

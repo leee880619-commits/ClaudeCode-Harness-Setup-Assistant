@@ -41,8 +41,10 @@ claude --plugin-dir .
 CI가 준비되기 전까지는 로컬에서 다음을 확인해 주세요.
 
 ```bash
+# 0) 훅 계약 회귀 테스트 (stdin JSON 파싱, exit 2 차단, timeout 선언)
+bash scripts/test-hooks.sh
+
 # 1) 훅 스크립트 문법
-bash -n .claude/hooks/ownership-guard.sh
 bash -n .claude/hooks/syntax-check.sh
 bash -n scripts/validate-settings.sh
 bash -n scripts/validate-meta-leakage.sh

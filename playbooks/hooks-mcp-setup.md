@@ -36,8 +36,15 @@ Phase 6 산출물의 **Context for Next Phase** 섹션에서 스킬별 allowed_d
 
 **Agent-Skill 분리 모델(모델 D) 적용 시**: 소유권 정보는 각 스킬 파일의 `allowed_dirs`를 참조한다. 에이전트 정의(`.claude/agents/*.md`)에는 소유권 정보가 없으므로 훅이 참조할 원본은 스킬 파일(`.claude/skills/*/SKILL.md` 또는 `playbooks/*.md`)이다.
 
+> **훅 계약 (틀리면 훅이 조용히 무동작한다)** — 상세는 `knowledge/06-hooks-system.md` 7.1 / 7.2.1.
+> - 입력은 **stdin JSON** (`{"tool_input":{"file_path":"..."}}`). `$CLAUDE_TOOL_INPUT` 환경변수는 **없다.**
+> - 차단은 **`exit 2`**. `exit 1`은 도구를 막지 못한다.
+> - 훅에 전달되는 환경변수는 `$CLAUDE_PROJECT_DIR` · `$CLAUDE_PLUGIN_ROOT` 등 정해진 것뿐이다. 임의 변수를 `export` 해도 훅은 못 받는다. **상태는 파일로 넘긴다.**
+> - 모든 훅에 `"timeout"` 과 `"shell": "bash"` 를 명시한다. 생략 시 기본 timeout 600초 — 훅이 쌓여 CPU를 태운다.
+> - Windows `file_path` 는 `C:\\Users\\...` 형태다. `/` 로 시작하는지로 절대경로를 판별하면 가드가 열린다.
+
 **다중 에이전트 프로젝트 기본 권장 훅 (자동 설치 후보):**
-- `ownership-guard.sh` (PreToolUse Write|Edit): 각 에이전트의 쓰기 범위를 SKILL.md allowed_dirs에 따라 강제. 본 어시스턴트 프로젝트의 `.claude/hooks/ownership-guard.sh`를 **대상 프로젝트 컨텍스트로 재작성**하여 템플릿으로 제공 (복사 금지 — 메타 누수). 핵심 구조: `$CLAUDE_TOOL_INPUT`에서 file_path 추출 → 심볼릭 링크/`..` 차단 → allow 리스트와 매칭.
+- `ownership-guard.sh` (PreToolUse Write|Edit): 각 에이전트의 쓰기 범위를 SKILL.md allowed_dirs에 따라 강제. 대상 프로젝트 컨텍스트에 맞춰 **새로 작성**한다. 핵심 구조: stdin JSON에서 file_path 추출 → 백슬래시 정규화 → 심볼릭 링크/`..` 차단 → allow 리스트와 매칭 → 위반 시 `exit 2`.
 
   **필수 포함 — Complexity Gate S 등급 예외 (ORCHESTRATOR_DIRECT, 보안 강화형)**: 대상 프로젝트 워크플로우에 Complexity Gate(workflow-design Step 4-B)가 포함된 경우 아래 블록을 삽입한다. 단순 환경변수 플래그는 세션 시작 시 1회 설정하면 세션 전체가 무방비가 되는 순환 고리 취약점이 있으므로 **per-task 토큰 + 민감 파일 블랙리스트 + deny 선처리** 3중 가드로 구성한다.
 
@@ -64,6 +71,8 @@ Phase 6 산출물의 **Context for Next Phase** 섹션에서 스킬별 allowed_d
     exit 2
   fi
   ```
+
+  > **미해결 — `ORCHESTRATOR_DIRECT_TOKEN` 은 훅에 도달하지 않는다.** 훅은 별도 프로세스로 실행되므로 다른 도구 호출에서 `export` 한 임의 환경변수를 받지 못한다. 따라서 위 S 등급 예외 분기는 **현재 절대 성립하지 않는다** (토큰이 항상 빈 값 -> 일반 가드로 낙하). 동작은 fail-closed 라 안전하지만 예외 기능은 죽어 있다. 토큰을 파일로 넘기면 락 파일과 같은 신뢰 경계에 놓여 해시 검증이 무의미해지므로, **이 예외를 실제로 쓰려면 전달 경로를 다시 설계해야 한다.** 그때까지 S 등급 예외는 "설계됐으나 미가동" 으로 간주하고, Escalations 에 `[ASK] S 등급 예외 미가동 — 현행 유지 / 재설계` 로 올린다.
 
   **보안 설계 근거**:
   - 1) deny 선처리가 `.env` · `.git/config` · secrets 경로를 S 등급 여부와 무관하게 **항상** 차단 (ownership-guard가 유일 방어선인 경로들).
@@ -92,12 +101,11 @@ Phase 6 산출물의 **Context for Next Phase** 섹션에서 스킬별 allowed_d
 
 필요한 각 훅에 대해:
 1. 스크립트 언어 선택 (bash 권장, node도 가능)
-2. 환경변수 사용 계획:
-   - `$CLAUDE_TOOL_NAME`: 실행된 도구 이름
-   - `$CLAUDE_TOOL_INPUT`: 도구 입력 JSON
-   - `$CLAUDE_TOOL_OUTPUT`: (PostToolUse만) 도구 실행 결과
-3. 성공/실패 기준: 종료 코드 0 = 통과, ≠ 0 = 차단/경고
+2. 입력 파싱 계획: **stdin JSON 1개** 를 읽어 `tool_name` · `tool_input.file_path` · `cwd` 를 꺼낸다.
+   Windows 경로의 이스케이프된 백슬래시(`C:\\Users\\...`)를 슬래시로 정규화한 뒤 판정한다.
+3. 성공/실패 기준: `exit 0` = 통과, `exit 2` = 차단(stderr가 Claude에게 전달). **`exit 1` 은 차단이 아니다.**
 4. stderr 피드백 메시지 (Claude에게 전달됨)
+5. **비용 계획**: 이 훅이 매 도구 호출마다 프로세스를 하나 띄운다는 전제로, 검사 대상이 아니면 인터프리터를 부르기 전에 `exit 0` 한다. `timeout` 값을 정한다 (가드 5초 / 검사 10초 / 빌드·테스트 30초 이상).
 
 스크립트 초안을 산출물에 포함하여 오케스트레이터가 승인 처리.
 
@@ -114,6 +122,8 @@ Phase 6 산출물의 **Context for Next Phase** 섹션에서 스킬별 allowed_d
         "hooks": [
           {
             "type": "command",
+            "shell": "bash",
+            "timeout": 5,
             "command": "bash .claude/hooks/ownership-guard.sh"
           }
         ]
@@ -123,13 +133,16 @@ Phase 6 산출물의 **Context for Next Phase** 섹션에서 스킬별 allowed_d
 }
 ```
 
+`timeout` 과 `shell` 은 **생략 금지**다. `timeout` 을 빼면 기본값 600초가 적용되어, 머신이 느려진 순간 훅이 끝나지 못하고 10분간 살아남으며 그 사이 새 훅이 계속 쌓인다. `shell` 을 빼면 Windows에서 `bash` 가 PATH에서 WSL 런처로 해석될 수 있다.
+
 변경된 settings.json 전체를 산출물에 포함하여 오케스트레이터가 승인 후 작성.
 
 ### Step 5: 훅 스크립트 파일 생성
 
 승인된 스크립트를 `.claude/hooks/` 디렉터리에 생성한다.
 실행 권한(`chmod +x`)을 부여한다.
-`set -euo pipefail`을 기본 포함한다.
+
+`set -uo pipefail` 을 기본 포함한다. **`set -e` 는 넣지 않는다** — `grep -c` 처럼 "찾지 못함"을 종료 코드 1로 알리는 명령이 흔한데, `-e` 가 걸리면 훅이 그 지점에서 exit 1로 죽는다. exit 1은 차단도 아니고 Claude에게 전달되지도 않으므로, 훅이 조용히 무동작하는 상태가 된다.
 
 ## Part 2: MCP 서버 추천 (Phase 8)
 

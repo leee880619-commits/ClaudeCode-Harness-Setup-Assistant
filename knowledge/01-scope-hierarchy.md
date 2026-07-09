@@ -526,6 +526,8 @@ description: Code review with personal checklist
         "hooks": [
           {
             "type": "command",
+            "shell": "bash",              // Windows에서 WSL bash 경유 방지
+            "timeout": 5,                 // 생략 시 기본 600초 -> 훅 프로세스 누적
             "command": "bash .claude/hooks/ownership-guard.sh"
           }
         ]

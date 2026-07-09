@@ -33,7 +33,7 @@ Claude가 Write 도구 호출 결정
   │    ├─ 종료 코드 0 → 계속 진행
   │    └─ 종료 코드 ≠ 0 → stderr 내용이 Claude에게 전달 → 수정 시도
   │
-  └─ 종료 코드 ≠ 0 → Write 도구 실행 차단, stderr 내용이 Claude에게 전달
+  └─ 종료 코드 2 → Write 도구 실행 차단, stderr 내용이 Claude에게 전달
   
   ...
   
@@ -45,15 +45,47 @@ Claude가 응답 완료
 
 **Hook의 입출력 프로토콜:**
 
-- **입력**: 환경변수를 통해 도구 실행 정보가 전달됨
-  - `$CLAUDE_TOOL_NAME`: 도구 이름 (예: "Write", "Edit", "Bash")
-  - `$CLAUDE_TOOL_INPUT`: 도구 입력 JSON (예: 파일 경로, 명령어)
-  - `$CLAUDE_TOOL_OUTPUT`: (PostToolUse만) 도구 실행 결과
-- **출력**: 
-  - 종료 코드 `0` → 성공 (계속 진행)
-  - 종료 코드 `≠ 0` → 실패 (PreToolUse: 도구 차단, PostToolUse: 경고)
-  - `stderr`로 출력한 내용은 Claude에게 피드백으로 전달됨
-  - `stdout`는 무시됨
+- **입력**: **stdin으로 전달되는 단일 JSON 객체**다. 환경변수가 아니다.
+
+  ```json
+  {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": { "file_path": "C:\\Users\\me\\proj\\a.json", "content": "..." },
+    "tool_response": { "...": "PostToolUse에만 존재" },
+    "cwd": "C:\\Users\\me\\proj",
+    "session_id": "..."
+  }
+  ```
+
+  `$CLAUDE_TOOL_INPUT` / `$CLAUDE_TOOL_NAME` / `$CLAUDE_TOOL_OUTPUT` 같은 환경변수는 **존재하지 않는다.**
+  이것을 읽는 훅은 항상 빈 문자열을 받아 조용히 통과하므로, 검사하는 척하면서 아무것도 하지 않는다.
+
+- **훅이 실제로 받는 환경변수**: `$CLAUDE_PROJECT_DIR`, `$CLAUDE_PLUGIN_ROOT`, `$CLAUDE_PLUGIN_DATA`, `$CLAUDE_EFFORT`.
+  임의 환경변수(`$TARGET_PROJECT_ROOT` 등)는 다른 도구 호출에서 `export` 해도 훅에 전달되지 않는다.
+  훅은 Claude Code가 별도 프로세스로 띄우기 때문이다. 상태가 필요하면 **파일에 적어라.**
+
+- **출력 (종료 코드)**:
+  - `0` → 통과. stdout이 유효 JSON이면 구조화 응답으로 해석됨
+  - `2` → **차단.** stderr가 Claude에게 전달됨 (PreToolUse: 도구 실행 취소 / PostToolUse: 실행은 끝났고 Claude가 후속 수정)
+  - `1` 또는 그 외 → **차단이 아니다.** 비차단 오류로 기록될 뿐 도구는 그대로 실행된다
+  - `stderr`로 출력한 내용이 Claude에게 전달되는 통로다
+
+  차단하려면 반드시 `exit 2`. `exit 1`은 아무것도 막지 못한다.
+
+**stdin JSON에서 file_path 뽑기 (인터프리터 스폰 없이):**
+
+```bash
+INPUT="$(cat)"
+REST="${INPUT#*\"file_path\":\"}"
+[[ "$REST" == "$INPUT" ]] && exit 0        # file_path 없음
+RAW="${REST%%\"*}"
+FILE="${RAW//\\\\//}"                      # C:\\Users\\x -> C:/Users/x
+FILE="${FILE//\\//}"
+```
+
+Windows에서 `file_path`는 백슬래시가 이스케이프된 형태(`C:\\Users\\...`)로 온다.
+`/`로 시작하는지로 절대경로를 판별하면 Windows 경로가 상대경로로 오인되어 가드가 열린다.
 
 ### 7.2 settings.json hooks 설정 포맷
 
@@ -68,6 +100,8 @@ Hook은 `.claude/settings.json`의 `hooks` 섹션에 정의한다.
         "hooks": [
           {
             "type": "command",
+            "shell": "bash",
+            "timeout": 5,
             "command": "bash .claude/hooks/ownership-guard.sh"
           }
         ]
@@ -77,6 +111,8 @@ Hook은 `.claude/settings.json`의 `hooks` 섹션에 정의한다.
         "hooks": [
           {
             "type": "command",
+            "shell": "bash",
+            "timeout": 5,
             "command": "bash .claude/hooks/dangerous-command-guard.sh"
           }
         ]
@@ -88,6 +124,8 @@ Hook은 `.claude/settings.json`의 `hooks` 섹션에 정의한다.
         "hooks": [
           {
             "type": "command",
+            "shell": "bash",
+            "timeout": 10,
             "command": "bash .claude/hooks/syntax-check.sh"
           }
         ]
@@ -97,6 +135,8 @@ Hook은 `.claude/settings.json`의 `hooks` 섹션에 정의한다.
         "hooks": [
           {
             "type": "command",
+            "shell": "bash",
+            "timeout": 30,
             "command": "bash .claude/hooks/quality-gate.sh"
           }
         ]
@@ -108,6 +148,8 @@ Hook은 `.claude/settings.json`의 `hooks` 섹션에 정의한다.
         "hooks": [
           {
             "type": "command",
+            "shell": "bash",
+            "timeout": 30,
             "command": "bash .claude/hooks/session-cleanup.sh"
           }
         ]
@@ -116,6 +158,18 @@ Hook은 `.claude/settings.json`의 `hooks` 섹션에 정의한다.
   }
 }
 ```
+
+#### 7.2.1 훅 비용 규약 (필수)
+
+훅은 **매 도구 호출마다 OS 프로세스를 새로 띄운다.** `Write|Edit` 매처는 파일을 하나 쓸 때마다 발동하고, 서브에이전트 안에서도 동일하게 발동한다. 다중 에이전트 워크플로우는 한 번 실행에 수백 번 Write를 하므로, 훅 하나의 낭비가 수백 배로 증폭된다.
+
+1. **모든 훅에 `timeout` 을 명시한다.** 생략 시 기본값은 **600초**다. 머신이 잠깐 느려지면 훅이 끝나지 못하고 10분간 살아남아, 그 사이 새 훅이 계속 쌓인다. 실제로 이 방식으로 훅 프로세스 378개가 누적된 사례가 있다. 가드는 5초, 검사는 10초, 빌드/테스트를 도는 훅만 30초 이상을 준다.
+
+2. **`"shell": "bash"` 를 명시한다.** 생략하면 Windows에서 셸이 PATH를 뒤져 `bash` 를 찾고, 후보에 WSL 런처(`WindowsApps\bash.exe`)가 섞여 있으면 훅 하나마다 WSL VM을 깨운다.
+
+3. **범위 밖 파일이면 즉시 `exit 0`.** 검사 대상이 `.json` / 특정 디렉터리뿐이라면, 그 판별을 **인터프리터 스폰 전에** 순수 bash로 끝낸다.
+
+4. **`python` / `node` 를 조건 없이 부르지 않는다.** Windows에서 `python3` 는 Microsoft Store 스텁일 수 있어 실행 시 멈출 수 있다. `command -v` 로 존재를 확인하고, 가능하면 `jq` 를 우선한다.
 
 **설정 구조 상세:**
 
@@ -127,6 +181,8 @@ hooks
 │       └── hooks: Array<HookDef>
 │           └── HookDef
 │               ├── type: "command"  ← 현재 "command"만 지원
+│               ├── shell: string    ← "bash" 권장 (Windows에서 WSL 경유 방지)
+│               ├── timeout: number  ← 초. 생략 시 600초 (반드시 명시할 것)
 │               └── command: string  ← 실행할 셸 명령
 ├── PostToolUse: Array<MatcherGroup>  ← 같은 구조
 └── Stop: Array<MatcherGroup>         ← 같은 구조 (matcher는 보통 빈 문자열)
@@ -211,7 +267,7 @@ if [ ${#ERRORS[@]} -gt 0 ]; then
     for err in "${ERRORS[@]}"; do
         echo "  - $err" >&2
     done
-    exit 1
+    exit 2   # 차단/보고는 2. exit 1 은 Claude 에게 전달되지 않는다.
 fi
 
 echo "✅ Quality gate passed" >&2
@@ -280,7 +336,7 @@ if [ ${#WARNINGS[@]} -gt 0 ]; then
     for w in "${WARNINGS[@]}"; do
         echo "  - $w" >&2
     done
-    exit 1
+    exit 2   # 차단/보고는 2. exit 1 은 Claude 에게 전달되지 않는다.
 fi
 
 exit 0
@@ -295,16 +351,21 @@ exit 0
 # .claude/hooks/ownership-guard.sh
 # PreToolUse 트리거: Write 또는 Edit 도구 실행 전 파일 소유권 확인
 
-set -euo pipefail
+set -uo pipefail
 
-# 환경변수에서 도구 입력 파싱
-TOOL_INPUT="$CLAUDE_TOOL_INPUT"
-TARGET_FILE=$(echo "$TOOL_INPUT" | jq -r '.file_path // .path // empty' 2>/dev/null)
-ROLE="${CLAUDE_SKILL_ROLE:-unknown}"
+# 도구 입력은 stdin JSON 으로 온다 (환경변수가 아니다)
+INPUT="$(cat 2>/dev/null)" || INPUT=""
+[ -z "$INPUT" ] && exit 0
 
-if [ -z "$TARGET_FILE" ]; then
-    exit 0  # 파일 경로를 추출할 수 없으면 통과
-fi
+REST="${INPUT#*\"file_path\":\"}"
+[ "$REST" = "$INPUT" ] && exit 0            # file_path 없음 -> 통과
+RAW="${REST%%\"*}"
+TARGET_FILE="${RAW//\\\\//}"                # C:\\Users\\x -> C:/Users/x
+TARGET_FILE="${TARGET_FILE//\\//}"
+[ -z "$TARGET_FILE" ] && exit 0
+
+# 역할은 환경변수로 전달되지 않는다. 파일에 적어두고 읽는다.
+ROLE="$(cat .claude/.current-role 2>/dev/null || echo unknown)"
 
 # 역할별 허용 경로 패턴
 declare -A OWNERSHIP_MAP
@@ -336,10 +397,10 @@ if [ -z "$ALLOWED_PATTERN" ]; then
 fi
 
 if ! echo "$REL_PATH" | grep -qE "$ALLOWED_PATTERN"; then
-    echo "❌ OWNERSHIP VIOLATION: Role '$ROLE' cannot write to '$REL_PATH'" >&2
+    echo "OWNERSHIP VIOLATION: Role '$ROLE' cannot write to '$REL_PATH'" >&2
     echo "   Allowed pattern: $ALLOWED_PATTERN" >&2
     echo "   Transfer this task to the appropriate role." >&2
-    exit 1
+    exit 2   # 차단은 2. exit 1 은 도구를 막지 못한다.
 fi
 
 exit 0
@@ -404,7 +465,7 @@ if [ ${#ERRORS[@]} -gt 0 ]; then
     for err in "${ERRORS[@]}"; do
         echo -e "  - $err" >&2
     done
-    exit 1
+    exit 2   # 차단/보고는 2. exit 1 은 Claude 에게 전달되지 않는다.
 fi
 
 echo "✅ Integration quality gate passed — integrated/ is independent" >&2
@@ -447,7 +508,7 @@ if [ ${#WARNINGS[@]} -gt 0 ]; then
     for w in "${WARNINGS[@]}"; do
         echo "  - $w" >&2
     done
-    exit 1
+    exit 2   # 차단/보고는 2. exit 1 은 Claude 에게 전달되지 않는다.
 fi
 
 exit 0
@@ -565,7 +626,7 @@ if [ ${#ERRORS[@]} -gt 0 ]; then
     for err in "${ERRORS[@]}"; do
         echo -e "  - $err" >&2
     done
-    exit 1
+    exit 2   # 차단/보고는 2. exit 1 은 Claude 에게 전달되지 않는다.
 fi
 
 echo "✅ Co-optris quality gate passed" >&2

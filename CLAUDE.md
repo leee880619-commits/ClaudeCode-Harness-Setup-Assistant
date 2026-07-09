@@ -25,7 +25,7 @@ claude --plugin-dir .
 
 1. **AskUserQuestion은 Orchestrator 전용** — 서브에이전트는 `Escalations`에 기록.
 2. **Agent-Playbook 분리** — 방법론은 `playbooks/`에만 (`.claude/skills/` 금지 — 자동 디스커버리되어 서브에이전트 소환 우회).
-3. **Target Project Guardrail** — 대상 프로젝트 경로 밖에 쓰기 금지. `ownership-guard.sh` 훅이 강제.
+3. **Target Project Guardrail** — 대상 프로젝트 경로 밖에 쓰기 금지. Claude Code `permissions.deny` 로 강제 (구 `ownership-guard.sh` 훅은 무동작이어서 v1.0.5에서 제거).
 4. **No Meta-Leakage** — 산출물에 플러그인 자체 규칙/Claude Code 아키텍처 설명 포함 금지. 검증: `scripts/validate-meta-leakage.sh`.
 5. **경로 변수** — 플러그인 내부 참조는 `${CLAUDE_PLUGIN_ROOT}` 필수.
 

@@ -128,7 +128,7 @@ For the design philosophy, agent-playbook separation, escalation protocol, and r
 
 ## Guardrails
 
-- **Target-project scope**: While building a harness for a target project, the plugin's own files are read-only. The `ownership-guard.sh` hook enforces this at `PreToolUse(Write|Edit)`.
+- **Target-project scope**: While building a harness for a target project, the plugin's own files are read-only. Claude Code's `permissions.deny` enforces this.
 - **Security**: Dangerous Bash patterns (`Bash(*)`, `sudo rm *`) are denied in the default settings template; secrets (API keys, tokens) are directed to gitignored `settings.local.json`.
 - **No meta-leakage**: Generated files don't include this plugin's internal rules or Claude Code architecture notes. Enforced by `meta-leakage-guard` and the checklist under `checklists/meta-leakage-keywords.md`.
 

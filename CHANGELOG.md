@@ -6,6 +6,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-07-09
+
+### 훅 계약 수정 + 훅 프로세스 폭증 차단
+
+**Incident 배경**: 사용자 머신에서 `bash.exe` 프로세스 378개가 누적되어 CPU 압박 발생. 내역은 `ownership-guard.sh` 190개 + `syntax-check.sh` 188개 (PreToolUse/PostToolUse 짝). 조사 결과 **두 훅 모두 지금까지 한 번도 동작한 적이 없었다.**
+
+**근본 원인** (실제 훅 프로브로 stdin/env 를 덤프하여 확정):
+- 두 훅 모두 존재하지 않는 `$CLAUDE_TOOL_INPUT` 환경변수를 읽고, 비어 있으면 즉시 `exit 0` 했다. Claude Code 는 훅 입력을 **stdin JSON** (`{"tool_input":{"file_path":"..."}}`) 으로 전달한다. 두 훅은 100% 무동작이었다.
+- 입력이 들어와도 Windows 절대경로(`C:\...`)가 `/` 로 시작하지 않아 상대경로로 오인되고, 프로젝트 루트를 앞에 붙인 뒤 "허용" 판정으로 fail-open 했다.
+- 차단에 `exit 1` 을 썼다. Claude Code 에서 차단은 `exit 2` 이며 `exit 1` 은 비차단이다.
+- `ownership-guard.sh` 가 참조하던 `$TARGET_PROJECT_ROOT` 는 훅에 전달되지 않는다. 훅은 별도 프로세스이고, Bash 도구에서 `export` 한 변수는 그 셸과 함께 사라진다. "범위 2: 대상 프로젝트" 분기는 죽은 코드였다.
+- `hooks.json` 에 `timeout` 이 없어 기본값 **600초**가 적용됐다. 머신이 느려지면 훅이 끝나지 못하고 10분간 살아남으며, 그 사이 파일 편집마다 새 훅 2개가 계속 쌓인다.
+- `command` 가 `bash <경로>` 형태라 `bash` 를 PATH 에서 찾는다. Windows 에서 후보에 WSL 런처(`WindowsApps\bash.exe`)가 섞여 있다.
+
+> 참고: 해당 incident 의 `vmmemWSL` CPU 2000% 자체는 별개 프로세스(Orca 의 `glab auth status` 반복 호출)가 유발했다. 본 플러그인의 훅은 Git Bash(MSYS)로 실행되며 WSL 을 경유하지 않는다. 다만 머신 포화 상태에서 timeout 부재가 프로세스 누적을 증폭시켰다.
+
+### Removed
+- `.claude/hooks/ownership-guard.sh` — 세 겹으로 무력화되어 한 번도 가드로 동작한 적이 없고, 대상 프로젝트 경로를 알 방법도 없어 제거. 쓰기 범위 보호는 Claude Code `permissions.deny` 가 담당.
+- `.claude/hooks/hooks.json` 의 `PreToolUse` · `SessionStart` 훅 등록.
+- `scripts/check-update.sh` — SessionStart 마다(서브에이전트 포함) `curl` 프로세스를 띄우던 버전 알림 훅. 버전 확인은 `/harness-architect:update` 로 수행.
+
+### Fixed
+- `.claude/hooks/syntax-check.sh` — stdin JSON 파싱으로 교체, 차단은 `exit 2`, Windows 백슬래시 경로 정규화, 검사 대상이 아니면 인터프리터 스폰 전에 즉시 `exit 0`, `jq` 우선(없으면 `python3`/`python`, 셋 다 없으면 검증 생략). `settings.json` 보안 검사는 파서 종류와 무관하게 항상 수행.
+- `.claude/hooks/hooks.json` — `"timeout": 10` 과 `"shell": "bash"` 명시.
+- `knowledge/06-hooks-system.md` — 훅 입출력 프로토콜을 stdin JSON 계약으로 정정. `exit 2` 차단 규약 명시. 예제 훅 6곳의 `exit 1` -> `exit 2`. 신설 7.2.1 "훅 비용 규약" (timeout 필수, shell 명시, 조기 종료, 조건부 인터프리터 호출).
+- `playbooks/hooks-mcp-setup.md` — 생성 훅 템플릿의 `$CLAUDE_TOOL_INPUT` 지시 제거, `timeout`/`shell` 필수화, `set -e` 금지 사유 명시. S 등급 예외의 `ORCHESTRATOR_DIRECT_TOKEN` 이 환경변수로는 훅에 도달하지 않음을 경고로 기록.
+- `.claude/rules/orchestrator-protocol.md` · `commands/harness-setup.md` · `examples/cli-arg-usage.md` — Phase 0 의 `TARGET_PROJECT_ROOT` export 지시 제거 (훅에 전달되지 않음). 대상 경로는 `00-target-path.md` 에 기록.
+- `ARCHITECTURE.md` · `CLAUDE.md` · `README.md` · `README_EN.md` · `PRIVACY.md` · `checklists/validation-checklist.md` — "ownership-guard 훅이 쓰기 범위를 강제한다"는 사실이 아닌 서술 정정.
+
+> **영향 범위**: v1.0.4 이전의 이 플러그인이 생성한 하네스는 동일한 훅 결함(무동작 + timeout 부재)을 포함한다. `/harness-architect:audit` 로 재점검하거나, 생성된 `.claude/hooks/*.sh` 를 위 stdin JSON 계약으로 갱신하기를 권장한다.
+
+### Added
+- `scripts/test-hooks.sh` — 훅 계약 회귀 테스트 16종. stdin JSON 파싱, Windows 경로, `exit 2` 차단, 범위 축소, `hooks.json` 의 timeout 선언을 고정한다. 훅이 다시 무동작으로 퇴행하면 실패한다. `CONTRIBUTING.md` 테스트 목록에 등록.
+
 ## [1.0.4] - 2026-05-26
 
 ### Phase 0 silent inference 차단 (라운드 1~6 누적)

@@ -46,7 +46,7 @@ Run through these checks after generating every harness file set.
 - [ ] 각 스킬/플레이북 파일(`.claude/skills/*/SKILL.md` 및 `playbooks/*.md`)에 "질문 소유권" 섹션 존재
 - [ ] 각 스킬의 Output Contract에 Summary / Files Generated / Escalations / Next Steps / Context for Next Phase 명시
 - [ ] Phase 5 Orchestrator Pattern Decision이 D-1인데 에이전트 전용 스킬이 `.claude/skills/`에 있지 않은지 확인 (메인 세션 우회 방지)
-- [ ] ownership-guard.sh (또는 동등) 훅 존재 — 멀티 에이전트 쓰기 범위 강제
+- [ ] 쓰기 범위 강제 수단 존재 — `permissions.deny` 또는 훅. 훅이면 stdin JSON 파싱 + `exit 2` + `timeout` 명시 확인
 - [ ] 에이전트가 2개 이상이면 각 스킬의 allowed_dirs가 충돌 없이 분리됨
 - [ ] `docs/{요청명}/` 산출물 번호 체인(00~07)이 완비. Phase 2.5 실행 시 `02b-domain-research.md`도 포함되고 Summary가 "스킵됨"이 아니면 Sources 섹션 유무 확인
 
