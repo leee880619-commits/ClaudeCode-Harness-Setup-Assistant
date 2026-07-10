@@ -39,47 +39,47 @@ Phase 6 산출물의 **Context for Next Phase** 섹션에서 스킬별 allowed_d
 > **훅 계약 (틀리면 훅이 조용히 무동작한다)** — 상세는 `knowledge/06-hooks-system.md` 7.1 / 7.2.1.
 > - 입력은 **stdin JSON** (`{"tool_input":{"file_path":"..."}}`). `$CLAUDE_TOOL_INPUT` 환경변수는 **없다.**
 > - 차단은 **`exit 2`**. `exit 1`은 도구를 막지 못한다.
-> - 훅에 전달되는 환경변수는 `$CLAUDE_PROJECT_DIR` · `$CLAUDE_PLUGIN_ROOT` 등 정해진 것뿐이다. 임의 변수를 `export` 해도 훅은 못 받는다. **상태는 파일로 넘긴다.**
+> - 훅에 전달되는 환경변수는 `$CLAUDE_PROJECT_DIR` · `$CLAUDE_PLUGIN_ROOT` 등 정해진 것뿐이다. 임의 변수를 `export` 해도 훅은 못 받는다. **상태는 파일로 넘긴다. 단 권한은 파일로 넘기지 마라** -- 메인 세션이 쓸 수 있는 파일은 자가 승인일 뿐이다.
+> - **"누가 쓰는가" 는 stdin JSON 의 `agent_type` 하나로만 안다.** 서브에이전트 호출에만 들어오고 메인 세션 호출에는 키가 없다. 런타임이 채우므로 모델이 위조할 수 없다. 역할을 환경변수나 `.current-role` 류의 파일에서 읽는 가드는 반드시 무동작하거나 fail-open 된다.
 > - 모든 훅에 `"timeout"` 과 `"shell": "bash"` 를 명시한다. 생략 시 기본 timeout 600초 — 훅이 쌓여 CPU를 태운다.
 > - Windows `file_path` 는 `C:\\Users\\...` 형태다. `/` 로 시작하는지로 절대경로를 판별하면 가드가 열린다.
 
 **다중 에이전트 프로젝트 기본 권장 훅 (자동 설치 후보):**
-- `ownership-guard.sh` (PreToolUse Write|Edit): 각 에이전트의 쓰기 범위를 SKILL.md allowed_dirs에 따라 강제. 대상 프로젝트 컨텍스트에 맞춰 **새로 작성**한다. 핵심 구조: stdin JSON에서 file_path 추출 → 백슬래시 정규화 → 심볼릭 링크/`..` 차단 → allow 리스트와 매칭 → 위반 시 `exit 2`.
+- `ownership-guard.sh` (PreToolUse Write|Edit): 각 에이전트의 쓰기 범위를 SKILL.md allowed_dirs에 따라 강제. 대상 프로젝트 컨텍스트에 맞춰 **새로 작성**한다. 핵심 구조: stdin JSON에서 file_path 와 `agent_type` 추출 -> 백슬래시 정규화 -> 심볼릭 링크/`..` 차단 -> 에이전트별 allow 리스트와 매칭 -> 위반 시 `exit 2`.
 
-  **필수 포함 — Complexity Gate S 등급 예외 (ORCHESTRATOR_DIRECT, 보안 강화형)**: 대상 프로젝트 워크플로우에 Complexity Gate(workflow-design Step 4-B)가 포함된 경우 아래 블록을 삽입한다. 단순 환경변수 플래그는 세션 시작 시 1회 설정하면 세션 전체가 무방비가 되는 순환 고리 취약점이 있으므로 **per-task 토큰 + 민감 파일 블랙리스트 + deny 선처리** 3중 가드로 구성한다.
+  **신원의 출처는 `agent_type` 하나뿐이다.** Claude Code 는 서브에이전트가 도구를 호출할 때만 stdin JSON 에 `agent_type` 을 넣고, 메인 세션 호출에는 키 자체를 넣지 않는다. 모델이 위조할 수 없는 유일한 신원 값이다. 역할이나 우회 허가를 **환경변수 플래그, 토큰, 락 파일**에서 읽으면 안 된다 (`.claude/.current-role` 류 포함) -- 그 값을 세팅하는 주체와 그 값으로 제한받는 주체가 같아 인증이 성립하지 않으며, 임의 환경변수는 훅 프로세스에 도달조차 하지 않는다. 상세: `knowledge/06-hooks-system.md` 7.1.
+
+  **Complexity Gate S 등급 예외**: 대상 프로젝트 워크플로우에 Complexity Gate(workflow-design Step 4-B)가 포함된 경우, S 등급은 오케스트레이터가 직접 처리한다. 오케스트레이터에게는 담당 영역(allowed_dirs)이 없으므로 `agent_type` 부재로 판정해 통과시킨다. **별도의 토큰·플래그·락 파일은 필요 없고, 만들어서도 안 된다.**
 
   ```bash
-  # 1) deny 패턴 선처리 — S 등급 여부와 무관하게 파괴적 액션은 항상 차단
+  # (앞서 stdin JSON 을 $INPUT 으로 읽고 $FILE_PATH 를 추출·정규화한 상태)
+
+  # 1) 민감 경로 선처리 -- 오케스트레이터든 에이전트든 항상 차단
   case "$FILE_PATH" in
     *.env|*.env.*|*/.env|*/.env.*|*/.git/*|*/secrets/*|*/credentials/*|*/private-keys/*)
-      echo "denied: sensitive path ($FILE_PATH) — S-grade override disabled for sensitive paths" >&2
+      echo "denied: sensitive path ($FILE_PATH)" >&2
       exit 2
       ;;
   esac
 
-  # 2) S-grade Complexity Gate 예외 — per-task 토큰 매칭 필수
-  # 토큰 생성: Complexity Gate 판정 시점에 사용자가 AskUserQuestion으로 S 등급을 승인하면
-  # 오케스트레이터가 $(uuidgen || head -c 16 /dev/urandom | xxd -p) 로 1회성 토큰을 발급하고,
-  # docs/complexity-gate.lock 파일에 해시만 기록한 뒤 해당 작업 완료 시 파일을 삭제한다.
-  if [ -n "${ORCHESTRATOR_DIRECT_TOKEN:-}" ] && [ -f docs/complexity-gate.lock ]; then
-    expected_hash=$(cat docs/complexity-gate.lock 2>/dev/null)
-    actual_hash=$(printf '%s' "$ORCHESTRATOR_DIRECT_TOKEN" | sha256sum | awk '{print $1}')
-    if [ "$expected_hash" = "$actual_hash" ]; then
-      exit 0
-    fi
-    echo "denied: ORCHESTRATOR_DIRECT_TOKEN mismatch" >&2
-    exit 2
-  fi
+  # 2) 신원 판정 -- agent_type 은 Claude Code 가 채우므로 위조 불가.
+  #    키가 없으면 메인 세션(오케스트레이터) = S 등급 직접 처리 경로.
+  case "$INPUT" in
+    *'"agent_type":"'*) R="${INPUT#*\"agent_type\":\"}"; ROLE="${R%%\"*}" ;;
+    *)                  ROLE="" ;;
+  esac
+  [ -z "$ROLE" ] && exit 0     # 오케스트레이터는 담당 영역이 없다
+
+  # 3) 이하 $ROLE 별 allowed_dirs 매칭. 매핑에 없는 에이전트는 exit 2 (fail-closed).
   ```
 
-  > **미해결 — `ORCHESTRATOR_DIRECT_TOKEN` 은 훅에 도달하지 않는다.** 훅은 별도 프로세스로 실행되므로 다른 도구 호출에서 `export` 한 임의 환경변수를 받지 못한다. 따라서 위 S 등급 예외 분기는 **현재 절대 성립하지 않는다** (토큰이 항상 빈 값 -> 일반 가드로 낙하). 동작은 fail-closed 라 안전하지만 예외 기능은 죽어 있다. 토큰을 파일로 넘기면 락 파일과 같은 신뢰 경계에 놓여 해시 검증이 무의미해지므로, **이 예외를 실제로 쓰려면 전달 경로를 다시 설계해야 한다.** 그때까지 S 등급 예외는 "설계됐으나 미가동" 으로 간주하고, Escalations 에 `[ASK] S 등급 예외 미가동 — 현행 유지 / 재설계` 로 올린다.
+  **설계 근거 (그리고 하지 말아야 할 것)**:
+  - **훅은 사용자 승인을 검증할 수 없다.** S 등급 승인은 AskUserQuestion 으로 받지만, 그 사실은 훅에 아무 흔적도 남기지 않는다. 오케스트레이터가 발급하는 토큰·플래그·락 파일은 전부 **자가 승인**이라 인증이 아니다 (발급 주체 = 제한 대상). 실제로 사용자 확인을 강제하려면 훅이 아니라 `permissions.ask` 를 쓴다.
+  - 훅이 실제로 아는 것은 "지금 쓰는 게 오케스트레이터인가, 어느 서브에이전트인가" 뿐이다. 이것만으로 **에이전트 간 경계**는 정확히 강제된다. 서브에이전트가 메인 세션을 사칭하는 것은 프롬프트 인젝션으로도 불가능하다 (`agent_type` 은 런타임이 채운다).
+  - **민감 경로를 이 훅에만 의존하지 마라.** 훅 matcher 는 `Write|Edit` 뿐이라 `Bash` 경유 쓰기(`python -c "open('.env','w')"`)를 못 막고, `permissions.deny` 역시 임의 서브프로세스는 못 막는다. 실제 강제가 필요하면 `sandbox.filesystem` 을 쓴다. 위 1)번 선처리는 **심층 방어이지 유일한 벽이 아니다.**
+  - S 등급 판정 자체는 오케스트레이터의 프로토콜 의무다 (CLAUDE.md 라우팅 프로토콜 Section 3). 훅으로 강제되지 않는다는 사실을 산출물에 명시한다.
 
-  **보안 설계 근거**:
-  - 1) deny 선처리가 `.env` · `.git/config` · secrets 경로를 S 등급 여부와 무관하게 **항상** 차단 (ownership-guard가 유일 방어선인 경로들).
-  - 2) 단순 `ORCHESTRATOR_DIRECT=1` 환경변수는 메인 세션 또는 프롬프트 인젝션으로 자가 설정 가능한 취약점이 있어 per-task 토큰 + 락 파일 기반으로 변경. 락 파일 생성/해제 시점을 Complexity Gate 판정 플로우가 유일하게 소유하도록 오케스트레이터 프로토콜에 명시.
-  - 3) S 등급 판정은 반드시 AskUserQuestion 경유 사용자 명시 승인 — "작은 작업인 것 같으니 직접 가겠다" 같은 메인 세션 자가 판단은 금지.
-
-  이 예외가 없거나 보안 설계를 누락하면 S 등급 작은 패치(파일 5개 이하)도 에이전트 소환이 강제되어 실측 $18/세션 수준의 비용이 발생하거나, 반대로 보안이 형해화된다.
+  S 등급 경로가 없으면 파일 3개 이하의 작은 수정에도 에이전트 소환이 강제되어 비용이 급증한다. 반대로 토큰 기반 "보안" 을 흉내 내면 **검증되지 않는 죽은 분기**가 남아 유지보수 비용만 늘어난다.
 - `syntax-check.sh` (PostToolUse Write|Edit): JSON parse, YAML frontmatter 닫힘, settings.json 위험 패턴 감지. 동일하게 템플릿으로 제공.
 
 두 훅 모두 Escalations에 `[ASK] 기본 훅 설치 제안 — 설치/스킵` 항목으로 기록. 단독 에이전트나 솔로 프로젝트에서는 훅을 **자동 제안하지 않는다**.
@@ -102,6 +102,7 @@ Phase 6 산출물의 **Context for Next Phase** 섹션에서 스킬별 allowed_d
 필요한 각 훅에 대해:
 1. 스크립트 언어 선택 (bash 권장, node도 가능)
 2. 입력 파싱 계획: **stdin JSON 1개** 를 읽어 `tool_name` · `tool_input.file_path` · `cwd` 를 꺼낸다.
+   역할 기반 가드라면 `agent_type` 도 함께 꺼낸다 (없으면 메인 세션).
    Windows 경로의 이스케이프된 백슬래시(`C:\\Users\\...`)를 슬래시로 정규화한 뒤 판정한다.
 3. 성공/실패 기준: `exit 0` = 통과, `exit 2` = 차단(stderr가 Claude에게 전달). **`exit 1` 은 차단이 아니다.**
 4. stderr 피드백 메시지 (Claude에게 전달됨)

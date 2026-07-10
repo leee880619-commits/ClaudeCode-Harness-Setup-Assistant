@@ -6,6 +6,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-07-10
+
+### 훅 신원(identity) 계약 확립 -- 죽은 S 등급 예외 제거
+
+**배경**: v1.0.5 가 훅의 *입력* 계약(stdin JSON)을 고쳤지만, *신원* 계약은 여전히 틀려 있었다. 훅이 "누가 파일을 쓰는가" 를 알아내려던 세 가지 수단이 모두 성립하지 않았다.
+
+**근본 원인 -- 발급 주체 = 제한 대상**:
+- `ORCHESTRATOR_DIRECT_TOKEN` (환경변수) + `docs/complexity-gate.lock` (해시 락 파일): 토큰을 발급하는 주체가 메인 세션이고, 그 토큰으로 제한받는 주체도 메인 세션이다. **자가 승인은 인증이 아니다.** 전달 경로를 환경변수에서 파일로 바꿔도 해결되지 않는다. 게다가 임의 환경변수는 훅 프로세스에 도달조차 하지 않아 분기 전체가 죽어 있었다 (항상 빈 값 -> 일반 가드로 낙하).
+- `.claude/.current-role` (v1.0.5 가 도입한 대체안): 이 파일을 쓰는 주체가 아무데도 없다. 항상 `unknown` 으로 읽혀 매핑 조회 실패 -> `exit 0`. **fail-open 무동작.** v1.0.4 의 `$CLAUDE_TOOL_INPUT` 과 동일한 실패를 다른 이름으로 반복한 것.
+- 사용자가 AskUserQuestion 으로 S 등급을 승인했다는 사실은 훅에 **아무 흔적도 남기지 않는다.** 훅은 사용자 승인을 검증할 수 없다.
+
+**해결 -- `agent_type`**: Claude Code 는 서브에이전트가 도구를 호출할 때만 stdin JSON 에 `agent_id` / `agent_type` 을 넣고, 메인 세션 호출에는 키 자체를 넣지 않는다. 런타임이 채우므로 모델이 위조할 수 없는 **유일한 신원 값**이다. 라이브 훅에 프로브를 심어 두 경로를 직접 캡처해 확인했다.
+
+### Removed
+- `ORCHESTRATOR_DIRECT_TOKEN` / `ORCHESTRATOR_DIRECT=1` 환경변수 플래그, `docs/complexity-gate.lock` 해시 락 파일 -- 인증이 성립하지 않는 죽은 메커니즘. `playbooks/hooks-mcp-setup.md`, `playbooks/pipeline-design.md`, `playbooks/design-review.md`, `.claude/agents/red-team-advisor.md` 에서 제거.
+  - 특히 `design-review.md` / `red-team-advisor.md` 의 Dim 12 체크리스트는 **없는 메커니즘을 "명시하라" 고 요구**하고 있었다. 이제 반대로, 환경변수 플래그/토큰 락 파일 기반 우회를 명시하면 `[BLOCK]` 을 발행한다.
+- `knowledge/06-hooks-system.md` ownership-guard 템플릿의 `.claude/.current-role` 파일 읽기.
+
+### Fixed
+- `knowledge/06-hooks-system.md` 7.1: stdin JSON 스키마에 `agent_id` / `agent_type` / `permission_mode` 추가. 메인 세션에는 키 자체가 없음을 표로 명시. "권한을 파일로 넘기지 마라 -- 메인 세션이 쓸 수 있는 파일은 자가 승인일 뿐" 규약 추가. `agent_type` 추출 스니펫(인터프리터 스폰 없음) 추가.
+- `knowledge/06-hooks-system.md` ownership-guard 템플릿: 역할을 `agent_type` 에서 읽고, 매핑에 없는 에이전트를 **fail-closed(`exit 2`)** 로 차단. 기존에는 `allowing write` 로 통과시켜 가드가 형해화됐다.
+- `playbooks/hooks-mcp-setup.md`: 훅 계약 요약에 신원 항목 추가. S 등급 예외를 `agent_type` 부재 판정으로 재작성. `.env` 등 민감 경로에 대한 **거짓 주장 정정** -- "ownership-guard 가 유일 방어선" 은 사실이 아니다. 훅 matcher 는 `Write|Edit` 뿐이라 `Bash` 경유 쓰기를 막지 못하고, `permissions.deny` 도 임의 서브프로세스는 막지 못한다. 실제 강제는 `sandbox.filesystem` 이며 훅의 선처리는 심층 방어일 뿐임을 명시.
+- `playbooks/workflow-design.md` + `playbooks/fresh-setup.md` 라우팅 프로토콜의 **S 등급 자기모순 해소**: 표는 "파일 3개 이하 변경" 을 허용하는데 Section 3 은 "영구 산출이 없는 작업 에만 허용" 이라 서로 배타적이었다. 표를 정본으로 확정하고, Section 3 은 원래 의도(리뷰 필수 파이프라인 보호)만 정밀하게 남겼다 -- `mandatory_review` 소속 / 생성·결정·설계·계획·리서치 성격 / 외부 공개 산출물. 기존 코드의 국소 수정은 커밋되더라도 S 등급으로 처리 가능. (`ops-audit.md` F-4 의 grep 매칭은 `mandatory_review` 로 계속 통과하며, 구버전 하네스 감사를 위해 `영구 산출` 패턴도 유지된다.)
+
+### Added
+- `scripts/test-hooks.sh` 섹션 9~11 (14개 테스트 추가, 총 30개):
+  - 신원 계약 회귀 방지 -- `ORCHESTRATOR_DIRECT` 계열, `complexity-gate.lock`, `cat .claude/.current-role`, `allowing write`(fail-open), `유일 방어선`(거짓 주장) 의 재유입 차단
+  - S 등급 모순 문장 재유입 차단 + `ops-audit` F-4 가드 문구 보존 확인
+  - **문서에 실린 `agent_type` 추출 코드를 markdown 에서 뽑아 실제 페이로드로 실행**. 문서가 깨진 훅 코드를 가르친 것이 v1.0.4~1.0.5 사고의 뿌리였으므로, grep 이 아니라 실행으로 고정한다.
+
+### 기존 사용자 영향
+v1.0.5 이하로 생성된 하네스의 `ownership-guard.sh` 는 역할을 환경변수나 `.current-role` 에서 읽어 **항상 통과(fail-open)** 하거나 완전 무동작이다. 보안상 위험이 커지지는 않으나(원래 아무것도 막지 못했다) 가드가 있다고 믿으면 안 된다. `/harness-architect:audit` 로 재점검하거나, `.claude/hooks/ownership-guard.sh` 의 역할 판정을 stdin JSON 의 `agent_type` 으로 교체할 것.
+
 ## [1.0.5] - 2026-07-09
 
 ### 훅 계약 수정 + 훅 프로세스 폭증 차단

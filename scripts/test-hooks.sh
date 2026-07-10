@@ -92,6 +92,104 @@ else
   ok "python 스폰 전 가용성 확인"
 fi
 
+echo "== 9. 신원 계약: 훅이 위조 불가능한 agent_type 을 쓰는가 =="
+# 배경: 훅은 "허가증을 발급하는 주체" 를 신뢰할 수 없다.
+#   - ORCHESTRATOR_DIRECT_TOKEN (환경변수): 메인 세션이 스스로 발급 -> 인증이 아님.
+#     게다가 임의 환경변수는 훅 프로세스에 도달조차 하지 않아 분기 전체가 죽어 있었다.
+#   - .claude/.current-role (파일): 아무도 쓰지 않아 항상 unknown -> fail-open.
+# Claude Code 는 서브에이전트 호출에 한해 stdin JSON 에 agent_type 을 넣는다.
+# 메인 세션 호출에는 키 자체가 없다. 모델은 이 값을 위조할 수 없다.
+
+# 과거 기록(CHANGELOG, 위키 이력)과 이 테스트 파일 자신은 제외하고 레포 전체를 검색한다.
+grep_repo() {
+  grep -rlF "$1" "$REPO_ROOT" \
+    --exclude-dir=.git --exclude-dir=docs \
+    --exclude=CHANGELOG.md --exclude=test-hooks.sh 2>/dev/null || true
+}
+
+absent() {  # $1=설명  $2=패턴  $3=왜 없어야 하는가
+  local hits; hits="$(grep_repo "$2")"
+  if [[ -z "$hits" ]]; then ok "$1"; else bad "$1" "$3 -- 잔존: $(printf '%s' "$hits" | tr '\n' ' ')"; fi
+}
+
+present() {  # $1=설명  $2=파일  $3=패턴
+  if grep -qF "$3" "${REPO_ROOT}/$2" 2>/dev/null; then ok "$1"; else bad "$1" "$2 에 '$3' 없음"; fi
+}
+
+# 아래 absent 검사는 '언급' 이 아니라 '코드 패턴' 을 금지한다.
+# 문서가 "이렇게 하지 마라" 며 이름을 거론하는 것은 오히려 회귀 방지에 필요하다.
+# _TOKEN 접미사만 막으면 맨몸 ORCHESTRATOR_DIRECT=1 플래그가 빠져나간다.
+# v1.0.5 시점에 실제로 pipeline-design / design-review / red-team-advisor 세 곳에 남아 있었고,
+# Advisor 는 이제 없는 메커니즘을 '명시하라' 고 요구하고 있었다. 이름 전체를 금지한다.
+absent "ORCHESTRATOR_DIRECT 계열 제거됨 (토큰·플래그 전부)" \
+  "ORCHESTRATOR_DIRECT" \
+  "환경변수는 훅에 도달하지 않고, 메인 세션이 자가 발급하므로 인증 수단이 될 수 없다"
+
+absent "복잡도 게이트 락 파일 제거됨" \
+  "complexity-gate.lock" \
+  "메인 세션이 스스로 쓰는 파일은 자가 승인일 뿐 인증이 아니다"
+
+absent "역할을 파일에서 읽지 않음" \
+  "cat .claude/.current-role" \
+  "아무도 쓰지 않는 파일이라 항상 unknown 으로 읽혀 가드가 fail-open 된다"
+
+absent "ownership-guard 템플릿이 fail-open 하지 않음" \
+  "allowing write" \
+  "매핑 없는 역할을 통과시키면 가드가 형해화된다. 차단(exit 2)해야 한다"
+
+absent "'유일 방어선' 거짓 주장 제거됨" \
+  "유일 방어선" \
+  "훅 matcher 는 Write|Edit 뿐이라 Bash 우회를 못 막는다. 진짜 벽은 sandbox.filesystem 이다"
+
+present "06-hooks-system.md 가 agent_type 을 문서화" \
+  "knowledge/06-hooks-system.md" "agent_type"
+present "hooks-mcp-setup.md 가 agent_type 기반 예외를 기술" \
+  "playbooks/hooks-mcp-setup.md" "agent_type"
+present "ownership-guard 템플릿이 미매핑 에이전트를 차단" \
+  "knowledge/06-hooks-system.md" "write denied"
+
+echo "== 10. S 등급 정의가 자기모순이 아닌가 =="
+# 표: "파일 <=3개 변경".  구 Section 3: "영구 산출이 없는 작업 에만 허용".
+# 둘 다 참일 수 없다. 표를 정본으로 두고 Section 3 을 정밀화했다.
+absent "S 등급 모순 문장 제거됨" \
+  "영구 산출이 없는 작업" \
+  "표의 '파일 <=3개 변경' 과 정면 충돌한다"
+
+# ops-audit F-4 는 라우팅 프로토콜에서 우회 가드 문구를 grep 한다. 깨뜨리면 안 된다.
+for f in playbooks/workflow-design.md playbooks/fresh-setup.md; do
+  present "ops-audit F-4 유지 ($f)" "$f" "mandatory_review"
+done
+
+echo "== 11. 문서에 실린 agent_type 추출 코드를 실제로 실행해 본다 =="
+# knowledge/06-hooks-system.md 가 깨진 훅 코드를 가르친 것이 이번 사고의 뿌리였다.
+# 그래서 문서의 코드 블록을 파일로 뽑아 실제 페이로드로 돌린다. grep 이 아니라 실행이다.
+SNIP="$TMP/agent_type_snippet.sh"
+awk '/stdin JSON에서 agent_type 뽑기/{f=1}
+     f && /^```bash$/ {c=1; next}
+     c && /^```$/     {exit}
+     c                {print}' "${REPO_ROOT}/knowledge/06-hooks-system.md" > "$SNIP"
+
+if [[ ! -s "$SNIP" ]]; then
+  bad "문서에서 agent_type 스니펫 추출" "코드 블록을 찾지 못했다"
+else
+  ok "문서에서 agent_type 스니펫 추출 ($(wc -l < "$SNIP") 줄)"
+
+  probe_role() { INPUT="$1"; ROLE=""; . "$SNIP"; printf '%s' "$ROLE"; }
+
+  # 실측 페이로드 (이 세션에서 라이브 훅으로 직접 캡처):
+  #   메인 세션에는 agent_type 키 자체가 없고, 서브에이전트에만 들어온다.
+  main_json='{"hook_event_name":"PostToolUse","tool_name":"Write","cwd":"C:\\proj","tool_input":{"file_path":"a.txt"}}'
+  sub_json='{"agent_id":"a29a93d048bc9fff5","agent_type":"general-purpose","tool_name":"Write","tool_input":{"file_path":"a.txt"}}'
+
+  got="$(probe_role "$main_json")"
+  [[ -z "$got" ]] && ok "메인 세션 -> 역할 없음 (가드 통과)" \
+                  || bad "메인 세션 오판" "빈 문자열이어야 하는데 '$got'"
+
+  got="$(probe_role "$sub_json")"
+  [[ "$got" == "general-purpose" ]] && ok "서브에이전트 -> 'general-purpose' 로 식별" \
+                                    || bad "서브에이전트 오판" "expected general-purpose, got '$got'"
+fi
+
 echo
 printf 'PASS=%d FAIL=%d\n' "$PASS" "$FAIL"
 [[ "$FAIL" -eq 0 ]]

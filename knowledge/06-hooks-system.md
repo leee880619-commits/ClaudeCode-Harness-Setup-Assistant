@@ -54,16 +54,37 @@ Claude가 응답 완료
     "tool_input": { "file_path": "C:\\Users\\me\\proj\\a.json", "content": "..." },
     "tool_response": { "...": "PostToolUse에만 존재" },
     "cwd": "C:\\Users\\me\\proj",
-    "session_id": "..."
+    "session_id": "...",
+    "permission_mode": "auto",
+
+    "agent_id":   "a29a93d048bc9fff5",
+    "agent_type": "general-purpose"
   }
   ```
 
   `$CLAUDE_TOOL_INPUT` / `$CLAUDE_TOOL_NAME` / `$CLAUDE_TOOL_OUTPUT` 같은 환경변수는 **존재하지 않는다.**
   이것을 읽는 훅은 항상 빈 문자열을 받아 조용히 통과하므로, 검사하는 척하면서 아무것도 하지 않는다.
 
+- **`agent_id` / `agent_type` -- 훅이 가진 유일한 위조 불가능 신원**:
+  이 두 키는 **서브에이전트가 도구를 호출할 때만** JSON에 들어온다. 메인 세션(오케스트레이터)이 호출하면
+  **키 자체가 없다** (`null`도 빈 문자열도 아니다). Claude Code가 직접 채우므로 모델이 조작할 수 없다.
+
+  | 호출 주체 | `agent_type` |
+  |-----------|--------------|
+  | 메인 세션 (오케스트레이터) | 키 없음 |
+  | 서브에이전트 | `"general-purpose"`, `"my-plugin:reviewer"` 등 |
+
+  역할 기반 가드는 **반드시 이 값을 신원의 출처로 삼아야 한다.** 역할을 환경변수나 별도 파일
+  (`.claude/.current-role` 등)에서 읽으면 안 된다. 그 값을 쓰는 주체와 그 값으로 제한받는 주체가
+  같기 때문에 인증이 성립하지 않고, 실제로는 아무도 그 파일을 쓰지 않아 가드가 조용히 열린다.
+
 - **훅이 실제로 받는 환경변수**: `$CLAUDE_PROJECT_DIR`, `$CLAUDE_PLUGIN_ROOT`, `$CLAUDE_PLUGIN_DATA`, `$CLAUDE_EFFORT`.
   임의 환경변수(`$TARGET_PROJECT_ROOT` 등)는 다른 도구 호출에서 `export` 해도 훅에 전달되지 않는다.
   훅은 Claude Code가 별도 프로세스로 띄우기 때문이다. 상태가 필요하면 **파일에 적어라.**
+
+  단, **권한(authorization)을 파일로 넘기지 마라.** 메인 세션이 쓸 수 있는 파일은 메인 세션의 자가 승인일 뿐이다.
+  "사용자가 승인했다"는 사실은 훅에 어떤 흔적도 남기지 않는다. 훅이 검증할 수 있는 신원은 위의 `agent_type` 하나뿐이고,
+  사용자 승인을 실제로 강제하는 수단은 훅이 아니라 `permissions.ask` / `permissions.deny` 다.
 
 - **출력 (종료 코드)**:
   - `0` → 통과. stdout이 유효 JSON이면 구조화 응답으로 해석됨
@@ -86,6 +107,15 @@ FILE="${FILE//\\//}"
 
 Windows에서 `file_path`는 백슬래시가 이스케이프된 형태(`C:\\Users\\...`)로 온다.
 `/`로 시작하는지로 절대경로를 판별하면 Windows 경로가 상대경로로 오인되어 가드가 열린다.
+
+**stdin JSON에서 agent_type 뽑기 (없으면 메인 세션):**
+
+```bash
+case "$INPUT" in
+  *'"agent_type":"'*) REST="${INPUT#*\"agent_type\":\"}"; ROLE="${REST%%\"*}" ;;
+  *)                  ROLE="" ;;     # 키 없음 = 메인 세션
+esac
+```
 
 ### 7.2 settings.json hooks 설정 포맷
 
@@ -346,6 +376,9 @@ exit 0
 
 멀티 에이전트 환경에서 각 역할이 자신의 담당 영역 외의 파일을 수정하지 못하도록 강제하는 가드이다.
 
+이 가드가 성립하는 유일한 이유는 **`agent_type`이 Claude Code가 채우는 위조 불가능한 값**이라는 데 있다.
+역할을 환경변수나 파일에서 읽으면, 그 값을 세팅하는 주체와 제한받는 주체가 같아져 가드가 무의미해진다.
+
 ```bash
 #!/bin/bash
 # .claude/hooks/ownership-guard.sh
@@ -364,10 +397,18 @@ TARGET_FILE="${RAW//\\\\//}"                # C:\\Users\\x -> C:/Users/x
 TARGET_FILE="${TARGET_FILE//\\//}"
 [ -z "$TARGET_FILE" ] && exit 0
 
-# 역할은 환경변수로 전달되지 않는다. 파일에 적어두고 읽는다.
-ROLE="$(cat .claude/.current-role 2>/dev/null || echo unknown)"
+# 역할 = stdin JSON 의 agent_type. Claude Code 가 직접 채우므로 모델이 위조할 수 없다.
+# 서브에이전트 호출에만 존재하고, 메인 세션 호출에는 키 자체가 없다.
+case "$INPUT" in
+  *'"agent_type":"'*) R="${INPUT#*\"agent_type\":\"}"; ROLE="${R%%\"*}" ;;
+  *)                  ROLE="" ;;
+esac
 
-# 역할별 허용 경로 패턴
+# 메인 세션(오케스트레이터)은 담당 영역이라는 개념이 없다 -> 이 가드의 대상이 아니다.
+# 민감 경로 보호는 이 훅이 아니라 settings.json 의 permissions.deny 가 담당한다.
+[ -z "$ROLE" ] && exit 0
+
+# 역할별 허용 경로 패턴 (키는 .claude/agents/ 의 에이전트 이름과 정확히 일치해야 한다)
 declare -A OWNERSHIP_MAP
 OWNERSHIP_MAP["build-html"]="^src/.*\.html$|^templates/"
 OWNERSHIP_MAP["build-css"]="^src/.*\.css$|^styles/"
@@ -391,20 +432,27 @@ fi
 # 역할별 소유권 확인
 ALLOWED_PATTERN="${OWNERSHIP_MAP[$ROLE]:-}"
 
+# 매핑에 없는 에이전트는 차단한다 (fail-closed).
+# 통과시키면 에이전트 하나만 추가해도 가드 전체가 형해화된다.
 if [ -z "$ALLOWED_PATTERN" ]; then
-    echo "⚠️ Role '$ROLE' has no ownership mapping — allowing write" >&2
-    exit 0
+    echo "OWNERSHIP: agent '$ROLE' is not in OWNERSHIP_MAP -- write denied" >&2
+    echo "   Add '$ROLE' to OWNERSHIP_MAP, or route this write to an owning agent." >&2
+    exit 2
 fi
 
 if ! echo "$REL_PATH" | grep -qE "$ALLOWED_PATTERN"; then
-    echo "OWNERSHIP VIOLATION: Role '$ROLE' cannot write to '$REL_PATH'" >&2
+    echo "OWNERSHIP VIOLATION: agent '$ROLE' cannot write to '$REL_PATH'" >&2
     echo "   Allowed pattern: $ALLOWED_PATTERN" >&2
-    echo "   Transfer this task to the appropriate role." >&2
+    echo "   Transfer this task to the appropriate agent." >&2
     exit 2   # 차단은 2. exit 1 은 도구를 막지 못한다.
 fi
 
 exit 0
 ```
+
+**fail-closed 유지 의무**: `OWNERSHIP_MAP`은 `.claude/agents/` 의 **모든** 에이전트를 담아야 한다.
+누락된 에이전트는 쓰기가 막히므로 즉시 드러난다 -- 조용히 통과시키는 것보다 낫다.
+Phase 7-8의 allowed_dirs 정합성 검증이 이 매핑의 완전성을 유지한다.
 
 #### 프로젝트 2: Project-Integration-Agent hooks
 
